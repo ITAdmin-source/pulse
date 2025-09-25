@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { userRoles, type UserRole, type NewUserRole } from "../schema/user-roles";
 
@@ -31,7 +31,7 @@ export async function getUserRoleByUserAndPoll(userId: string, pollId: string | 
 
   if (pollId === null) {
     // For global roles, pollId should be null
-    conditions.push(eq(userRoles.pollId, null));
+    conditions.push(isNull(userRoles.pollId));
   } else {
     conditions.push(eq(userRoles.pollId, pollId));
   }

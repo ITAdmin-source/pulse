@@ -1,4 +1,4 @@
-import { eq, desc, and, or, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { polls, type Poll, type NewPoll } from "../schema/polls";
 
@@ -54,21 +54,14 @@ export async function getPublishedPolls(): Promise<Poll[]> {
 }
 
 export async function getActivePolls(): Promise<Poll[]> {
-  const now = new Date();
   return await db
     .select()
     .from(polls)
     .where(
       and(
         eq(polls.status, "published"),
-        or(
-          isNull(polls.startTime),
-          eq(polls.startTime, null)
-        ),
-        or(
-          isNull(polls.endTime),
-          eq(polls.endTime, null)
-        )
+        isNull(polls.startTime),
+        isNull(polls.endTime)
       )
     )
     .orderBy(desc(polls.createdAt));

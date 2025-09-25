@@ -59,5 +59,5 @@ export async function deleteStatement(id: string): Promise<boolean> {
     .delete(statements)
     .where(eq(statements.id, id));
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }

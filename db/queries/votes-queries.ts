@@ -84,5 +84,5 @@ export async function deleteVote(id: string): Promise<boolean> {
     .delete(votes)
     .where(eq(votes.id, id));
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }

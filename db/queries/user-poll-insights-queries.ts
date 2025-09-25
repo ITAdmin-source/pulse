@@ -74,5 +74,5 @@ export async function deleteUserPollInsight(userId: string, pollId: string): Pro
     .delete(userPollInsights)
     .where(and(eq(userPollInsights.userId, userId), eq(userPollInsights.pollId, pollId)));
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }

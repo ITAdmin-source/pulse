@@ -1,5 +1,4 @@
 import { pgTable, pgEnum, text, uuid, timestamp, boolean, integer, varchar } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 import { users } from "./users";
 
 // Define poll_status enum
