@@ -11,6 +11,8 @@ import {
   getVoteByUserAndStatement,
   updateVote,
   upsertVote,
+  getUserVoteCountForPoll,
+  hasUserMetVotingThreshold,
 } from "@/db/queries/votes-queries";
 import { type NewVote } from "@/db/schema/votes";
 
@@ -119,5 +121,25 @@ export async function getVoteByUserAndStatementAction(userId: string, statementI
   } catch (error) {
     console.error("Error fetching user vote for statement:", error);
     return { success: false, error: "Failed to fetch user vote for statement" };
+  }
+}
+
+export async function getUserVoteCountForPollAction(userId: string, pollId: string) {
+  try {
+    const count = await getUserVoteCountForPoll(userId, pollId);
+    return { success: true, data: count };
+  } catch (error) {
+    console.error("Error fetching user vote count for poll:", error);
+    return { success: false, error: "Failed to fetch user vote count for poll" };
+  }
+}
+
+export async function hasUserMetVotingThresholdAction(userId: string, pollId: string) {
+  try {
+    const hasMetThreshold = await hasUserMetVotingThreshold(userId, pollId);
+    return { success: true, data: hasMetThreshold };
+  } catch (error) {
+    console.error("Error checking voting threshold for user:", error);
+    return { success: false, error: "Failed to check voting threshold" };
   }
 }

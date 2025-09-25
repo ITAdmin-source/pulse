@@ -93,3 +93,31 @@ export async function getStatementByIdAction(id: string) {
     return { success: false, error: "Failed to fetch statement" };
   }
 }
+
+export async function rejectStatementAction(id: string) {
+  try {
+    const success = await deleteStatement(id);
+    if (!success) {
+      return { success: false, error: "Statement not found" };
+    }
+    revalidatePath("/polls");
+    return { success: true };
+  } catch (error) {
+    console.error("Error rejecting statement:", error);
+    return { success: false, error: "Failed to reject statement" };
+  }
+}
+
+export async function approveStatementAction(id: string) {
+  try {
+    const updatedStatement = await updateStatement(id, { isApproved: true });
+    if (!updatedStatement) {
+      return { success: false, error: "Statement not found" };
+    }
+    revalidatePath("/polls");
+    return { success: true, data: updatedStatement };
+  } catch (error) {
+    console.error("Error approving statement:", error);
+    return { success: false, error: "Failed to approve statement" };
+  }
+}
