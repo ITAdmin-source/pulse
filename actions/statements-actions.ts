@@ -1,0 +1,95 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import {
+  createStatement,
+  deleteStatement,
+  getStatementById,
+  getAllStatements,
+  getStatementsByPollId,
+  getApprovedStatementsByPollId,
+  updateStatement,
+} from "@/db/queries/statements-queries";
+import { type NewStatement } from "@/db/schema/statements";
+
+export async function createStatementAction(data: NewStatement) {
+  try {
+    const statement = await createStatement(data);
+    revalidatePath("/polls");
+    return { success: true, data: statement };
+  } catch (error) {
+    console.error("Error creating statement:", error);
+    return { success: false, error: "Failed to create statement" };
+  }
+}
+
+export async function updateStatementAction(id: string, data: Partial<NewStatement>) {
+  try {
+    const updatedStatement = await updateStatement(id, data);
+    if (!updatedStatement) {
+      return { success: false, error: "Statement not found" };
+    }
+    revalidatePath("/polls");
+    return { success: true, data: updatedStatement };
+  } catch (error) {
+    console.error("Error updating statement:", error);
+    return { success: false, error: "Failed to update statement" };
+  }
+}
+
+export async function deleteStatementAction(id: string) {
+  try {
+    const success = await deleteStatement(id);
+    if (!success) {
+      return { success: false, error: "Statement not found" };
+    }
+    revalidatePath("/polls");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting statement:", error);
+    return { success: false, error: "Failed to delete statement" };
+  }
+}
+
+export async function getStatementsAction() {
+  try {
+    const statements = await getAllStatements();
+    return { success: true, data: statements };
+  } catch (error) {
+    console.error("Error fetching statements:", error);
+    return { success: false, error: "Failed to fetch statements" };
+  }
+}
+
+export async function getStatementsByPollIdAction(pollId: string) {
+  try {
+    const statements = await getStatementsByPollId(pollId);
+    return { success: true, data: statements };
+  } catch (error) {
+    console.error("Error fetching statements for poll:", error);
+    return { success: false, error: "Failed to fetch statements for poll" };
+  }
+}
+
+export async function getApprovedStatementsByPollIdAction(pollId: string) {
+  try {
+    const statements = await getApprovedStatementsByPollId(pollId);
+    return { success: true, data: statements };
+  } catch (error) {
+    console.error("Error fetching approved statements for poll:", error);
+    return { success: false, error: "Failed to fetch approved statements for poll" };
+  }
+}
+
+export async function getStatementByIdAction(id: string) {
+  try {
+    const statement = await getStatementById(id);
+    if (!statement) {
+      return { success: false, error: "Statement not found" };
+    }
+    return { success: true, data: statement };
+  } catch (error) {
+    console.error("Error fetching statement:", error);
+    return { success: false, error: "Failed to fetch statement" };
+  }
+}
