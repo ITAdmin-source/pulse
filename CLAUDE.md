@@ -50,7 +50,7 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 
 **Core Polling System:**
 - `polls` - Main poll entities with lifecycle (draft→published→closed), control settings, and voting requirements
-- `statements` - Poll statements that can be user-suggested and require approval before appearing
+- `statements` - Poll statements with approval workflow (null=pending, true=approved, false=rejected then deleted)
 - `votes` - User votes on statements with unique constraint per (user_id, statement_id)
 - `user_poll_insights` - AI-generated insights per user/poll (only latest version kept)
 
@@ -73,6 +73,46 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 - **Statement moderation** - Only approved statements appear; rejected statements are deleted
 - **Anonymous user transition** - Anonymous users who sign up have their votes transferred to authenticated identity
 
+## Infrastructure Services (NEW)
+
+The project now includes a comprehensive service layer in `lib/services/` that provides business logic and data access:
+
+### Core Services
+- **UserService** (`lib/services/user-service.ts`) - User creation, authentication, role management
+- **PollService** (`lib/services/poll-service.ts`) - Poll lifecycle, statistics, slug generation
+- **VotingService** (`lib/services/voting-service.ts`) - Vote recording, progress tracking, distribution analysis
+- **StatementService** (`lib/services/statement-service.ts`) - Statement CRUD, approval workflow, moderation
+
+### Service Layer Benefits
+- **Business logic centralization** - All core logic in services, not scattered in actions
+- **Reusability** - Services can be called from actions, API routes, or directly
+- **Type safety** - Full TypeScript integration with Zod validation
+- **Error handling** - Consistent error patterns across all services
+- **Testing ready** - Services are pure functions easy to unit test
+
+### Validation Layer
+- **Zod schemas** (`lib/validations/`) - Input validation for all entities
+- **Business rule enforcement** - Vote values, approval workflows, user permissions
+- **Type inference** - Automatic TypeScript types from validation schemas
+
+### Utility Functions
+- **Session management** (`lib/utils/session.ts`) - Anonymous user session handling
+- **Slug generation** (`lib/utils/slug.ts`) - URL-friendly poll identifiers
+- **Voting utilities** (`lib/utils/voting.ts`) - Vote calculations and distributions
+- **Permission helpers** (`lib/utils/permissions.ts`) - Role-based access control
+
+## Authentication & Middleware (NEW)
+
+### Clerk Integration
+- **Provider setup** - ClerkProvider in root layout
+- **Middleware** - Route protection and authentication handling
+- **Anonymous support** - Session-based users with seamless upgrade path
+
+### User Management
+- **Dual user system** - Anonymous (session_id) and authenticated (clerk_user_id)
+- **Seamless upgrade** - Anonymous users can authenticate without losing data
+- **Role-based permissions** - Database-managed roles independent of Clerk
+
 ## Adding New Tables
 
 Follow the comprehensive guide in `NEW_TABLE_INSTRUCTIONS.md` which covers:
@@ -84,8 +124,28 @@ Follow the comprehensive guide in `NEW_TABLE_INSTRUCTIONS.md` which covers:
 
 ## Architecture Patterns
 
-### Server Actions Pattern
-All Server Actions follow this pattern:
+### Service Layer Pattern (RECOMMENDED)
+New development should use services directly for better architecture:
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { UserService } from "@/lib/services/user-service";
+
+export async function actionName(data: DataType) {
+  try {
+    const result = await UserService.createUser(data);
+    revalidatePath("/relevant-path");
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error description:", error);
+    return { success: false, error: "User-friendly message" };
+  }
+}
+```
+
+### Legacy Server Actions Pattern
+Existing actions follow this pattern (being migrated to services):
 ```typescript
 "use server";
 
@@ -158,9 +218,25 @@ DATABASE_URL=your_supabase_postgresql_connection_string
 
 ## Key Design Decisions
 
+- **Service Layer Architecture** - Business logic centralized in services, not scattered in queries/actions
 - **Supabase over Clerk for RBAC** - Database-managed roles allow poll-specific permissions and fine-grained control
 - **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
 - **Statement lifecycle** - Rejected statements deleted (not archived) to avoid DB clutter
 - **Voting thresholds** - Configurable minimum engagement ensures meaningful participation
 - **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
 - **Insight regeneration** - Personal insights recalculated when votes change, only latest version stored
+- **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
+
+## Development Guidelines (NEW)
+
+### For New Features
+1. **Start with services** - Create or extend services in `lib/services/`
+2. **Add validation** - Define Zod schemas in `lib/validations/`
+3. **Create actions** - Wrap service calls in Server Actions
+4. **Build UI** - Use actions in React components
+
+### Code Quality Standards
+- **Always run `npm run build`** - Ensure TypeScript compilation before committing
+- **Use provided services** - Don't bypass services to call queries directly
+- **Follow validation patterns** - Use Zod schemas for all input validation
+- **Handle errors consistently** - Use the established error patterns

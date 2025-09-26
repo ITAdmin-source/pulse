@@ -110,7 +110,7 @@ export async function rejectStatementAction(id: string) {
 
 export async function approveStatementAction(id: string) {
   try {
-    const updatedStatement = await updateStatement(id, { isApproved: true });
+    const updatedStatement = await updateStatement(id, { approved: true });
     if (!updatedStatement) {
       return { success: false, error: "Statement not found" };
     }

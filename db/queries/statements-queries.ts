@@ -32,19 +32,20 @@ export async function getApprovedStatementsByPollId(pollId: string): Promise<Sta
   return await db
     .select()
     .from(statements)
-    .where(and(eq(statements.pollId, pollId), eq(statements.isApproved, true)))
+    .where(and(eq(statements.pollId, pollId), eq(statements.approved, true)))
     .orderBy(desc(statements.createdAt));
 }
 
 export async function createStatement(data: NewStatement): Promise<Statement> {
   const finalData = { ...data };
 
-  if (data.pollId && data.isUserSuggested) {
+  if (data.pollId) {
     const pollResult = await db.select().from(polls).where(eq(polls.id, data.pollId)).limit(1);
     const poll = pollResult[0];
 
     if (poll?.autoApproveStatements) {
-      finalData.isApproved = true;
+      finalData.approved = true;
+      finalData.approvedAt = new Date();
     }
   }
 
