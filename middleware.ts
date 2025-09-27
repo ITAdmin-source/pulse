@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/login",
   "/signup",
   "/api/anonymous-users/(.*)",
+  "/api/webhooks/(.*)", // Allow webhooks to bypass authentication
   // Test interface routes - make all test pages public
   "/test-auth",
   "/test-admin/(.*)",
