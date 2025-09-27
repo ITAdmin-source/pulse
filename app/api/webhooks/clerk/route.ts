@@ -70,7 +70,8 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Success", { status: 200 });
   } catch (error) {
     console.error(`Error handling webhook event ${eventType}:`, error);
-    return new NextResponse("Error occurred while processing webhook", {
+    console.error('Webhook payload:', JSON.stringify(evt.data, null, 2));
+    return new NextResponse(`Error occurred while processing webhook: ${error}`, {
       status: 500,
     });
   }
@@ -100,11 +101,11 @@ async function handleUserCreated(data: {
     await UserService.createUser({
       clerkUserId: data.id,
       metadata: {
-        firstName: data.first_name,
-        lastName: data.last_name,
-        emailAddress: data.email_addresses?.[0]?.email_address,
-        imageUrl: data.image_url,
-        createdAt: data.created_at,
+        firstName: data.first_name || null,
+        lastName: data.last_name || null,
+        emailAddress: data.email_addresses?.[0]?.email_address || null,
+        imageUrl: data.image_url || null,
+        createdAt: data.created_at ? new Date(data.created_at) : null,
       },
     });
 
@@ -137,11 +138,11 @@ async function handleUserUpdated(data: {
     await UserService.updateUser(user.id, {
       metadata: {
         ...(user.metadata as Record<string, unknown> || {}),
-        firstName: data.first_name,
-        lastName: data.last_name,
-        emailAddress: data.email_addresses?.[0]?.email_address,
-        imageUrl: data.image_url,
-        updatedAt: data.updated_at,
+        firstName: data.first_name || null,
+        lastName: data.last_name || null,
+        emailAddress: data.email_addresses?.[0]?.email_address || null,
+        imageUrl: data.image_url || null,
+        updatedAt: data.updated_at ? new Date(data.updated_at) : null,
       },
     });
 
