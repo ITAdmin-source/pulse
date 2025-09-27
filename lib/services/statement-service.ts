@@ -4,9 +4,48 @@ import { statements, polls, votes } from "@/db/schema";
 import type { Statement } from "@/db/schema";
 import { createStatementSchema, updateStatementSchema, approveStatementSchema, statementQuerySchema } from "@/lib/validations/statement";
 import { PollService } from "./poll-service";
+import { UserService } from "./user-service";
 import { z } from "zod";
 
 export class StatementService {
+  /**
+   * Create statement with automatic user creation for anonymous users
+   * @param pollId ID of the poll
+   * @param text Statement text
+   * @param clerkUserId Clerk user ID for authenticated users
+   * @param sessionId Session ID for anonymous users
+   */
+  static async createStatementWithUserCreation(
+    pollId: string,
+    text: string,
+    clerkUserId?: string,
+    sessionId?: string
+  ): Promise<Statement> {
+    // Determine user ID - create anonymous user if needed
+    let submittedBy: string | undefined;
+
+    if (clerkUserId) {
+      // Authenticated user - get existing user
+      const user = await UserService.findByClerkId(clerkUserId);
+      if (!user) {
+        throw new Error("Authenticated user not found");
+      }
+      submittedBy = user.id;
+    } else if (sessionId) {
+      // Anonymous user - create if needed
+      const user = await UserService.createAnonymousUserForAction(sessionId);
+      submittedBy = user.id;
+    }
+    // Note: submittedBy can be undefined for admin-created statements
+
+    // Create the statement
+    return await this.createStatement({
+      pollId,
+      text,
+      submittedBy,
+    });
+  }
+
   static async createStatement(data: z.infer<typeof createStatementSchema>): Promise<Statement> {
     const validatedData = createStatementSchema.parse(data);
 

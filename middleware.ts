@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -7,7 +7,14 @@ const isPublicRoute = createRouteMatcher([
   "/api/polls/(.*)",
   "/login",
   "/signup",
-  "/api/anonymous-users/(.*)"
+  "/api/anonymous-users/(.*)",
+  // Test interface routes - make all test pages public
+  "/test-auth",
+  "/test-admin/(.*)",
+  "/test-polls/(.*)",
+  "/test-dashboard",
+  "/test-analytics",
+  "/test-services/(.*)"
 ]);
 
 const isProtectedRoute = createRouteMatcher([
@@ -16,19 +23,21 @@ const isProtectedRoute = createRouteMatcher([
   "/api/admin/(.*)"
 ]);
 
-export default clerkMiddleware(async (auth, req: NextRequest) => {
-  const { userId } = await auth();
-
-  if (isProtectedRoute(req) && !userId) {
-    const signInUrl = new URL("/login", req.url);
-    signInUrl.searchParams.set("redirect_url", req.url);
-    return NextResponse.redirect(signInUrl);
+export default clerkMiddleware(async (auth, req) => {
+  // Skip auth check for public routes to avoid hanging
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
   }
 
-  if (!isPublicRoute(req) && !userId) {
-    const signInUrl = new URL("/login", req.url);
-    signInUrl.searchParams.set("redirect_url", req.url);
-    return NextResponse.redirect(signInUrl);
+  // Only check auth for protected routes
+  if (isProtectedRoute(req)) {
+    const authResult = await auth();
+    if (!authResult.userId) {
+      // Redirect to login for unauthenticated users on protected routes
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect_url', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();

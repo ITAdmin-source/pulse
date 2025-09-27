@@ -5,9 +5,52 @@ import type { Vote } from "@/db/schema";
 import { createVoteSchema, updateVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/lib/validations/vote";
 import { VoteValue, calculateVoteDistribution } from "@/lib/utils/voting";
 import { PollService } from "./poll-service";
+import { UserService } from "./user-service";
 import { z } from "zod";
 
 export class VotingService {
+  /**
+   * Cast vote with automatic user creation for anonymous users
+   * @param statementId ID of the statement to vote on
+   * @param value Vote value (-1, 0, 1)
+   * @param clerkUserId Clerk user ID for authenticated users
+   * @param sessionId Session ID for anonymous users
+   */
+  static async castVoteWithUserCreation(
+    statementId: string,
+    value: -1 | 0 | 1,
+    clerkUserId?: string,
+    sessionId?: string
+  ): Promise<Vote> {
+    // Determine user ID - create anonymous user if needed
+    let userId: string;
+
+    if (clerkUserId) {
+      // Authenticated user - get existing user
+      const user = await UserService.findByClerkId(clerkUserId);
+      if (!user) {
+        throw new Error("Authenticated user not found");
+      }
+      userId = user.id;
+    } else if (sessionId) {
+      // Anonymous user - create if needed
+      const user = await UserService.createAnonymousUserForAction(sessionId);
+      userId = user.id;
+    } else {
+      throw new Error("Either clerkUserId or sessionId must be provided");
+    }
+
+    // Cast the vote with the user ID
+    return await this.castVote({
+      userId,
+      statementId,
+      value,
+    });
+  }
+
+  /**
+   * Cast vote - creates anonymous user if needed
+   */
   static async castVote(data: z.infer<typeof createVoteSchema>): Promise<Vote> {
     const validatedData = createVoteSchema.parse(data);
 

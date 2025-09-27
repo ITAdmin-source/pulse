@@ -3,7 +3,20 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "Bash(npm run build:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(find:*)",
+      "Bash(dir C:UsersGuyDownloadsProjectspulse)",
+      "Bash(cat:*)",
+      "Bash(npm test)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(rm:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(npm run dev:*)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

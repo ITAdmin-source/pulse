@@ -24,9 +24,25 @@ export async function getOrCreateSessionId(): Promise<string> {
   return newSessionId;
 }
 
+/**
+ * Clear session ID - used when user signs up to become authenticated
+ */
 export async function clearSessionId(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE_NAME);
+}
+
+/**
+ * Restore session ID - used when authenticated user logs out
+ */
+export async function restoreSessionId(sessionId: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, sessionId, {
+    maxAge: SESSION_COOKIE_MAX_AGE,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
 }
 
 export async function getSessionId(): Promise<string | undefined> {

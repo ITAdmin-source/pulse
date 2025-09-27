@@ -80,28 +80,63 @@ export class UserService {
     return upgradedUser;
   }
 
-  static async getOrCreateAnonymousUser(sessionId: string): Promise<User> {
-    // Try to find existing user by session ID
-    let user = await this.findBySessionId(sessionId);
-
-    if (!user) {
-      // Create new anonymous user
-      user = await this.createUser({ sessionId });
+  /**
+   * Creates an anonymous user only when they take an action (vote/submit statement)
+   * This replaces getOrCreateAnonymousUser which created users just for visiting
+   */
+  static async createAnonymousUserForAction(sessionId: string): Promise<User> {
+    // Check if user already exists first
+    const existingUser = await this.findBySessionId(sessionId);
+    if (existingUser) {
+      return existingUser;
     }
 
-    return user;
+    // Create new anonymous user only when they take action
+    return await this.createUser({ sessionId });
   }
 
+  /**
+   * Gets existing authenticated user by Clerk ID, creates if from webhook
+   */
   static async getOrCreateUserByClerkId(clerkUserId: string): Promise<User> {
     // Try to find existing user by Clerk ID
     let user = await this.findByClerkId(clerkUserId);
 
     if (!user) {
-      // Create new authenticated user
+      // Create new authenticated user (usually from webhook)
       user = await this.createUser({ clerkUserId });
     }
 
     return user;
+  }
+
+  /**
+   * Gets current user without creating - for checking existence
+   */
+  static async getCurrentUser(clerkUserId?: string, sessionId?: string): Promise<User | null> {
+    if (clerkUserId) {
+      // User is authenticated - get by Clerk ID
+      return await this.findByClerkId(clerkUserId);
+    } else if (sessionId) {
+      // User is anonymous - only return if they exist (have taken actions)
+      return await this.findBySessionId(sessionId);
+    }
+
+    return null;
+  }
+
+  static async updateUser(userId: string, data: Partial<Pick<User, 'metadata'>>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+
+    return updatedUser;
   }
 
   static async deleteUser(userId: string): Promise<void> {
