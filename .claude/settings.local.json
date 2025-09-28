@@ -16,7 +16,11 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "WebSearch",
+      "WebFetch(domain:clerk.com)",
+      "Bash(npm run:*)",
+      "Bash(npx drizzle-kit generate:*)"
     ],
     "deny": [],
     "ask": []

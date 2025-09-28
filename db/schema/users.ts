@@ -5,8 +5,8 @@ export const users = pgTable("users", {
   clerkUserId: text("clerk_user_id").unique(),        // NULL if anonymous
   sessionId: text("session_id").unique(),             // NULL if authenticated
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  upgradedAt: timestamp("upgraded_at", { withTimezone: true }),
-  metadata: jsonb("metadata"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }), // When we last fetched from Clerk
+  cachedMetadata: jsonb("cached_metadata"),           // Cache of Clerk profile data
 });
 
 export type User = typeof users.$inferSelect;

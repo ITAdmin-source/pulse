@@ -8,8 +8,8 @@ export async function GET() {
     const { userId: clerkUserId } = await auth();
 
     if (clerkUserId) {
-      // User is authenticated with Clerk - get existing user only
-      const dbUser = await UserService.findByClerkId(clerkUserId);
+      // User is authenticated with Clerk - use JIT creation
+      const dbUser = await UserService.getOrCreateUserByClerkId(clerkUserId);
       return NextResponse.json({ user: dbUser });
     } else {
       // Anonymous user - get session ID but don't create user yet
