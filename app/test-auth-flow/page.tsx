@@ -67,11 +67,11 @@ function AuthTestContent() {
                 <div><strong>Clerk ID:</strong> {user.clerkUserId || "None"}</div>
                 <div><strong>Session ID:</strong> {user.sessionId || "None"}</div>
                 <div><strong>Created:</strong> {new Date(user.createdAt).toLocaleString()}</div>
-                {user.lastSyncedAt && (
-                  <div><strong>Last Synced:</strong> {new Date(user.lastSyncedAt).toLocaleString()}</div>
+                {user.upgradedAt && (
+                  <div><strong>Upgraded At:</strong> {new Date(user.upgradedAt).toLocaleString()}</div>
                 )}
-                {user.cachedMetadata ? (
-                  <div><strong>Cached Metadata:</strong> <pre>{JSON.stringify(user.cachedMetadata, null, 2)}</pre></div>
+                {user.metadata ? (
+                  <div><strong>Metadata:</strong> <pre>{JSON.stringify(user.metadata, null, 2)}</pre></div>
                 ) : null}
               </div>
             </div>

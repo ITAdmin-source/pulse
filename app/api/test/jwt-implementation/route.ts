@@ -46,8 +46,8 @@ export async function GET() {
         profileFetched: !!profile,
         displayName,
         socialProfilesCount: socialProfiles.length,
-        lastSyncedAt: dbUser.lastSyncedAt,
-        hasCachedData: !!dbUser.cachedMetadata,
+        createdAt: dbUser.createdAt,
+        hasMetadata: !!dbUser.metadata,
       }
     });
 

@@ -14,8 +14,7 @@ export class UserService {
       .values({
         clerkUserId: validatedData.clerkUserId,
         sessionId: validatedData.sessionId,
-        cachedMetadata: validatedData.cachedMetadata,
-        lastSyncedAt: validatedData.clerkUserId ? new Date() : null, // Set sync time for authenticated users
+        metadata: validatedData.metadata,
       })
       .returning();
 
@@ -73,7 +72,7 @@ export class UserService {
       .set({
         clerkUserId: validatedData.clerkUserId,
         sessionId: null, // Clear session ID
-        lastSyncedAt: new Date(), // Set initial sync time
+        upgradedAt: new Date(), // Set upgrade time
       })
       .where(eq(users.id, anonymousUser.id))
       .returning();
@@ -126,7 +125,7 @@ export class UserService {
     return null;
   }
 
-  static async updateUser(userId: string, data: Partial<Pick<User, 'cachedMetadata' | 'lastSyncedAt'>>): Promise<User> {
+  static async updateUser(userId: string, data: Partial<Pick<User, 'metadata' | 'upgradedAt'>>): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set(data)
@@ -141,12 +140,11 @@ export class UserService {
   }
 
   /**
-   * Update cached metadata for a user and set lastSyncedAt
+   * Update cached metadata for a user
    */
   static async updateCachedMetadata(userId: string, metadata: Record<string, unknown>): Promise<User> {
     return await this.updateUser(userId, {
-      cachedMetadata: metadata,
-      lastSyncedAt: new Date(),
+      metadata: metadata,
     });
   }
 

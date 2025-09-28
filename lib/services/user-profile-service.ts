@@ -1,6 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { UserService } from "./user-service";
-import type { User } from "@/db/schema";
 
 export interface ClerkUserProfile {
   id: string;
@@ -38,13 +37,16 @@ export class UserProfileService {
       await UserService.getOrCreateUserByClerkId(clerkUserId);
     }
 
-    // Check if cached data is fresh
-    const isCacheFresh = dbUser?.lastSyncedAt &&
-      (new Date().getTime() - dbUser.lastSyncedAt.getTime()) < this.CACHE_DURATION;
+    // Check if cached data exists and is fresh
+    // Store cache timestamp in metadata
+    const metadata = dbUser?.metadata as { profileData?: ClerkUserProfile; lastSyncedAt?: string } | null;
+    const lastSyncedAt = metadata?.lastSyncedAt ? new Date(metadata.lastSyncedAt) : null;
+    const isCacheFresh = lastSyncedAt &&
+      (new Date().getTime() - lastSyncedAt.getTime()) < this.CACHE_DURATION;
 
-    if (isCacheFresh && dbUser?.cachedMetadata) {
+    if (isCacheFresh && metadata?.profileData) {
       // Return cached data
-      return dbUser.cachedMetadata as ClerkUserProfile;
+      return metadata.profileData as ClerkUserProfile;
     }
 
     // Fetch fresh data from Clerk
@@ -84,10 +86,13 @@ export class UserProfileService {
         publicMetadata: clerkUser.publicMetadata,
       };
 
-      // Update cache in database
+      // Update cache in database with timestamp
       const dbUser = await UserService.findByClerkId(clerkUserId);
       if (dbUser) {
-        await UserService.updateCachedMetadata(dbUser.id, profileData as unknown as Record<string, unknown>);
+        await UserService.updateCachedMetadata(dbUser.id, {
+          profileData: profileData as unknown as Record<string, unknown>,
+          lastSyncedAt: new Date().toISOString()
+        });
       }
 
       return profileData;
@@ -96,8 +101,9 @@ export class UserProfileService {
 
       // Fallback to cached data if available
       const dbUser = await UserService.findByClerkId(clerkUserId);
-      if (dbUser?.cachedMetadata) {
-        return dbUser.cachedMetadata as ClerkUserProfile;
+      const metadata = dbUser?.metadata as { profileData?: ClerkUserProfile; lastSyncedAt?: string } | null;
+      if (metadata?.profileData) {
+        return metadata.profileData as ClerkUserProfile;
       }
 
       return null;
@@ -109,9 +115,10 @@ export class UserProfileService {
    */
   static async getCachedProfile(clerkUserId: string): Promise<ClerkUserProfile | null> {
     const dbUser = await UserService.findByClerkId(clerkUserId);
+    const metadata = dbUser?.metadata as { profileData?: ClerkUserProfile; lastSyncedAt?: string } | null;
 
-    if (dbUser?.cachedMetadata) {
-      return dbUser.cachedMetadata as ClerkUserProfile;
+    if (metadata?.profileData) {
+      return metadata.profileData as ClerkUserProfile;
     }
 
     return null;
@@ -123,11 +130,14 @@ export class UserProfileService {
   static async isCacheStale(clerkUserId: string): Promise<boolean> {
     const dbUser = await UserService.findByClerkId(clerkUserId);
 
-    if (!dbUser?.lastSyncedAt) {
+    const metadata = dbUser?.metadata as { profileData?: ClerkUserProfile; lastSyncedAt?: string } | null;
+    const lastSyncedAt = metadata?.lastSyncedAt ? new Date(metadata.lastSyncedAt) : null;
+
+    if (!lastSyncedAt) {
       return true; // No cache data
     }
 
-    const cacheAge = new Date().getTime() - dbUser.lastSyncedAt.getTime();
+    const cacheAge = new Date().getTime() - lastSyncedAt.getTime();
     return cacheAge > this.CACHE_DURATION;
   }
 

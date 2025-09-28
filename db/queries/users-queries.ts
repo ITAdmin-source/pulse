@@ -70,7 +70,7 @@ export async function deleteUser(id: string): Promise<boolean> {
 export async function upgradeUser(id: string): Promise<User | undefined> {
   const result = await db
     .update(users)
-    .set({ lastSyncedAt: new Date() })
+    .set({ upgradedAt: new Date() })
     .where(eq(users.id, id))
     .returning();
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createUserSchema = z.object({
   clerkUserId: z.string().optional(),
   sessionId: z.string().optional(),
-  cachedMetadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 }).refine(
   (data) => data.clerkUserId || data.sessionId,
   {
