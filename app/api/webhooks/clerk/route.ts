@@ -4,14 +4,19 @@ import { Webhook } from "svix";
 import { UserService } from "@/lib/services/user-service";
 
 export async function POST(request: NextRequest) {
+  console.log("=== CLERK WEBHOOK RECEIVED ===");
+
   // Get the headers
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
   const svix_signature = headerPayload.get("svix-signature");
 
+  console.log("Headers received:", { svix_id: !!svix_id, svix_timestamp: !!svix_timestamp, svix_signature: !!svix_signature });
+
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
+    console.error("Missing svix headers");
     return new NextResponse("Error occurred -- no svix headers", {
       status: 400,
     });
@@ -19,11 +24,14 @@ export async function POST(request: NextRequest) {
 
   // Get the body
   const payload = await request.text();
+  console.log("Payload length:", payload.length);
 
   // Get the Clerk webhook secret from environment variables
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+  console.log("Webhook secret exists:", !!WEBHOOK_SECRET);
 
   if (!WEBHOOK_SECRET) {
+    console.error("Missing CLERK_WEBHOOK_SECRET environment variable");
     return new NextResponse("Error occurred -- no webhook secret", {
       status: 500,
     });
@@ -85,20 +93,22 @@ async function handleUserCreated(data: {
   image_url?: string;
   created_at?: number;
 }) {
-  console.log("Handling user creation from webhook:", data.id);
+  console.log("=== HANDLING USER CREATION ===");
+  console.log("User ID:", data.id);
+  console.log("Raw data:", JSON.stringify(data, null, 2));
 
   try {
     // Check if user already exists to prevent duplicates
+    console.log("Checking for existing user...");
     const existingUser = await UserService.findByClerkId(data.id);
     if (existingUser) {
       console.log("User already exists, skipping creation");
       return;
     }
+    console.log("No existing user found, proceeding with creation");
 
-    // For sign-ups: Check if there's an anonymous user session to upgrade
-    // This requires client-side to call upgrade endpoint with session info
-    // For now, just create the authenticated user
-    await UserService.createUser({
+    // Prepare user data
+    const userData = {
       clerkUserId: data.id,
       metadata: {
         firstName: data.first_name || null,
@@ -107,11 +117,25 @@ async function handleUserCreated(data: {
         imageUrl: data.image_url || null,
         createdAt: data.created_at ? new Date(data.created_at) : null,
       },
-    });
+    };
+
+    console.log("User data to create:", JSON.stringify(userData, null, 2));
+
+    // For sign-ups: Check if there's an anonymous user session to upgrade
+    // This requires client-side to call upgrade endpoint with session info
+    // For now, just create the authenticated user
+    console.log("Creating user with UserService...");
+    const createdUser = await UserService.createUser(userData);
+    console.log("User created successfully:", createdUser.id);
 
     console.log("Successfully created authenticated user:", data.id);
   } catch (error) {
     console.error("Error creating user:", error);
+    console.error("Error details:", {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw error;
   }
 }
