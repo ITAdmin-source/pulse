@@ -14,23 +14,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-# Development server with Turbopack
+# Development server
 npm run dev
 
-# Production build with Turbopack
+# Development with clean restart (Windows)
+npm run dev:clean   # Kills node processes, cleans cache, and starts dev server
+
+# Production build
 npm run build
 
 # Start production server
 npm run start
 
-# Run ESLint
+# Code quality
 npm run lint
 
-# Generate database migration
-npm run db:generate
+# Database management
+npm run db:generate  # Generate database migration
+npm run db:migrate   # Apply database migrations
 
-# Apply database migrations
-npm run db:migrate
+# Testing
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage
+npm run test:ui      # Run tests with UI
+npm run test:e2e     # Run E2E tests with Playwright
+npm run test:quick   # Quick unit test run
+npm run test:integration # Run integration tests
+npm run test:all     # Run all test suites
 ```
 
 ## Database Architecture
@@ -78,7 +89,8 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 The project now includes a comprehensive service layer in `lib/services/` that provides business logic and data access:
 
 ### Core Services
-- **UserService** (`lib/services/user-service.ts`) - User creation, authentication, role management
+- **UserService** (`lib/services/user-service.ts`) - User creation, authentication, role management, JIT user creation from Clerk
+- **UserProfileService** (`lib/services/user-profile-service.ts`) - Clerk profile caching, display name management, social profiles
 - **PollService** (`lib/services/poll-service.ts`) - Poll lifecycle, statistics, slug generation
 - **VotingService** (`lib/services/voting-service.ts`) - Vote recording, progress tracking, distribution analysis
 - **StatementService** (`lib/services/statement-service.ts`) - Statement CRUD, approval workflow, moderation
@@ -105,7 +117,10 @@ The project now includes a comprehensive service layer in `lib/services/` that p
 
 ### Clerk Integration
 - **Provider setup** - ClerkProvider in root layout
-- **Middleware** - Route protection and authentication handling
+- **Middleware** - Route protection with public/protected route matching
+- **JWT-only authentication** - No webhook dependency, uses JWT tokens from Clerk
+- **JIT user creation** - Users created on-demand when first authenticated
+- **Profile caching** - 24-hour cache for Clerk profile data to reduce API calls
 - **Anonymous support** - Session-based users with seamless upgrade path
 
 ### User Management
@@ -182,50 +197,100 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 ### Poll Lifecycle
 1. **Draft** - Poll created, editable, not visible to participants
 2. **Published** - Poll opened at start_time, visible and accepting votes
-3. **Closed** - Past end_time, read-only but visible
+3. **Unpublish** - Published polls can be returned to draft state (votes preserved)
+4. **Closed** - Past end_time, read-only but visible
 
 ### Voting Process
 1. Users see only approved statements
-2. Vote agree/disagree/neutral on statements
-3. Must reach minimum voting threshold for participation to count
-4. Personal insights generated after threshold met
+2. Vote agree/disagree/neutral on statements (card deck metaphor)
+3. **Statement batching** - Polls with 10+ statements show in batches of 10 with continuation page
+4. Must reach minimum voting threshold for participation to count
+5. Personal insights generated after threshold met
+6. **Closed polls** - Accessible to both voters (with insights) and non-voters (results only)
 
 ### Statement Management
 - User-suggested statements require approval (unless auto_approve_statements enabled)
 - Rejected statements are deleted (not archived)
 - Only approved statements visible to voters
+- **Minimum 6 statements required** to create a poll (mandatory, not just recommended)
+
+### UX/UI Design Principles
+- **Card deck metaphor** - Each statement is a card, each poll is a deck, voting is sorting cards
+- **Stories-style progress bar** - Shows position in the deck (Instagram Stories style)
+- **User creation timing** - User record created on demographics save OR first vote (whichever first)
+- **Statement batching** - Shows 10 statements at a time with continuation page for larger polls
+- **Demographics** - One-time optional prompt before first card, never re-requested
+- **Closed poll access** - Both voters and non-voters can view results; only voters see personal insights
 
 ## Technology Stack
 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
-- **Database**: Supabase (PostgreSQL) with Drizzle ORM
-- **Authentication**: Clerk (with database-managed roles/permissions)
-- **UI**: Radix UI components with Tailwind CSS
-- **Build**: Turbopack for faster development
+- **Database**: Supabase (PostgreSQL) with Drizzle ORM using pooler connections
+- **Authentication**: Clerk (JWT-only implementation without webhooks)
+- **UI**: Radix UI components with Tailwind CSS, Lucide icons
+- **Testing**: Vitest for unit/integration tests, Playwright for E2E tests
 - **Forms**: React Hook Form with Zod validation
+- **State Management**: React Context API (UserContext for user state)
 
 ## Environment Setup
 
 Ensure `.env.local` contains:
 ```
-# Supabase Database
-DATABASE_URL=your_supabase_postgresql_connection_string
+# Supabase Database (using pooler for IPv4 compatibility)
+DATABASE_URL=your_supabase_pooler_connection_string
 
 # Clerk Authentication
-# Add required Clerk environment variables for auth integration
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
 ```
+
+## API Routes
+
+### Health & Testing
+- `/api/health/db` - Database connection health check
+- `/api/test/database-connection` - Test database connectivity
+- `/api/test/jwt-implementation` - Verify JWT auth implementation
+
+### User Management
+- `/api/user/current` - Get current user information
+- `/api/user/roles` - Fetch user roles and permissions
+- `/api/user/upgrade` - Upgrade anonymous user to authenticated
+
+### Voting & Statements
+- `/api/vote/cast` - Cast or update a vote
+- `/api/statement/submit` - Submit a new statement to a poll
+
+## Test Pages
+
+Development includes comprehensive test pages for all major features:
+- `/test-auth` - Authentication flow testing
+- `/test-admin/*` - Admin functionality testing
+- `/test-polls/*` - Poll interaction testing
+- `/test-dashboard` - Dashboard component testing
+- `/test-analytics` - Analytics visualization testing
 
 ## Key Design Decisions
 
 - **Service Layer Architecture** - Business logic centralized in services, not scattered in queries/actions
 - **Supabase over Clerk for RBAC** - Database-managed roles allow poll-specific permissions and fine-grained control
+- **Card deck metaphor** - Visual design inspired by card deck with Stories progress bar for intuitive voting
+- **Statement batching** - 10 statements at a time with continuation pages for better UX on large polls
+- **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
+- **Universal closed poll access** - Both voters and non-voters can view results; voters get insights
+- **Minimum 6 statements** - Required (not just recommended) to create a poll for meaningful engagement
+- **User creation flexibility** - Users created on demographics save OR first vote (whichever first)
 - **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
 - **Statement lifecycle** - Rejected statements deleted (not archived) to avoid DB clutter
 - **Voting thresholds** - Configurable minimum engagement ensures meaningful participation
 - **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
 - **Insight regeneration** - Personal insights recalculated when votes change, only latest version stored
 - **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
+- **JWT-only authentication** - Simplified auth without webhook complexity, using Clerk JWTs directly
+- **Profile caching strategy** - 24-hour cache for user profiles to minimize external API calls
+- **Supabase pooler connections** - Using connection pooling for better IPv4 compatibility and performance
 
 ## Development Guidelines (NEW)
 
