@@ -53,6 +53,14 @@ export async function getPublishedPolls(): Promise<Poll[]> {
     .orderBy(desc(polls.createdAt));
 }
 
+export async function getVisiblePolls(): Promise<Poll[]> {
+  return await db
+    .select()
+    .from(polls)
+    .where(or(eq(polls.status, "published"), eq(polls.status, "closed")))
+    .orderBy(desc(polls.createdAt));
+}
+
 export async function getActivePolls(): Promise<Poll[]> {
   const now = new Date();
   return await db
@@ -108,4 +116,8 @@ export async function publishPoll(id: string): Promise<Poll | undefined> {
 
 export async function unpublishPoll(id: string): Promise<Poll | undefined> {
   return await updatePoll(id, { status: "draft" });
+}
+
+export async function closePoll(id: string): Promise<Poll | undefined> {
+  return await updatePoll(id, { status: "closed" });
 }

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { UserProvider } from "@/contexts/user-context";
+import { Providers } from "@/components/providers";
+import { Header } from "@/components/shared";
 import "./globals.css";
-import Header from "@/components/test/header";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -30,10 +32,17 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <UserProvider>
-            <Header />
-            {children}
-          </UserProvider>
+          <Providers
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <UserProvider>
+              <Header />
+              {children}
+            </UserProvider>
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

@@ -108,3 +108,38 @@ export async function hasUserMetVotingThreshold(userId: string, pollId: string):
   const poll = pollResult[0];
   return poll ? voteCount >= poll.minStatementsVotedToEnd : false;
 }
+
+/**
+ * Get vote distribution for a specific statement
+ * Returns counts and percentages for agree/disagree/unsure votes
+ */
+export async function getStatementVoteDistribution(statementId: string): Promise<{
+  agreeCount: number;
+  disagreeCount: number;
+  unsureCount: number;
+  totalVotes: number;
+  agreePercent: number;
+  disagreePercent: number;
+  unsurePercent: number;
+}> {
+  const statementVotes = await getVotesByStatementId(statementId);
+
+  const agreeCount = statementVotes.filter(v => v.value === 1).length;
+  const disagreeCount = statementVotes.filter(v => v.value === -1).length;
+  const unsureCount = statementVotes.filter(v => v.value === 0).length;
+  const totalVotes = statementVotes.length;
+
+  const agreePercent = totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 0;
+  const disagreePercent = totalVotes > 0 ? Math.round((disagreeCount / totalVotes) * 100) : 0;
+  const unsurePercent = totalVotes > 0 ? Math.round((unsureCount / totalVotes) * 100) : 0;
+
+  return {
+    agreeCount,
+    disagreeCount,
+    unsureCount,
+    totalVotes,
+    agreePercent,
+    disagreePercent,
+    unsurePercent,
+  };
+}

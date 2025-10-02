@@ -27,7 +27,7 @@ export const createPollSchema = z.object({
 
 export const updatePollSchema = createPollSchema.partial().extend({
   id: z.string().uuid(),
-  status: z.enum(['draft', 'published']).optional(),
+  status: z.enum(['draft', 'published', 'closed']).optional(),
 });
 
 export const publishPollSchema = z.object({
@@ -36,7 +36,7 @@ export const publishPollSchema = z.object({
   endTime: z.date().optional(),
 });
 
-export const pollStatusSchema = z.enum(['draft', 'published']);
+export const pollStatusSchema = z.enum(['draft', 'published', 'closed']);
 
 export const pollQuerySchema = z.object({
   status: pollStatusSchema.optional(),

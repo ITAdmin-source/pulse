@@ -1,0 +1,2 @@
+
+Scan every clickable object in every file in @app\  and in @components\ and make sure it works correctly (it does what it is supposed  to do) as definied in @USE_CASES.md and in @UX_UI_SPEC.md. Especialy the objects that creat, read, update, and delete from DB.

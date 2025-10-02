@@ -214,6 +214,66 @@ export class PollService {
     };
   }
 
+  /**
+   * Unpublish a published poll (returns it to draft state)
+   * Votes and analytics are preserved
+   */
+  static async unpublishPoll(pollId: string): Promise<Poll> {
+    // Get current poll to verify status
+    const poll = await this.findById(pollId);
+    if (!poll) {
+      throw new Error("Poll not found");
+    }
+
+    // Verify poll is currently published
+    if (poll.status !== 'published') {
+      throw new Error("Only published polls can be unpublished");
+    }
+
+    // Change status to draft, keep all data intact
+    const [unpublishedPoll] = await db
+      .update(polls)
+      .set({ status: 'draft' })
+      .where(eq(polls.id, pollId))
+      .returning();
+
+    if (!unpublishedPoll) {
+      throw new Error("Failed to unpublish poll");
+    }
+
+    return unpublishedPoll;
+  }
+
+  /**
+   * Close a published poll (permanent, cannot reopen)
+   * Votes and analytics are preserved
+   */
+  static async closePoll(pollId: string): Promise<Poll> {
+    // Get current poll to verify status
+    const poll = await this.findById(pollId);
+    if (!poll) {
+      throw new Error("Poll not found");
+    }
+
+    // Verify poll is currently published
+    if (poll.status !== 'published') {
+      throw new Error("Only published polls can be closed");
+    }
+
+    // Change status to closed, keep all data intact
+    const [closedPoll] = await db
+      .update(polls)
+      .set({ status: 'closed' })
+      .where(eq(polls.id, pollId))
+      .returning();
+
+    if (!closedPoll) {
+      throw new Error("Failed to close poll");
+    }
+
+    return closedPoll;
+  }
+
   private static async getAllSlugs(): Promise<string[]> {
     const results = await db
       .select({ slug: polls.slug })

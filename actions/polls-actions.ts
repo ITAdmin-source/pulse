@@ -10,6 +10,7 @@ import {
   getPollsByStatus,
   getPollsByCreator,
   getPublishedPolls,
+  getVisiblePolls,
   getActivePolls,
   updatePoll,
   publishPoll,
@@ -92,6 +93,20 @@ export async function unpublishPollAction(id: string) {
   }
 }
 
+export async function closePollAction(id: string) {
+  try {
+    const { PollService } = await import("@/lib/services/poll-service");
+    const closedPoll = await PollService.closePoll(id);
+    revalidatePath("/polls");
+    revalidatePath("/admin/polls");
+    revalidatePath(`/polls/${closedPoll.slug}`);
+    return { success: true, data: closedPoll };
+  } catch (error) {
+    console.error("Error closing poll:", error);
+    return { success: false, error: "Failed to close poll" };
+  }
+}
+
 export async function getPollsAction() {
   try {
     const polls = await getAllPolls();
@@ -150,7 +165,7 @@ export async function getPollsByCreatorAction(createdBy: string) {
 
 export async function getPublishedPollsAction() {
   try {
-    const polls = await getPublishedPolls();
+    const polls = await getVisiblePolls();
     return { success: true, data: polls };
   } catch (error) {
     console.error("Error fetching published polls:", error);

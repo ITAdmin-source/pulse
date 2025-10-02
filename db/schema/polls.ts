@@ -2,7 +2,7 @@ import { pgTable, pgEnum, text, uuid, timestamp, boolean, integer, varchar } fro
 import { users } from "./users";
 
 // Define poll_status enum
-export const pollStatusEnum = pgEnum("poll_status", ["draft", "published"]);
+export const pollStatusEnum = pgEnum("poll_status", ["draft", "published", "closed"]);
 
 export const polls = pgTable("polls", {
   id: uuid("id").defaultRandom().primaryKey(),

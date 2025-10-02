@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
-import { users, userRoles } from "@/db/schema";
+import { users, userRoles, userDemographics } from "@/db/schema";
 import type { User } from "@/db/schema";
 import { createUserSchema, upgradeUserSchema } from "@/lib/validations/user";
 import { z } from "zod";
@@ -173,5 +173,86 @@ export class UserService {
 
   static async isAuthenticated(user: User): Promise<boolean> {
     return !!user.clerkUserId;
+  }
+
+  /**
+   * Create or get user (called on demographics save OR first vote)
+   * This ensures user exists with demographics if provided
+   */
+  static async ensureUserExists(params: {
+    clerkUserId?: string;
+    sessionId?: string;
+    demographics?: {
+      ageGroupId?: number;
+      genderId?: number;
+      ethnicityId?: number;
+      politicalPartyId?: number;
+    };
+  }): Promise<User> {
+    // Check if user exists
+    let existingUser: User | null = null;
+
+    if (params.clerkUserId) {
+      existingUser = await this.findByClerkId(params.clerkUserId);
+    } else if (params.sessionId) {
+      existingUser = await this.findBySessionId(params.sessionId);
+    } else {
+      throw new Error("Either clerkUserId or sessionId must be provided");
+    }
+
+    // If user exists, optionally save demographics and return
+    if (existingUser) {
+      if (params.demographics) {
+        await this.saveDemographics(existingUser.id, params.demographics);
+      }
+      return existingUser;
+    }
+
+    // Create new user
+    const newUser = await this.createUser({
+      clerkUserId: params.clerkUserId,
+      sessionId: params.sessionId,
+    });
+
+    // Save demographics if provided
+    if (params.demographics) {
+      await this.saveDemographics(newUser.id, params.demographics);
+    }
+
+    return newUser;
+  }
+
+  /**
+   * Save or update user demographics
+   */
+  private static async saveDemographics(
+    userId: string,
+    demographics: {
+      ageGroupId?: number;
+      genderId?: number;
+      ethnicityId?: number;
+      politicalPartyId?: number;
+    }
+  ): Promise<void> {
+    // Use INSERT ... ON CONFLICT to handle upsert
+    await db
+      .insert(userDemographics)
+      .values({
+        userId,
+        ageGroupId: demographics.ageGroupId || null,
+        genderId: demographics.genderId || null,
+        ethnicityId: demographics.ethnicityId || null,
+        politicalPartyId: demographics.politicalPartyId || null,
+      })
+      .onConflictDoUpdate({
+        target: userDemographics.userId,
+        set: {
+          ageGroupId: demographics.ageGroupId || null,
+          genderId: demographics.genderId || null,
+          ethnicityId: demographics.ethnicityId || null,
+          politicalPartyId: demographics.politicalPartyId || null,
+          updatedAt: new Date(),
+        },
+      });
   }
 }

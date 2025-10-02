@@ -8,6 +8,7 @@ import {
   getAllStatements,
   getStatementsByPollId,
   getApprovedStatementsByPollId,
+  getAllPendingStatements,
   updateStatement,
 } from "@/db/queries/statements-queries";
 import { type NewStatement } from "@/db/schema/statements";
@@ -58,6 +59,16 @@ export async function getStatementsAction() {
   } catch (error) {
     console.error("Error fetching statements:", error);
     return { success: false, error: "Failed to fetch statements" };
+  }
+}
+
+export async function getPendingStatementsAction() {
+  try {
+    const statements = await getAllPendingStatements();
+    return { success: true, data: statements };
+  } catch (error) {
+    console.error("Error fetching pending statements:", error);
+    return { success: false, error: "Failed to fetch pending statements" };
   }
 }
 

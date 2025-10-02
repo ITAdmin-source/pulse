@@ -1,4 +1,4 @@
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, isNull } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
@@ -325,6 +325,79 @@ export class VotingService {
         disagree: distribution.disagree,
         neutral: distribution.neutral,
       },
+    };
+  }
+
+  /**
+   * Get next batch of statements for user (10 at a time)
+   * Returns up to 10 approved statements the user hasn't voted on yet
+   */
+  static async getStatementBatch(
+    pollId: string,
+    userId: string,
+    batchNumber: number
+  ): Promise<typeof statements.$inferSelect[]> {
+    if (batchNumber < 1) {
+      throw new Error("Batch number must be at least 1");
+    }
+
+    const offset = (batchNumber - 1) * 10;
+
+    // Get approved statements that the user hasn't voted on
+    const unvotedStatements = await db
+      .select({
+        id: statements.id,
+        createdAt: statements.createdAt,
+        pollId: statements.pollId,
+        text: statements.text,
+        submittedBy: statements.submittedBy,
+        approved: statements.approved,
+        approvedBy: statements.approvedBy,
+        approvedAt: statements.approvedAt,
+      })
+      .from(statements)
+      .leftJoin(votes, and(
+        eq(votes.statementId, statements.id),
+        eq(votes.userId, userId)
+      ))
+      .where(and(
+        eq(statements.pollId, pollId),
+        eq(statements.approved, true),
+        isNull(votes.id) // No vote exists (left join returned null)
+      ))
+      .limit(10)
+      .offset(offset);
+
+    return unvotedStatements;
+  }
+
+  /**
+   * Get user's voting progress including batching information
+   */
+  static async getVotingProgress(
+    pollId: string,
+    userId: string
+  ): Promise<{
+    totalVoted: number;
+    currentBatch: number;
+    hasMoreStatements: boolean;
+    thresholdReached: boolean;
+  }> {
+    // Get user's voting progress
+    const progress = await this.getUserVotingProgress({ pollId, userId });
+
+    // Calculate current batch (1-indexed)
+    const currentBatch = Math.ceil(progress.votedStatements / 10) || 1;
+
+    // Check if there are more unvoted statements
+    const nextBatch = await this.getStatementBatch(pollId, userId, currentBatch + 1);
+    const hasMoreStatements = nextBatch.length > 0;
+
+    return {
+      totalVoted: progress.votedStatements,
+      currentBatch,
+      hasMoreStatements,
+      thresholdReached: progress.hasReachedThreshold,
     };
   }
 }

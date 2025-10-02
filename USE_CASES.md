@@ -305,6 +305,27 @@
    - Insights available across sessions
    - Can view completed polls with vote summaries and insights
 
+#### Scenario D: Already Authenticated User Behavior
+**Edge Case: User already signed in attempts to access auth pages**
+
+1. **Sign In/Sign Up Buttons Hidden**
+   - When user is authenticated, Sign In/Sign Up buttons are hidden from UI
+   - Only UserButton (with sign out) is visible
+   - Prevents confusion and accidental auth page visits
+
+2. **Direct Auth Page Access** (if user manually navigates to `/login` or `/signup`)
+   - Clerk's SignIn/SignUp components detect existing authentication
+   - User is automatically redirected to `fallbackRedirectUrl` (home page `/`)
+   - No error message shown - seamless redirect
+   - Expected behavior: authenticated users shouldn't reach auth pages
+
+3. **Sign Out Flow**
+   - User clicks UserButton (avatar) in header
+   - Clerk menu opens with user info and "Sign out" option
+   - Clicks "Sign out"
+   - Redirected to home page (`afterSignOutUrl="/"`)
+   - Can now access Sign In/Sign Up buttons again
+
 ---
 
 ### Journey 3: Poll Discovery & Browsing

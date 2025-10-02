@@ -8,6 +8,13 @@
       "when": 1759065299675,
       "tag": "0000_tiny_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1759310077417,
+      "tag": "0001_parallel_stone_men",
+      "breakpoints": true
     }
   ]
 }

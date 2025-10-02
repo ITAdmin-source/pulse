@@ -5,8 +5,8 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/polls/(.*)",
   "/api/polls/(.*)",
-  "/login",
-  "/signup",
+  "/login(.*)",
+  "/signup(.*)",
   "/api/anonymous-users/(.*)",
   // Test interface routes - make all test pages public
   "/test-auth",

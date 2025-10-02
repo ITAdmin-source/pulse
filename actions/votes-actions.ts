@@ -143,3 +143,36 @@ export async function hasUserMetVotingThresholdAction(userId: string, pollId: st
     return { success: false, error: "Failed to check voting threshold" };
   }
 }
+
+export async function getStatementBatchAction(pollId: string, userId: string, batchNumber: number) {
+  try {
+    const { VotingService } = await import("@/lib/services/voting-service");
+    const statements = await VotingService.getStatementBatch(pollId, userId, batchNumber);
+    return { success: true, data: statements };
+  } catch (error) {
+    console.error("Error fetching statement batch:", error);
+    return { success: false, error: "Failed to fetch statement batch" };
+  }
+}
+
+export async function getVotingProgressAction(pollId: string, userId: string) {
+  try {
+    const { VotingService } = await import("@/lib/services/voting-service");
+    const progress = await VotingService.getVotingProgress(pollId, userId);
+    return { success: true, data: progress };
+  } catch (error) {
+    console.error("Error fetching voting progress:", error);
+    return { success: false, error: "Failed to fetch voting progress" };
+  }
+}
+
+export async function getStatementVoteDistributionAction(statementId: string) {
+  try {
+    const { getStatementVoteDistribution } = await import("@/db/queries/votes-queries");
+    const distribution = await getStatementVoteDistribution(statementId);
+    return { success: true, data: distribution };
+  } catch (error) {
+    console.error("Error fetching statement vote distribution:", error);
+    return { success: false, error: "Failed to fetch vote distribution" };
+  }
+}

@@ -11,6 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Flexible participation** - Anonymous (browser session) or authenticated (Clerk) users
 - **Database-managed RBAC** - Fine-grained permissions independent of Clerk roles
 
+### Additional Documentation
+
+For comprehensive details on user workflows and interface design:
+- **[USE_CASES.md](USE_CASES.md)** - Complete user journeys, personas, and detailed workflow documentation
+- **[UX_UI_SPEC.md](UX_UI_SPEC.md)** - Full UX/UI specification including component library, layouts, and interaction patterns
+
 ## Development Commands
 
 ```bash

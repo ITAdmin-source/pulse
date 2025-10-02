@@ -71,3 +71,34 @@ export async function getUserDemographicsByIdAction(userId: string) {
     return { success: false, error: "Failed to fetch user demographics" };
   }
 }
+
+/**
+ * Save demographics and ensure user exists
+ * This creates the user DB record if it doesn't exist yet
+ */
+export async function saveDemographicsAction(params: {
+  clerkUserId?: string;
+  sessionId?: string;
+  demographics: {
+    ageGroupId?: number;
+    genderId?: number;
+    ethnicityId?: number;
+    politicalPartyId?: number;
+  };
+}) {
+  try {
+    const { UserService } = await import("@/lib/services/user-service");
+
+    const user = await UserService.ensureUserExists({
+      clerkUserId: params.clerkUserId,
+      sessionId: params.sessionId,
+      demographics: params.demographics,
+    });
+
+    revalidatePath("/");
+    return { success: true, data: user };
+  } catch (error) {
+    console.error("Error saving demographics:", error);
+    return { success: false, error: "Failed to save demographics" };
+  }
+}

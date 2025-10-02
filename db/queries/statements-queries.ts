@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { statements, type Statement, type NewStatement } from "../schema/statements";
 import { polls } from "../schema/polls";
@@ -33,6 +33,14 @@ export async function getApprovedStatementsByPollId(pollId: string): Promise<Sta
     .select()
     .from(statements)
     .where(and(eq(statements.pollId, pollId), eq(statements.approved, true)))
+    .orderBy(desc(statements.createdAt));
+}
+
+export async function getAllPendingStatements(): Promise<Statement[]> {
+  return await db
+    .select()
+    .from(statements)
+    .where(isNull(statements.approved))
     .orderBy(desc(statements.createdAt));
 }
 

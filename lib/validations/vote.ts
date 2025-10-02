@@ -33,3 +33,16 @@ export const userVotingProgressSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
   pollId: z.string().uuid("Invalid poll ID"),
 });
+
+export const statementBatchSchema = z.object({
+  pollId: z.string().uuid("Invalid poll ID"),
+  userId: z.string().uuid("Invalid user ID"),
+  batchNumber: z.number().int().positive("Batch number must be positive"),
+});
+
+export const votingProgressResponseSchema = z.object({
+  totalVoted: z.number().int().min(0),
+  currentBatch: z.number().int().positive(),
+  hasMoreStatements: z.boolean(),
+  thresholdReached: z.boolean(),
+});

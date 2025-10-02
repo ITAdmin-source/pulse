@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Clustering: Dual Visualization Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .viz-toggle {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 1rem;
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            border-color: #667eea;
+        }
+
+        .viz-container {
+            display: none;
+        }
+
+        .viz-container.active {
+            display: block;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+
+        h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: #cbd5e1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value.green { color: #10b981; }
+        .stat-value.yellow { color: #f59e0b; }
+        .stat-value.red { color: #ef4444; }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .heatmap-container {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .heatmap-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.875rem;
+        }
+
+        .heatmap-table th {
+            background: #1e293b;
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #cbd5e1;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #334155;
+        }
+
+        .heatmap-table th.group-col {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .heatmap-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .heatmap-table tr:hover {
+            background: #1e293b;
+        }
+
+        .statement-name {
+            color: #e2e8f0;
+            max-width: 300px;
+        }
+
+        .vote-cell {
+            text-align: center;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 0.5rem;
+        }
+
+        .vote-cell.strong-agree {
+            background: #10b981;
+            color: white;
+        }
+
+        .vote-cell.agree {
+            background: #34d399;
+            color: white;
+        }
+
+        .vote-cell.neutral {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .vote-cell.disagree {
+            background: #f87171;
+            color: white;
+        }
+
+        .vote-cell.strong-disagree {
+            background: #ef4444;
+            color: white;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .type-badge.consensus {
+            background: #10b981;
+            color: white;
+        }
+
+        .type-badge.partial {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .type-badge.split {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .type-badge.divisive {
+            background: #ef4444;
+            color: white;
+        }
+
+        .coalition-text {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-family: 'Courier New', monospace;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: #334155;
+        }
+
+        button.secondary:hover {
+            background: #475569;
+            box-shadow: 0 4px 12px rgba(51, 65, 85, 0.4);
+        }
+
+        .scenario-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .scenario-btn {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+
+        .info-box {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #a78bfa;
+        }
+
+        .coalition-box {
+            background: #1e293b;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .coalition-box h4 {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 0.5rem;
+        }
+
+        .coalition-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .coalition-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .sort-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            margin: 0;
+            flex: 1;
+        }
+
+        canvas {
+            width: 100%;
+            height: 500px;
+            background: #0f172a;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .legend {
+            margin-top: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: #0f172a;
+            border-radius: 6px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .legend-label {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+
+        .legend-count {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            background: #334155;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 1200px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .footer-note {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌌 Pulse Dual Clustering Visualization</h1>
+        <p class="subtitle">User clustering (PCA) + Statement agreement analysis (Heatmap)</p>
+
+        <div class="viz-toggle">
+            <button class="toggle-btn active" onclick="showVisualization('users')">
+                👥 User Clustering (PCA Space)
+            </button>
+            <button class="toggle-btn" onclick="showVisualization('statements')">
+                📊 Statement Agreement (Heatmap)
+            </button>
+        </div>
+
+        <!-- USER CLUSTERING VIEW (Original PCA) -->
+        <div id="users-viz" class="viz-container active">
+            <div class="demo-grid">
+                <div class="panel">
+                    <h2>Opinion Space (2D PCA Projection)</h2>
+                    <canvas id="pcaCanvas"></canvas>
+                    <div class="info-box">
+                        <strong>What this shows:</strong><br>
+                        • Where users cluster based on voting patterns<br>
+                        • Spatial distance = opinion difference<br>
+                        • Your position in the opinion landscape
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="control-group">
+                        <label>Quick Scenarios</label>
+                        <div class="scenario-selector">
+                            <button class="scenario-btn" onclick="loadScenario('polarized')">2 Groups</button>
+                            <button class="scenario-btn" onclick="loadScenario('moderate')">3 Groups</button>
+                            <button class="scenario-btn" onclick="loadScenario('scattered')">4 Groups</button>
+                            <button class="scenario-btn" onclick="loadScenario('fragmented')">5 Groups</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <button onclick="regenerateData()">🎲 Random Data</button>
+                    </div>
+
+                    <h2>Opinion Groups</h2>
+                    <div id="userLegend" class="legend"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATEMENT AGREEMENT VIEW (New Heatmap) -->
+        <div id="statements-viz" class="viz-container">
+            <div class="demo-grid">
+                <div class="panel">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value green" id="consensusCount">0</div>
+                            <div class="stat-label">Full Consensus</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value yellow" id="partialCount">0</div>
+                            <div class="stat-label">Partial Agreement</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value red" id="divisiveCount">0</div>
+                            <div class="stat-label">Divisive</div>
+                        </div>
+                    </div>
+
+                    <div class="sort-controls">
+                        <button class="sort-btn" onclick="sortStatements('type')">Sort by Type</button>
+                        <button class="sort-btn secondary" onclick="sortStatements('name')">Sort by Name</button>
+                    </div>
+
+                    <h2>Statement Agreement Matrix</h2>
+                    <div class="heatmap-container">
+                        <table class="heatmap-table" id="heatmapTable">
+                            <thead>
+                                <tr>
+                                    <th>Statement</th>
+                                    <th class="group-col">Group 1</th>
+                                    <th class="group-col">Group 2</th>
+                                    <th class="group-col">Group 3</th>
+                                    <th class="group-col">Group 4</th>
+                                    <th>Type</th>
+                                    <th>Coalition</th>
+                                </tr>
+                            </thead>
+                            <tbody id="heatmapBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>How to read this:</strong><br>
+                        • 🟢 Green = Group agrees with statement<br>
+                        • 🔴 Red = Group disagrees with statement<br>
+                        • 🟡 Yellow = Group is neutral/mixed<br>
+                        • Darker color = Stronger agreement/disagreement
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Coalition Analysis</h2>
+                    <div id="coalitionAnalysis"></div>
+
+                    <h2>Key Insights</h2>
+                    <div id="insights"></div>
+
+                    <div class="info-box">
+                        <strong>What this shows:</strong><br>
+                        • Which statements unite vs divide groups<br>
+                        • Coalition patterns (which groups align)<br>
+                        • Consensus opportunities for dialogue
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Dual visualization demo for Pulse clustering v3.0 • Left: PCA user clustering • Right: Statement agreement analysis
+        </div>
+    </div>
+
+    <script>
+        // Shared data
+        let currentScenario = 'polarized';
+        let statements = [];
+        let groups = [];
+
+        const groupColors = [
+            { main: '#8b5cf6', light: 'rgba(139, 92, 246, 0.3)', name: 'Opinion Group 1' },
+            { main: '#ec4899', light: 'rgba(236, 72, 153, 0.3)', name: 'Opinion Group 2' },
+            { main: '#06b6d4', light: 'rgba(6, 182, 212, 0.3)', name: 'Opinion Group 3' },
+            { main: '#10b981', light: 'rgba(16, 185, 129, 0.3)', name: 'Opinion Group 4' },
+            { main: '#f59e0b', light: 'rgba(245, 158, 11, 0.3)', name: 'Opinion Group 5' },
+        ];
+
+        // Visualization toggle
+        function showVisualization(type) {
+            document.querySelectorAll('.viz-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.toggle-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`${type}-viz`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Scenario definitions
+        const scenarios = {
+            polarized: {
+                numGroups: 2,
+                statements: [
+                    { name: 'Fossil fuels should be banned by 2030', votes: [95, -92] },
+                    { name: 'Carbon tax is essential', votes: [88, -85] },
+                    { name: 'Nuclear energy is dangerous', votes: [82, -78] },
+                    { name: 'Government should regulate emissions', votes: [91, -88] },
+                    { name: 'Climate change requires immediate action', votes: [93, -87] },
+                    { name: 'Renewable energy subsidies needed', votes: [89, -83] },
+                    { name: 'Individual action is not enough', votes: [85, -81] },
+                    { name: 'Corporate accountability is key', votes: [90, -86] },
+                    { name: 'Clean air is important', votes: [96, 94] }, // Consensus
+                    { name: 'Climate data should be transparent', votes: [92, 91] }, // Consensus
+                ]
+            },
+            moderate: {
+                numGroups: 3,
+                statements: [
+                    { name: 'Public transit should be free', votes: [88, 45, -75] },
+                    { name: 'Carbon tax on businesses', votes: [-78, 91, 85] },
+                    { name: 'Nuclear power expansion', votes: [82, 75, -88] },
+                    { name: 'Ban single-use plastics', votes: [91, 52, -71] },
+                    { name: 'Electric vehicle mandates', votes: [-69, 88, 82] },
+                    { name: 'Protect old-growth forests', votes: [93, 89, 91] }, // Consensus
+                    { name: 'Fossil fuel phase-out by 2035', votes: [87, -45, 79] },
+                    { name: 'Green building standards', votes: [85, 78, -62] },
+                    { name: 'Water conservation is critical', votes: [94, 92, 93] }, // Consensus
+                    { name: 'Renewable energy investment', votes: [89, 91, -73] },
+                ]
+            },
+            scattered: {
+                numGroups: 4,
+                statements: [
+                    { name: 'Universal basic income', votes: [92, -85, 45, -78] },
+                    { name: 'Wealth tax on billionaires', votes: [88, 82, -91, -85] },
+                    { name: 'Free college education', votes: [-72, 89, 85, -69] },
+                    { name: 'Medicare for all', votes: [91, -88, 87, 52] },
+                    { name: 'Corporate tax increases', votes: [85, 78, -82, -89] },
+                    { name: 'Education is a human right', votes: [93, 91, 92, 90] }, // Consensus
+                    { name: 'Minimum wage $25/hour', votes: [87, -75, 82, -45] },
+                    { name: 'Worker unions are important', votes: [89, -69, 85, 48] },
+                    { name: 'Transparency in government', votes: [95, 93, 94, 92] }, // Consensus
+                    { name: 'Housing affordability crisis', votes: [88, 65, 91, 72] }, // Partial
+                ]
+            },
+            fragmented: {
+                numGroups: 5,
+                statements: [
+                    { name: 'Cryptocurrency regulation', votes: [-88, 92, 45, -72, 85] },
+                    { name: 'Social media age limits', votes: [91, -65, 88, 52, -78] },
+                    { name: 'AI development needs oversight', votes: [85, 82, -91, 78, -69] },
+                    { name: 'Data privacy is a right', votes: [93, 91, 92, 90, 94] }, // Consensus
+                    { name: 'Tech monopolies should be broken up', votes: [87, -75, 82, -88, 65] },
+                    { name: 'Remote work should be standard', votes: [89, 72, -78, 91, 55] },
+                    { name: 'Cybersecurity is critical', votes: [94, 92, 93, 91, 95] }, // Consensus
+                    { name: 'Gig workers need protections', votes: [91, -69, 85, 48, 78] },
+                    { name: 'Screen time limits for kids', votes: [78, 88, -72, 82, -65] },
+                    { name: 'Open source software preferred', votes: [-72, 85, 91, -78, 88] },
+                ]
+            }
+        };
+
+        function loadScenario(scenarioName) {
+            currentScenario = scenarioName;
+            const scenario = scenarios[scenarioName];
+
+            statements = scenario.statements.map((stmt, idx) => ({
+                id: idx,
+                name: stmt.name,
+                votes: stmt.votes
+            }));
+
+            // Generate groups for PCA visualization
+            groups = [];
+            const numGroups = scenario.numGroups;
+
+            for (let g = 0; g < numGroups; g++) {
+                const centerX = (Math.random() - 0.5) * 1.5;
+                const centerY = (Math.random() - 0.5) * 1.5;
+                const points = [];
+
+                const pointsPerGroup = Math.floor(Math.random() * 20) + 30;
+                for (let i = 0; i < pointsPerGroup; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * 0.3 + Math.random() * 0.2;
+                    points.push({
+                        x: centerX + Math.cos(angle) * radius,
+                        y: centerY + Math.sin(angle) * radius
+                    });
+                }
+
+                groups.push({
+                    id: g,
+                    points: points,
+                    centroid: { x: centerX, y: centerY },
+                    color: groupColors[g],
+                    memberCount: pointsPerGroup
+                });
+            }
+
+            updateUserLegend();
+            updateHeatmap();
+            updateStats();
+            updateCoalitionAnalysis();
+            updateInsights();
+        }
+
+        function regenerateData() {
+            loadScenario(currentScenario);
+        }
+
+        // User legend (for PCA view)
+        function updateUserLegend() {
+            const legend = document.getElementById('userLegend');
+            legend.innerHTML = '';
+
+            groups.forEach((group, idx) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background: ${group.color.main}"></div>
+                    <div class="legend-label">${group.color.name}</div>
+                    <div class="legend-count">${group.memberCount} voters</div>
+                `;
+                legend.appendChild(item);
+            });
+        }
+
+        // Heatmap functions
+        function getVoteClass(vote) {
+            if (vote >= 80) return 'strong-agree';
+            if (vote >= 60) return 'agree';
+            if (vote >= -60) return 'neutral';
+            if (vote >= -80) return 'disagree';
+            return 'strong-disagree';
+        }
+
+        function classifyStatement(votes) {
+            const numGroups = votes.length;
+
+            // Check for full consensus
+            const allPositive = votes.every(v => v > 60);
+            const allNegative = votes.every(v => v < -60);
+            if (allPositive || allNegative) {
+                return { type: 'consensus', coalition: 'All groups' };
+            }
+
+            // Count agreements
+            const positive = votes.filter(v => v > 60).length;
+            const negative = votes.filter(v => v < -60).length;
+
+            // Partial consensus
+            if (positive >= numGroups - 1) {
+                const against = votes.map((v, i) => v < -60 ? i + 1 : null).filter(x => x);
+                return {
+                    type: 'partial',
+                    coalition: `${positive} agree vs Group ${against.join(',')}`
+                };
+            }
+            if (negative >= numGroups - 1) {
+                const against = votes.map((v, i) => v > 60 ? i + 1 : null).filter(x => x);
+                return {
+                    type: 'partial',
+                    coalition: `${negative} disagree vs Group ${against.join(',')}`
+                };
+            }
+
+            // Split decision
+            if (positive > 0 && negative > 0 && positive === negative) {
+                const pos = votes.map((v, i) => v > 60 ? i + 1 : null).filter(x => x).join(',');
+                const neg = votes.map((v, i) => v < -60 ? i + 1 : null).filter(x => x).join(',');
+                return {
+                    type: 'split',
+                    coalition: `Grp ${pos} vs Grp ${neg}`
+                };
+            }
+
+            // Divisive (fragmented)
+            return {
+                type: 'divisive',
+                coalition: 'Fragmented'
+            };
+        }
+
+        let currentSort = 'type';
+
+        function sortStatements(sortBy) {
+            currentSort = sortBy;
+            updateHeatmap();
+        }
+
+        function updateHeatmap() {
+            const tbody = document.getElementById('heatmapBody');
+            const numGroups = groups.length;
+
+            // Create copy for sorting
+            let sortedStatements = [...statements];
+
+            if (currentSort === 'type') {
+                const order = { consensus: 0, partial: 1, split: 2, divisive: 3 };
+                sortedStatements.sort((a, b) => {
+                    const typeA = classifyStatement(a.votes).type;
+                    const typeB = classifyStatement(b.votes).type;
+                    return order[typeA] - order[typeB];
+                });
+            } else {
+                sortedStatements.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            tbody.innerHTML = sortedStatements.map(stmt => {
+                const classification = classifyStatement(stmt.votes);
+
+                const groupCells = stmt.votes.map(vote => {
+                    const sign = vote >= 0 ? '+' : '';
+                    return `<td class="vote-cell ${getVoteClass(vote)}">${sign}${vote}%</td>`;
+                }).join('');
+
+                // Pad with empty cells if fewer groups
+                const padding = Array(4 - numGroups).fill('<td></td>').join('');
+
+                return `
+                    <tr>
+                        <td class="statement-name">${stmt.name}</td>
+                        ${groupCells}
+                        ${padding}
+                        <td><span class="type-badge ${classification.type}">${classification.type}</span></td>
+                        <td><span class="coalition-text">${classification.coalition}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update table headers
+            const headerRow = document.querySelector('#heatmapTable thead tr');
+            const groupHeaders = Array.from({ length: numGroups }, (_, i) =>
+                `<th class="group-col">Group ${i + 1}</th>`
+            ).join('');
+            const emptyHeaders = Array(4 - numGroups).fill('<th class="group-col" style="display:none"></th>').join('');
+
+            headerRow.innerHTML = `
+                <th>Statement</th>
+                ${groupHeaders}
+                ${emptyHeaders}
+                <th>Type</th>
+                <th>Coalition</th>
+            `;
+        }
+
+        function updateStats() {
+            let consensus = 0, partial = 0, divisive = 0;
+
+            statements.forEach(stmt => {
+                const type = classifyStatement(stmt.votes).type;
+                if (type === 'consensus') consensus++;
+                else if (type === 'partial') partial++;
+                else divisive++;
+            });
+
+            document.getElementById('consensusCount').textContent = consensus;
+            document.getElementById('partialCount').textContent = partial;
+            document.getElementById('divisiveCount').textContent = divisive + statements.filter(s => classifyStatement(s.votes).type === 'split').length;
+        }
+
+        function updateCoalitionAnalysis() {
+            const container = document.getElementById('coalitionAnalysis');
+            const numGroups = groups.length;
+
+            // Analyze which groups align most often
+            const pairwiseAgreement = {};
+
+            for (let i = 0; i < numGroups; i++) {
+                for (let j = i + 1; j < numGroups; j++) {
+                    const key = `${i}-${j}`;
+                    let agreements = 0;
+
+                    statements.forEach(stmt => {
+                        const vote1 = stmt.votes[i];
+                        const vote2 = stmt.votes[j];
+                        // Both positive or both negative
+                        if ((vote1 > 60 && vote2 > 60) || (vote1 < -60 && vote2 < -60)) {
+                            agreements++;
+                        }
+                    });
+
+                    pairwiseAgreement[key] = {
+                        groups: [i + 1, j + 1],
+                        agreements,
+                        percentage: Math.round((agreements / statements.length) * 100)
+                    };
+                }
+            }
+
+            // Sort by agreement
+            const sorted = Object.values(pairwiseAgreement).sort((a, b) => b.agreements - a.agreements);
+
+            container.innerHTML = sorted.slice(0, 3).map(coalition => `
+                <div class="coalition-box">
+                    <div class="coalition-item">
+                        <span class="coalition-badge">Groups ${coalition.groups[0]} & ${coalition.groups[1]}</span>
+                        <span style="color: #cbd5e1;">Align on ${coalition.agreements}/${statements.length} statements (${coalition.percentage}%)</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateInsights() {
+            const container = document.getElementById('insights');
+            const consensusStmts = statements.filter(s => classifyStatement(s.votes).type === 'consensus');
+            const divisiveStmts = statements.filter(s => ['split', 'divisive'].includes(classifyStatement(s.votes).type));
+
+            container.innerHTML = `
+                <div class="info-box">
+                    ${consensusStmts.length > 0 ? `
+                        <strong style="color: #10b981;">✅ ${consensusStmts.length} Consensus Areas:</strong><br>
+                        ${consensusStmts.map(s => '• ' + s.name).join('<br>')}
+                    ` : '<strong style="color: #ef4444;">❌ No consensus found</strong>'}
+                </div>
+                <div class="info-box" style="margin-top: 1rem;">
+                    <strong style="color: #94a3b8;">📊 Polarization Level:</strong><br>
+                    ${Math.round((divisiveStmts.length / statements.length) * 100)}% of statements are divisive
+                </div>
+            `;
+        }
+
+        // PCA Canvas drawing (simplified version - reuse from previous demo)
+        const canvas = document.getElementById('pcaCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function toCanvasCoords(x, y) {
+            const rect = canvas.getBoundingClientRect();
+            const padding = 40;
+            const cx = (x + 1) / 2 * (rect.width - padding * 2) + padding;
+            const cy = (1 - (y + 1) / 2) * (rect.height - padding * 2) + padding;
+            return { x: cx, y: cy };
+        }
+
+        function drawPCA() {
+            const rect = canvas.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // Draw axes
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            const yCenter = toCanvasCoords(0, 0).y;
+            const xCenter = toCanvasCoords(0, 0).x;
+
+            ctx.beginPath();
+            ctx.moveTo(0, yCenter);
+            ctx.lineTo(rect.width, yCenter);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(xCenter, 0);
+            ctx.lineTo(xCenter, rect.height);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('← PC1 →', rect.width / 2, rect.height - 10);
+            ctx.save();
+            ctx.translate(15, rect.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('← PC2 →', 0, 0);
+            ctx.restore();
+
+            // Draw group clouds
+            groups.forEach(group => {
+                if (group.points.length < 3) return;
+
+                const hull = convexHull(group.points);
+                if (hull.length < 3) return;
+
+                ctx.fillStyle = group.color.light;
+                ctx.beginPath();
+                const first = toCanvasCoords(hull[0].x, hull[0].y);
+                ctx.moveTo(first.x, first.y);
+                for (let i = 1; i < hull.length; i++) {
+                    const p = toCanvasCoords(hull[i].x, hull[i].y);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = group.color.main;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function convexHull(points) {
+            if (points.length < 3) return points;
+            let start = points[0];
+            for (let p of points) {
+                if (p.y < start.y || (p.y === start.y && p.x < start.x)) {
+                    start = p;
+                }
+            }
+            const hull = [start];
+            let current = start;
+            do {
+                let next = points[0];
+                for (let p of points) {
+                    if (p === current) continue;
+                    const cross = (next.x - current.x) * (p.y - current.y) - (next.y - current.y) * (p.x - current.x);
+                    if (next === current || cross < 0) {
+                        next = p;
+                    }
+                }
+                current = next;
+                if (current !== start) hull.push(current);
+            } while (current !== start);
+            return hull;
+        }
+
+        function animate() {
+            drawPCA();
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        loadScenario('polarized');
+        animate();
+    </script>
+</body>
+</html>

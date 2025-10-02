@@ -236,6 +236,29 @@
 - Back navigation
 - Link to sign in
 
+#### Authenticated User Behavior
+**What happens if already signed-in user visits `/login` or `/signup`:**
+
+1. **Automatic Redirect**
+   - Clerk's SignIn/SignUp components detect existing authentication via JWT
+   - User is automatically redirected to `fallbackRedirectUrl` (set to `/` home page)
+   - No error message displayed - seamless user experience
+   - Redirect happens immediately on page load
+
+2. **Prevention Strategy**
+   - Sign In/Sign Up buttons hidden when user authenticated (using `<SignedOut>` wrapper)
+   - Only UserButton (avatar with sign-out menu) visible when signed in (using `<SignedIn>` wrapper)
+   - Prevents most users from accidentally visiting auth pages when logged in
+
+3. **Sign Out Flow**
+   - User clicks UserButton (Clerk-provided avatar component) in header
+   - Dropdown menu appears with:
+     - User profile info
+     - "Manage account" link
+     - **"Sign out" button**
+   - After sign out, redirects to `afterSignOutUrl` (set to `/` home page)
+   - Sign In/Sign Up buttons reappear in header
+
 ---
 
 ## Voting Interface

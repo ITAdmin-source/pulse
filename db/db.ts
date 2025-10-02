@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { users, ageGroups, genders, ethnicities, politicalParties, userDemographics, userProfiles, userRoles, roleEnum, polls, pollStatusEnum, statements, votes, userPollInsights } from "./schema";
+import { users, ageGroups, genders, ethnicities, politicalParties, userDemographics, userProfiles, userRoles, roleEnum, polls, pollStatusEnum, statements, votes, userPollInsights, pollResultsSummaries } from "./schema";
 
 config({ path: ".env.local" });
 
@@ -20,6 +20,7 @@ const schema = {
   statements: statements,
   votes: votes,
   userPollInsights: userPollInsights,
+  pollResultsSummaries: pollResultsSummaries,
 };
 
 if (!process.env.DATABASE_URL) {

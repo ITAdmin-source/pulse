@@ -12,6 +12,8 @@ import {
   upgradeUser,
 } from "@/db/queries/users-queries";
 import { type NewUser } from "@/db/schema/users";
+import { getOrCreateSessionId } from "@/lib/utils/session";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createUserAction(data: NewUser) {
   try {
@@ -112,5 +114,37 @@ export async function upgradeUserAction(id: string) {
   } catch (error) {
     console.error("Error upgrading user:", error);
     return { success: false, error: "Failed to upgrade user" };
+  }
+}
+
+/**
+ * Get session ID for anonymous users (creates if doesn't exist)
+ * This is a server action that can be called from client components
+ */
+export async function getSessionIdAction() {
+  try {
+    const sessionId = await getOrCreateSessionId();
+    return { success: true, data: sessionId };
+  } catch (error) {
+    console.error("Error getting session ID:", error);
+    return { success: false, error: "Failed to get session ID" };
+  }
+}
+
+/**
+ * Ensure user exists (creates if doesn't exist)
+ * Used when user takes first action (vote/submit statement)
+ */
+export async function ensureUserExistsAction(params: {
+  clerkUserId?: string;
+  sessionId?: string;
+}) {
+  try {
+    const user = await UserService.ensureUserExists(params);
+    revalidatePath("/");
+    return { success: true, data: user };
+  } catch (error) {
+    console.error("Error ensuring user exists:", error);
+    return { success: false, error: "Failed to create user" };
   }
 }
