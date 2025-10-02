@@ -1,36 +1,33 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+"use client";
+
+import { useEffect } from "react";
+import { useHeader } from "@/contexts/header-context";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
-export default async function AuthLayout({ children }: AuthLayoutProps) {
+export default function AuthLayout({ children }: AuthLayoutProps) {
+  const { setConfig, resetConfig } = useHeader();
+
+  useEffect(() => {
+    // Configure header for auth pages
+    setConfig({
+      variant: "minimal",
+      backUrl: "/polls",
+      backLabel: "Back to Polls",
+      showLogo: true,
+    });
+
+    // Reset on unmount
+    return () => resetConfig();
+  }, [setConfig, resetConfig]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header with Back Button */}
-      <header className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/polls">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Polls
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Auth Content */}
+      {/* Auth Content - Header is handled by AdaptiveHeader */}
       <div className="flex items-center justify-center min-h-[calc(100vh-72px)] px-4 py-8">
-        <div className="w-full max-w-md space-y-6">
-          {/* Logo/Branding */}
-          <div className="text-center">
-            <Link href="/" className="text-4xl font-bold text-gray-900">
-              Pulse
-            </Link>
-          </div>
-
+        <div className="w-full max-w-md">
           {/* Clerk Component */}
           {children}
         </div>

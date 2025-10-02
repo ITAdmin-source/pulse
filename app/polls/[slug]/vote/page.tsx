@@ -7,6 +7,7 @@ import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
+import { useHeader } from "@/contexts/header-context";
 import {
   StatementCard,
   ProgressBar,
@@ -20,7 +21,7 @@ import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 import { createVoteAction, getVotesByUserIdAction, getStatementVoteDistributionAction, getVoteByUserAndStatementAction } from "@/actions/votes-actions";
 import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions/user-demographics-actions";
-import { getSessionIdAction, ensureUserExistsAction } from "@/actions/users-actions";
+import { getSessionIdAction, ensureUserExistsAction, getUserBySessionIdAction } from "@/actions/users-actions";
 import { toast } from "sonner";
 
 interface Statement {
@@ -66,6 +67,7 @@ interface Poll {
 export default function VotingPage({ params }: VotingPageProps) {
   const router = useRouter();
   const { user, isLoaded: isUserLoaded } = useUser();
+  const { setConfig, resetConfig } = useHeader();
 
   const [poll, setPoll] = useState<Poll | null>(null);
   const [statements, setStatements] = useState<Statement[]>([]);
@@ -168,10 +170,42 @@ export default function VotingPage({ params }: VotingPageProps) {
           if (sessionResult.success && sessionResult.data) {
             setSessionId(sessionResult.data);
 
-            // For anonymous users, don't create user DB record yet
-            // User will be created on demographics save OR first vote
-            // Show demographics modal for new anonymous users
-            setShowDemographicsModal(true);
+            // Check if anonymous user already exists in database
+            const existingUserResult = await getUserBySessionIdAction(sessionResult.data);
+
+            if (existingUserResult.success && existingUserResult.data) {
+              // Anonymous user exists - set their ID
+              setUserId(existingUserResult.data.id);
+
+              // Load existing votes for this anonymous user
+              const votesResult = await getVotesByUserIdAction(existingUserResult.data.id);
+              if (votesResult.success && votesResult.data) {
+                const existingVotes: Record<string, 1 | 0 | -1> = {};
+                votesResult.data.forEach((vote) => {
+                  existingVotes[vote.statementId] = vote.value as 1 | 0 | -1;
+                });
+                setVotes(existingVotes);
+
+                // Only show demographics modal if user has NO demographics AND no votes
+                if (votesResult.data.length === 0) {
+                  const demographicsResult = await getUserDemographicsByIdAction(existingUserResult.data.id);
+                  if (!demographicsResult.success || !demographicsResult.data) {
+                    setShowDemographicsModal(true);
+                  }
+                }
+              } else {
+                // User exists but has no votes - check demographics
+                const demographicsResult = await getUserDemographicsByIdAction(existingUserResult.data.id);
+                if (!demographicsResult.success || !demographicsResult.data) {
+                  setShowDemographicsModal(true);
+                }
+              }
+            } else {
+              // New anonymous user - don't create user DB record yet
+              // User will be created on demographics save OR first vote
+              // Show demographics modal for new anonymous users
+              setShowDemographicsModal(true);
+            }
           }
         }
       } catch (error) {
@@ -199,6 +233,58 @@ export default function VotingPage({ params }: VotingPageProps) {
   const agreeCount = Object.values(votes).filter((v) => v === 1).length;
   const disagreeCount = Object.values(votes).filter((v) => v === -1).length;
   const unsureCount = Object.values(votes).filter((v) => v === 0).length;
+
+  // Configure header with poll context (placed after variable calculations)
+  useEffect(() => {
+    if (!poll) return;
+
+    setConfig({
+      variant: "voting",
+      title: poll.question,
+      subtitle: poll.endTime
+        ? `Ends ${new Date(poll.endTime).toLocaleDateString()} at ${new Date(poll.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : undefined,
+      actions: (
+        <>
+          {poll.allowUserStatements && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowStatementModal(true)}
+              disabled={isSavingVote}
+            >
+              Submit Statement
+            </Button>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant={canFinish ? "default" : "ghost"}
+                disabled={!canFinish || isSavingVote}
+                onClick={handleFinish}
+              >
+                Finish
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {canFinish
+                ? "Complete voting and view your insights"
+                : `Vote on ${(poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount} more statement${((poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount) > 1 ? 's' : ''} to finish`}
+            </TooltipContent>
+          </Tooltip>
+        </>
+      ),
+      customContent: (
+        <ProgressBar
+          totalSegments={Math.min(BATCH_SIZE, currentBatch.length)}
+          currentSegment={positionInBatch}
+        />
+      ),
+    });
+
+    return () => resetConfig();
+  }, [poll, canFinish, votedCount, isSavingVote, setConfig, resetConfig, currentBatch.length, positionInBatch]);
 
   const handleVote = async (value: 1 | 0 | -1) => {
     setIsSavingVote(true);
@@ -306,12 +392,13 @@ export default function VotingPage({ params }: VotingPageProps) {
 
     setIsFinished(true);
 
-    // Navigate to insights page after a brief delay
+    // Navigate to insights page after ensuring database writes are complete
+    // Longer delay to avoid race conditions with database writes
     setTimeout(() => {
       if (poll?.slug) {
         router.push(`/polls/${poll.slug}/insights`);
       }
-    }, 2000);
+    }, 3000);
   };
 
   const handleDemographicsSubmit = async (demographics: DemographicsData) => {
@@ -403,58 +490,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header with Progress Bar */}
-      <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-medium text-gray-700 truncate">
-                {poll.question}
-              </h2>
-              {poll.endTime && (
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Ends {new Date(poll.endTime).toLocaleDateString()} at {new Date(poll.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {poll.allowUserStatements && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowStatementModal(true)}
-                  disabled={isSavingVote}
-                >
-                  Submit Statement
-                </Button>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant={canFinish ? "default" : "ghost"}
-                    disabled={!canFinish || isSavingVote}
-                    onClick={handleFinish}
-                  >
-                    Finish
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {canFinish
-                    ? "Complete voting and view your insights"
-                    : `Vote on ${(poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount} more statement${((poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount) > 1 ? 's' : ''} to finish`}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-          <ProgressBar
-            totalSegments={Math.min(BATCH_SIZE, currentBatch.length)}
-            currentSegment={positionInBatch}
-          />
-        </div>
-      </header>
-
-      {/* Main Voting Interface */}
+      {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
         <div className="w-full max-w-md space-y-6">
           {!showResults ? (

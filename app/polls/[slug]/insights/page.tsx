@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getUserPollInsightAction, upsertUserPollInsightAction } from "@/actions/user-poll-insights-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
@@ -75,9 +75,14 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">Failed to Generate Insights</h1>
-            <p className="text-gray-600">We couldn&apos;t analyze your responses. Please try again.</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <h1 className="text-2xl font-bold text-gray-900">Not Enough Votes Yet</h1>
+            <p className="text-gray-600">
+              You need to vote on more statements before we can generate insights.
+              Please continue voting and try again.
+            </p>
+            <Button asChild>
+              <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
+            </Button>
           </div>
         </div>
       );
@@ -86,19 +91,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/polls">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Polls
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="space-y-6">
           {/* Anonymous User Warning */}

@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Edit, CheckCircle, XCircle, Trash2, Plus, Loader2 } from "lucide-react";
+import { Edit, CheckCircle, XCircle, Trash2, Plus, Loader2 } from "lucide-react";
 import {
   unpublishPollAction,
   closePollAction,
@@ -510,19 +510,7 @@ export default function ManagePage({ params }: ManagePageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/polls">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Polls
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Poll Header */}
         <div className="mb-6 space-y-4">

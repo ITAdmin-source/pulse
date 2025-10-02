@@ -128,37 +128,7 @@ export default function PollsPage() {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
-            Pulse
-          </Link>
-          <div className="flex gap-2">
-            {isSignedIn ? (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/polls/create">Create Poll</Link>
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link href="/admin/dashboard">Dashboard</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/login">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/signup">Sign Up</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <section className="mb-8 text-center">

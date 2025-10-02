@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Target } from "lucide-react";
+import { Target } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 import { getPollResultsAction } from "@/actions/poll-results-actions";
@@ -44,22 +44,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/polls">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/login">Sign In</Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-72px)]">
         <div className="max-w-2xl w-full text-center space-y-8">
           {/* Poll Question */}

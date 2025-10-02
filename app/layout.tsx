@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { UserProvider } from "@/contexts/user-context";
+import { HeaderProvider } from "@/contexts/header-context";
 import { Providers } from "@/components/providers";
-import { Header } from "@/components/shared";
+import { AdaptiveHeader } from "@/components/shared";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,8 +40,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <UserProvider>
-              <Header />
-              {children}
+              <HeaderProvider>
+                <AdaptiveHeader />
+                {children}
+              </HeaderProvider>
             </UserProvider>
           </Providers>
         </body>

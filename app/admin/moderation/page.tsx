@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, Search, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Search, Loader2 } from "lucide-react";
 import { getPendingStatementsAction, approveStatementAction, rejectStatementAction } from "@/actions/statements-actions";
 import { getPublishedPollsAction } from "@/actions/polls-actions";
 import { toast } from "sonner";
@@ -217,23 +216,7 @@ export default function ModerationQueuePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Link>
-            </Button>
-            <h1 className="text-xl font-bold">Global Moderation Queue</h1>
-            <div className="w-32"></div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Loading State */}
         {isLoading && (

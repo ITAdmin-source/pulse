@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, X, Minus } from "lucide-react";
+import { Check, X, Minus } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 import { getVotesByUserIdAction } from "@/actions/votes-actions";
@@ -101,19 +101,7 @@ export default async function ClosedPollPage({ params }: ClosedPollPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/polls">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Polls
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="space-y-6">
           {/* Title Section */}

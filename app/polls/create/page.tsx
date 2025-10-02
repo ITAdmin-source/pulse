@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, X, Plus, Loader2 } from "lucide-react";
+import { ArrowRight, X, Plus, Loader2 } from "lucide-react";
 import { createPollAction } from "@/actions/polls-actions";
 import { createStatementAction } from "@/actions/statements-actions";
 import { ensureUserExistsAction, getSessionIdAction } from "@/actions/users-actions";
@@ -188,23 +187,7 @@ export default function CreatePollPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/polls">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Cancel
-              </Link>
-            </Button>
-            <h1 className="text-lg font-semibold">Create New Poll</h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Progress Indicator */}
         <div className="mb-8">
@@ -452,7 +435,6 @@ export default function CreatePollPage() {
             onClick={handleBack}
             disabled={currentStep === 1}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
 

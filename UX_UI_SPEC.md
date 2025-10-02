@@ -1,8 +1,11 @@
 # Pulse - UX/UI Specification Document
 
-**Version:** 1.0
-**Date:** 2025-10-01
+**Version:** 1.1
+**Date:** 2025-10-02
 **Purpose:** Complete frontend specification for designers and developers
+
+**Changelog:**
+- **v1.1 (2025-10-02)**: Implemented AdaptiveHeader system - unified context-aware navigation with 5 variants, removed duplicate headers across all pages
 
 ---
 
@@ -1346,13 +1349,84 @@
 ### Component Library
 
 #### 1. Navigation Components
-- **Header/Nav Bar**
-  - Logo
-  - Menu (hamburger on mobile)
-  - Auth buttons / User menu
-  - Notifications (optional)
 
-- **Footer**
+##### AdaptiveHeader (Context-Aware Header System)
+**Implementation:** Single header component that adapts based on page context and configuration
+
+**Architecture:**
+- **HeaderContext** - Provides configuration API for pages to customize header
+- **AdaptiveHeader** - Smart component that renders appropriate variant based on context
+- **Auto-detection** - Detects route patterns to apply correct variant automatically
+- **Override capability** - Pages can use `useHeader()` hook to customize header behavior
+
+**Header Variants:**
+
+1. **Default Variant** (Public pages: Home, Poll listing)
+   - Logo (left)
+   - Desktop navigation: Polls, Create Poll (auth), Admin (auth)
+   - Auth buttons / User menu (right)
+   - Mobile hamburger menu
+   - Sticky positioning
+
+2. **Voting Variant** (Active voting session `/polls/[slug]/vote`)
+   - Poll question (truncated, left)
+   - Poll end time (subtitle, if applicable)
+   - Context actions (right): Submit Statement, Finish button
+   - Progress bar (custom content below header)
+   - Compact layout optimized for voting flow
+
+3. **Management Variant** (Poll owner/manager `/polls/[slug]/manage`)
+   - Back button (left)
+   - Poll title/badge (center)
+   - Management actions (right): Edit, Publish/Unpublish, Close
+   - User menu
+   - Sticky positioning
+
+4. **Minimal Variant** (Auth, Results, Insights, Closed polls)
+   - Back button with custom label (left)
+   - Logo (center, optional)
+   - Auth buttons / User menu (right)
+   - Clean, focused layout
+
+5. **Admin Variant** (Admin dashboard, moderation)
+   - Back button (left)
+   - Page title (center)
+   - Admin-specific actions (right, optional)
+   - Sticky positioning
+
+**Usage Pattern:**
+```tsx
+// Pages use HeaderContext to customize header
+const { setConfig, resetConfig } = useHeader();
+
+useEffect(() => {
+  setConfig({
+    variant: "management",
+    backUrl: "/polls",
+    backLabel: "Back to Polls",
+    title: "Poll Management",
+    actions: <CustomActions />
+  });
+
+  return () => resetConfig();
+}, []);
+```
+
+**Benefits:**
+- Single source of truth (no duplicate headers)
+- Context-aware (adapts to page needs)
+- Consistent behavior across all pages
+- Easy to maintain and extend
+
+##### Mobile Navigation
+- **MobileNav Component**
+  - Slide-out sheet from left
+  - User info at top (if authenticated)
+  - Navigation links
+  - Auth buttons (if anonymous)
+  - Aligned with AdaptiveHeader structure
+
+##### Footer
   - Links (About, Privacy, Terms)
   - Copyright
   - Social links

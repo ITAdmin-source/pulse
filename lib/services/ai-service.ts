@@ -76,21 +76,23 @@ export class AIService {
     pollId: string
   ): Promise<{ title: string; body: string }> {
     try {
-      // Fetch user votes for this poll
-      const allUserVotes = await getVotesByUserId(userId);
+      // Fetch poll and statements first
       const poll = await getPollById(pollId);
-
       if (!poll) {
         throw new Error("Poll not found");
       }
 
-      // Filter votes for this specific poll
       const statements = await getApprovedStatementsByPollId(pollId);
       const statementIds = new Set(statements.map(s => s.id));
+
+      // Fetch user votes for this poll
+      const allUserVotes = await getVotesByUserId(userId);
+
+      // Filter votes for this specific poll
       const pollVotes = allUserVotes.filter(v => statementIds.has(v.statementId));
 
       if (pollVotes.length === 0) {
-        throw new Error("No votes found for this poll");
+        throw new Error(`No votes found for this poll. User has ${allUserVotes.length} total votes, but none match the ${statements.length} statements in this poll.`);
       }
 
       // Calculate user statistics

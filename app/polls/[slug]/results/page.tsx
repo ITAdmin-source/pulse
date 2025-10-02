@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getPollResultsSummaryAction } from "@/actions/poll-results-actions";
 
@@ -86,19 +85,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/polls/${slug}/insights`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Insights
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="space-y-6">
           {/* Title Section */}

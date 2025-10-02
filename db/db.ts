@@ -34,9 +34,10 @@ try {
   console.log(`Attempting to connect to database at: ${dbUrl.hostname}`);
 
   client = postgres(process.env.DATABASE_URL, {
-    max: 1, // Limit connections for serverless
+    max: 10, // Increased connection pool for better performance
     idle_timeout: 20,
-    connect_timeout: 10,
+    connect_timeout: 30, // Increased timeout for network latency
+    max_lifetime: 60 * 30, // Reuse connections for 30 minutes
     onnotice: () => {}, // Suppress notices
   });
 
