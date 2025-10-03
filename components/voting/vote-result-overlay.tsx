@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, X, Minus } from "lucide-react";
@@ -30,6 +31,19 @@ export function VoteResultOverlay({
   disagreeLabel = "Disagree",
   unsureLabel = "Unsure",
 }: VoteResultOverlayProps) {
+  const [animationPhase, setAnimationPhase] = useState<'idle' | 'started' | 'complete'>('idle');
+
+  useEffect(() => {
+    setAnimationPhase('idle');
+    const timer = setTimeout(() => setAnimationPhase('started'), 100);
+    const completeTimer = setTimeout(() => setAnimationPhase('complete'), 1100);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(completeTimer);
+    };
+  }, []); // Only runs on mount
+
   const getUserVoteLabel = () => {
     if (userVote === 1) return `✓ YOU ${agreeLabel.toUpperCase()}D`;
     if (userVote === -1) return `✗ YOU ${disagreeLabel.toUpperCase()}D`;
@@ -51,7 +65,9 @@ export function VoteResultOverlay({
           <div className="flex items-center justify-center gap-2 py-3">
             <VoteIcon
               className={cn(
-                "h-5 w-5",
+                "h-5 w-5 transition-all duration-300",
+                animationPhase !== 'idle' && "scale-100 opacity-100",
+                animationPhase === 'idle' && "scale-75 opacity-0",
                 userVote === 1 && "text-green-600",
                 userVote === -1 && "text-red-600",
                 userVote === 0 && "text-gray-600"
@@ -59,7 +75,9 @@ export function VoteResultOverlay({
             />
             <span
               className={cn(
-                "font-semibold text-sm",
+                "font-semibold text-sm transition-all duration-300",
+                animationPhase !== 'idle' && "opacity-100 translate-x-0",
+                animationPhase === 'idle' && "opacity-0 translate-x-2",
                 userVote === 1 && "text-green-600",
                 userVote === -1 && "text-red-600",
                 userVote === 0 && "text-gray-600"
@@ -80,7 +98,10 @@ export function VoteResultOverlay({
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-green-600 h-full transition-all duration-500 ease-out"
-                  style={{ width: `${agreePercent}%` }}
+                  style={{ 
+                    width: animationPhase !== 'idle' ? `${agreePercent}%` : "0%",
+                    transitionDelay: animationPhase === 'started' ? '0ms' : '0ms'
+                  }}
                 />
               </div>
             </div>
@@ -94,7 +115,10 @@ export function VoteResultOverlay({
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-red-600 h-full transition-all duration-500 ease-out"
-                  style={{ width: `${disagreePercent}%` }}
+                  style={{ 
+                    width: animationPhase !== 'idle' ? `${disagreePercent}%` : "0%",
+                    transitionDelay: animationPhase === 'started' ? '200ms' : '0ms'
+                  }}
                 />
               </div>
             </div>
@@ -108,7 +132,10 @@ export function VoteResultOverlay({
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-gray-600 h-full transition-all duration-500 ease-out"
-                  style={{ width: `${unsurePercent}%` }}
+                  style={{ 
+                    width: animationPhase !== 'idle' ? `${unsurePercent}%` : "0%",
+                    transitionDelay: animationPhase === 'started' ? '400ms' : '0ms'
+                  }}
                 />
               </div>
             </div>

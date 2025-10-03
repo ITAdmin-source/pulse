@@ -149,13 +149,6 @@
 │   Poll Description      │
 │   (if provided)         │
 │                         │
-│   ┌─────────────────┐   │
-│   │  Participation  │   │
-│   │  Stats          │   │
-│   │  - X voters     │   │
-│   │  - Y statements │   │
-│   └─────────────────┘   │
-│                         │
 │   [Start Voting]        │
 │   (Large CTA button)    │
 │                         │
@@ -171,7 +164,6 @@
 - **Poll Intro Card**
   - Poll question (H1)
   - Description text
-  - Participation statistics
   - Start voting CTA button
 
 #### Interactions

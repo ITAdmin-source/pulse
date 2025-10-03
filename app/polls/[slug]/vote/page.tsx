@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -21,7 +21,7 @@ import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 import { createVoteAction, getVotesByUserIdAction, getStatementVoteDistributionAction, getVoteByUserAndStatementAction } from "@/actions/votes-actions";
 import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions/user-demographics-actions";
-import { getSessionIdAction, ensureUserExistsAction, getUserBySessionIdAction } from "@/actions/users-actions";
+import { ensureUserExistsAction } from "@/actions/users-actions";
 import { toast } from "sonner";
 
 interface Statement {
@@ -66,7 +66,7 @@ interface Poll {
 
 export default function VotingPage({ params }: VotingPageProps) {
   const router = useRouter();
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
   const { setConfig, resetConfig } = useHeader();
 
   const [poll, setPoll] = useState<Poll | null>(null);
@@ -82,15 +82,26 @@ export default function VotingPage({ params }: VotingPageProps) {
   const [showDemographicsModal, setShowDemographicsModal] = useState(false);
   const [showStatementModal, setShowStatementModal] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [currentVoteDistribution, setCurrentVoteDistribution] = useState<{
+    agreeCount: number;
+    disagreeCount: number;
+    unsureCount: number;
+    totalVotes: number;
+    agreePercent: number;
+    disagreePercent: number;
+    unsurePercent: number;
+  } | null>(null);
 
   // Auto-advance timer with cleanup after showing results
+  
   useEffect(() => {
     if (!showResults) return;
 
     const timer = setTimeout(() => {
       setShowResults(false);
+      setCurrentVoteDistribution(null); // Clear stored distribution
       advanceToNext();
-    }, 3000);
+    }, 5000);
 
     // Cleanup timer on unmount or when showResults changes
     return () => clearTimeout(timer);
@@ -134,13 +145,14 @@ export default function VotingPage({ params }: VotingPageProps) {
           setStatements(statementsResult.data);
         }
 
-        // Handle user ID - authenticated or anonymous
-        if (user?.id) {
-          // User is authenticated - use Clerk user ID
-          setUserId(user.id);
+        // Handle user ID - use database user from context
+        if (dbUser?.id) {
+          // User exists in database (authenticated or anonymous with history)
+          setUserId(dbUser.id);
+          setSessionId(contextSessionId);
 
           // Load existing votes for this user
-          const votesResult = await getVotesByUserIdAction(user.id);
+          const votesResult = await getVotesByUserIdAction(dbUser.id);
           if (votesResult.success && votesResult.data) {
             const existingVotes: Record<string, 1 | 0 | -1> = {};
             votesResult.data.forEach((vote) => {
@@ -151,62 +163,25 @@ export default function VotingPage({ params }: VotingPageProps) {
             // Only show demographics modal if user has NO demographics AND no votes
             if (votesResult.data.length === 0) {
               // Check if user already has demographics
-              const demographicsResult = await getUserDemographicsByIdAction(user.id);
+              const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
               if (!demographicsResult.success || !demographicsResult.data) {
                 // User has no demographics - show modal
                 setShowDemographicsModal(true);
               }
             }
           } else {
-            // New user with no votes - check demographics
-            const demographicsResult = await getUserDemographicsByIdAction(user.id);
+            // User exists but has no votes - check demographics
+            const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
             if (!demographicsResult.success || !demographicsResult.data) {
               setShowDemographicsModal(true);
             }
           }
-        } else {
-          // User is anonymous - get or create session ID
-          const sessionResult = await getSessionIdAction();
-          if (sessionResult.success && sessionResult.data) {
-            setSessionId(sessionResult.data);
-
-            // Check if anonymous user already exists in database
-            const existingUserResult = await getUserBySessionIdAction(sessionResult.data);
-
-            if (existingUserResult.success && existingUserResult.data) {
-              // Anonymous user exists - set their ID
-              setUserId(existingUserResult.data.id);
-
-              // Load existing votes for this anonymous user
-              const votesResult = await getVotesByUserIdAction(existingUserResult.data.id);
-              if (votesResult.success && votesResult.data) {
-                const existingVotes: Record<string, 1 | 0 | -1> = {};
-                votesResult.data.forEach((vote) => {
-                  existingVotes[vote.statementId] = vote.value as 1 | 0 | -1;
-                });
-                setVotes(existingVotes);
-
-                // Only show demographics modal if user has NO demographics AND no votes
-                if (votesResult.data.length === 0) {
-                  const demographicsResult = await getUserDemographicsByIdAction(existingUserResult.data.id);
-                  if (!demographicsResult.success || !demographicsResult.data) {
-                    setShowDemographicsModal(true);
-                  }
-                }
-              } else {
-                // User exists but has no votes - check demographics
-                const demographicsResult = await getUserDemographicsByIdAction(existingUserResult.data.id);
-                if (!demographicsResult.success || !demographicsResult.data) {
-                  setShowDemographicsModal(true);
-                }
-              }
-            } else {
-              // New anonymous user - don't create user DB record yet
-              // User will be created on demographics save OR first vote
-              // Show demographics modal for new anonymous users
-              setShowDemographicsModal(true);
-            }
-          }
+        } else if (contextSessionId) {
+          // Anonymous user without DB record yet
+          // Will be created on first action (vote or demographics save)
+          setSessionId(contextSessionId);
+          // Show demographics modal for new users
+          setShowDemographicsModal(true);
         }
       } catch (error) {
         console.error("Error loading poll data:", error);
@@ -216,10 +191,10 @@ export default function VotingPage({ params }: VotingPageProps) {
       }
     };
 
-    if (isUserLoaded) {
+    if (!isUserLoading) {
       loadData();
     }
-  }, [params, router, user, isUserLoaded]);
+  }, [params, router, dbUser, contextSessionId, isUserLoading]);
 
   const currentBatchStart = Math.floor(currentStatementIndex / BATCH_SIZE) * BATCH_SIZE;
   const currentBatchEnd = Math.min(currentBatchStart + BATCH_SIZE, statements.length);
@@ -296,7 +271,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       if (!effectiveUserId) {
         // User doesn't exist yet - create them now
         const userResult = await ensureUserExistsAction({
-          clerkUserId: user?.id,
+          clerkUserId: dbUser?.clerkUserId || undefined,
           sessionId: sessionId || undefined,
         });
 
@@ -340,6 +315,8 @@ export default function VotingPage({ params }: VotingPageProps) {
                 : s
             )
           );
+          // Store distribution separately so it doesn't get lost when currentStatement changes
+          setCurrentVoteDistribution(distributionResult.data);
         }
 
         // Show results overlay
@@ -405,7 +382,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     try {
       // Save demographics and create user if doesn't exist
       const result = await saveDemographicsAction({
-        clerkUserId: user?.id,
+        clerkUserId: dbUser?.clerkUserId || undefined,
         sessionId: sessionId || undefined,
         demographics,
       });
@@ -482,11 +459,11 @@ export default function VotingPage({ params }: VotingPageProps) {
     );
   }
 
-  // Use actual vote distribution from fetched data
-  const agreePercent = currentStatement.voteDistribution?.agreePercent || 0;
-  const disagreePercent = currentStatement.voteDistribution?.disagreePercent || 0;
-  const unsurePercent = currentStatement.voteDistribution?.unsurePercent || 0;
-  const totalVotes = currentStatement.voteDistribution?.totalVotes || 0;
+  // Use stored vote distribution (doesn't change when currentStatement changes)
+  const agreePercent = currentVoteDistribution?.agreePercent || 0;
+  const disagreePercent = currentVoteDistribution?.disagreePercent || 0;
+  const unsurePercent = currentVoteDistribution?.unsurePercent || 0;
+  const totalVotes = currentVoteDistribution?.totalVotes || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,14 +14,14 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, X, Plus, Loader2 } from "lucide-react";
 import { createPollAction } from "@/actions/polls-actions";
 import { createStatementAction } from "@/actions/statements-actions";
-import { ensureUserExistsAction, getSessionIdAction } from "@/actions/users-actions";
+import { ensureUserExistsAction } from "@/actions/users-actions";
 import { toast } from "sonner";
 
 const STEPS = 5;
 
 export default function CreatePollPage() {
   const router = useRouter();
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
   const [currentStep, setCurrentStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -88,7 +88,7 @@ export default function CreatePollPage() {
   };
 
   const handleCreate = async () => {
-    if (!isUserLoaded) {
+    if (isUserLoading) {
       toast.error("Please wait...");
       return;
     }
@@ -99,19 +99,14 @@ export default function CreatePollPage() {
       // Ensure user exists (for both authenticated and anonymous users)
       let userId: string;
 
-      if (user?.id) {
-        // Authenticated user
-        userId = user.id;
-      } else {
-        // Anonymous user - get or create session
-        const sessionResult = await getSessionIdAction();
-        if (!sessionResult.success || !sessionResult.data) {
-          toast.error("Failed to create session");
-          return;
-        }
-
+      if (dbUser?.id) {
+        // User already exists in database
+        userId = dbUser.id;
+      } else if (contextSessionId) {
+        // Anonymous user without DB record - create now
         const userResult = await ensureUserExistsAction({
-          sessionId: sessionResult.data,
+          clerkUserId: dbUser?.clerkUserId || undefined,
+          sessionId: contextSessionId,
         });
 
         if (!userResult.success || !userResult.data) {
@@ -120,6 +115,9 @@ export default function CreatePollPage() {
         }
 
         userId = userResult.data.id;
+      } else {
+        toast.error("User session not found");
+        return;
       }
 
       // Create slug from question

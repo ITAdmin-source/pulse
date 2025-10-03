@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getUserPollInsightAction, upsertUserPollInsightAction } from "@/actions/user-poll-insights-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
+import { UserService } from "@/lib/services/user-service";
 import { AIService } from "@/lib/services/ai-service";
 import { InsightActions } from "@/components/polls/insight-actions";
 
@@ -17,7 +18,7 @@ interface InsightsPageProps {
 
 export default async function InsightsPage({ params }: InsightsPageProps) {
   const { slug } = await params;
-  const { userId } = await auth();
+  const { userId: clerkUserId } = await auth();
 
   // Fetch poll data
   const pollResult = await getPollBySlugAction(slug);
@@ -36,14 +37,20 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
 
   const poll = pollResult.data;
 
-  // Get effective user ID
-  let effectiveUserId = userId;
-  if (!effectiveUserId) {
+  // Resolve to database user ID
+  let dbUser;
+  if (clerkUserId) {
+    // Authenticated user - find by Clerk ID
+    dbUser = await UserService.findByClerkId(clerkUserId);
+  } else {
+    // Anonymous user - find by session ID
     const sessionResult = await getSessionIdAction();
-    effectiveUserId = sessionResult.data || null;
+    if (sessionResult.success && sessionResult.data) {
+      dbUser = await UserService.findBySessionId(sessionResult.data);
+    }
   }
 
-  if (!effectiveUserId) {
+  if (!dbUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -56,6 +63,8 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       </div>
     );
   }
+
+  const effectiveUserId = dbUser.id;
 
   // Try to fetch existing insight
   const insightResult = await getUserPollInsightAction(effectiveUserId, poll.id);
@@ -95,7 +104,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="space-y-6">
           {/* Anonymous User Warning */}
-          {!userId && (
+          {!clerkUserId && (
             <Card className="bg-yellow-50 border-yellow-200">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
@@ -148,7 +157,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
             pollTitle={poll.question}
             insightTitle={insight.title}
             insightBody={insight.body}
-            userId={userId || undefined}
+            userId={clerkUserId || undefined}
           />
           <div className="flex justify-center pt-3">
             <Button size="lg" asChild>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +76,8 @@ interface Statement {
 
 export default function ManagePage({ params }: ManagePageProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user: clerkUser } = useUser(); // For display purposes only
+  const { user: dbUser } = useCurrentUser(); // For database operations
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -974,7 +976,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                     <div className="flex items-center gap-3">
                       <Badge className="bg-blue-600">Owner</Badge>
                       <span className="text-sm text-gray-700">
-                        {user?.id ? `You (${user.primaryEmailAddress?.emailAddress || 'Current user'})` : 'Unknown'}
+                        {clerkUser?.id ? `You (${clerkUser.primaryEmailAddress?.emailAddress || 'Current user'})` : 'Unknown'}
                       </span>
                     </div>
                     <p className="text-xs text-gray-600 mt-2">
@@ -1077,12 +1079,12 @@ export default function ManagePage({ params }: ManagePageProps) {
       />
 
       {/* Add Statement Modal */}
-      {poll && user && (
+      {poll && dbUser && (
         <AddStatementModal
           open={showAddModal}
           onOpenChange={setShowAddModal}
           pollId={poll.id}
-          userId={user.id}
+          userId={dbUser.id}
           onSuccess={loadStatements}
         />
       )}

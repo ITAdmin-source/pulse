@@ -68,8 +68,9 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 **Core Polling System:**
 - `polls` - Main poll entities with lifecycle (draft→published→closed), control settings, and voting requirements
 - `statements` - Poll statements with approval workflow (null=pending, true=approved, false=rejected then deleted)
-- `votes` - User votes on statements with unique constraint per (user_id, statement_id)
+- `votes` - User votes on statements with unique constraint per (user_id, statement_id), votes are immutable (no updates)
 - `user_poll_insights` - AI-generated insights per user/poll (only latest version kept)
+- `poll_results_summaries` - Cached AI-generated poll summaries with participant/vote counts (24-hour cache)
 
 **User System:**
 - `users` - Core user data supporting both anonymous (session_id) and authenticated (clerk_user_id) users
@@ -83,16 +84,18 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 ### Important Constraints & Business Rules
 
 - **Vote values** are constrained to exactly `-1` (disagree), `0` (neutral/unsure), `1` (agree)
-- **Unique voting** - One vote per user per statement via unique constraint (users can update votes)
+- **Votes are immutable** - Once cast, votes cannot be changed (enforced in voting logic, not at DB level)
+- **Unique voting** - One vote per user per statement via unique constraint
 - **Composite primary key** on user_poll_insights (user_id, poll_id) ensures only latest insight per user/poll
 - **Cascade deletes** - Statements/votes deleted when polls removed, insights deleted when users/polls removed
 - **Voting threshold** - Users must vote on `min_statements_voted_to_end` statements (default 5, min 1) for participation to count
 - **Statement moderation** - Only approved statements appear; rejected statements are deleted
 - **Anonymous user transition** - Anonymous users who sign up have their votes transferred to authenticated identity
+- **Poll results caching** - AI-generated summaries cached for 24 hours to reduce API calls
 
-## Infrastructure Services (NEW)
+## Infrastructure Services
 
-The project now includes a comprehensive service layer in `lib/services/` that provides business logic and data access:
+The project includes a comprehensive service layer in `lib/services/` that provides business logic and data access:
 
 ### Core Services
 - **UserService** (`lib/services/user-service.ts`) - User creation, authentication, role management, JIT user creation from Clerk
@@ -100,6 +103,8 @@ The project now includes a comprehensive service layer in `lib/services/` that p
 - **PollService** (`lib/services/poll-service.ts`) - Poll lifecycle, statistics, slug generation
 - **VotingService** (`lib/services/voting-service.ts`) - Vote recording, progress tracking, distribution analysis
 - **StatementService** (`lib/services/statement-service.ts`) - Statement CRUD, approval workflow, moderation
+- **PollResultsService** (`lib/services/poll-results-service.ts`) - Aggregate results, vote distributions, demographic breakdowns (planned)
+- **AIService** (`lib/services/ai-service.ts`) - Mock AI-generated insights and summaries (ready for API integration)
 
 ### Service Layer Benefits
 - **Business logic centralization** - All core logic in services, not scattered in actions
@@ -119,19 +124,22 @@ The project now includes a comprehensive service layer in `lib/services/` that p
 - **Voting utilities** (`lib/utils/voting.ts`) - Vote calculations and distributions
 - **Permission helpers** (`lib/utils/permissions.ts`) - Role-based access control
 
-## Authentication & Middleware (NEW)
+## Authentication & User Management
 
 ### Clerk Integration
-- **Provider setup** - ClerkProvider in root layout
-- **Middleware** - Route protection with public/protected route matching
+- **Provider setup** - ClerkProvider in root layout with custom UserProvider
+- **Middleware** - Route protection with public/protected route matching (middleware.ts)
 - **JWT-only authentication** - No webhook dependency, uses JWT tokens from Clerk
-- **JIT user creation** - Users created on-demand when first authenticated
+- **JIT user creation** - Users created on-demand when first authenticated or when taking first action
 - **Profile caching** - 24-hour cache for Clerk profile data to reduce API calls
 - **Anonymous support** - Session-based users with seamless upgrade path
 
-### User Management
-- **Dual user system** - Anonymous (session_id) and authenticated (clerk_user_id)
-- **Seamless upgrade** - Anonymous users can authenticate without losing data
+### User Context & State Management
+- **UserContext** (`contexts/user-context.tsx`) - Global user state with automatic session/auth detection
+- **Automatic upgrade flow** - Anonymous users who sign up automatically get their history transferred
+- **Session handling** - Browser session IDs for anonymous users, auto-generated and stored in cookies
+- **Dual user system** - Anonymous (session_id) and authenticated (clerk_user_id) users supported
+- **Seamless upgrade** - Anonymous users can authenticate without losing votes or demographics
 - **Role-based permissions** - Database-managed roles independent of Clerk
 
 ## Adding New Tables
@@ -234,10 +242,13 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - **Language**: TypeScript
 - **Database**: Supabase (PostgreSQL) with Drizzle ORM using pooler connections
 - **Authentication**: Clerk (JWT-only implementation without webhooks)
-- **UI**: Radix UI components with Tailwind CSS, Lucide icons
+- **UI**: Radix UI components with Tailwind CSS v4, Lucide icons
+- **Animations**: Framer Motion for smooth transitions
+- **Charts**: Recharts for data visualization
 - **Testing**: Vitest for unit/integration tests, Playwright for E2E tests
 - **Forms**: React Hook Form with Zod validation
-- **State Management**: React Context API (UserContext for user state)
+- **State Management**: React Context API (UserContext, HeaderContext)
+- **Notifications**: Sonner for toast notifications
 
 ## Environment Setup
 
@@ -261,17 +272,38 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
 - `/api/test/jwt-implementation` - Verify JWT auth implementation
 
 ### User Management
-- `/api/user/current` - Get current user information
+- `/api/user/current` - Get current user information (handles both auth and anonymous)
 - `/api/user/roles` - Fetch user roles and permissions
-- `/api/user/upgrade` - Upgrade anonymous user to authenticated
+- `/api/user/upgrade` - Upgrade anonymous user to authenticated (auto-triggered on sign-up)
 
 ### Voting & Statements
-- `/api/vote/cast` - Cast or update a vote
+- `/api/vote/cast` - Cast a vote (votes are immutable, cannot update)
 - `/api/statement/submit` - Submit a new statement to a poll
 
-## Test Pages
+## Application Pages & Routes
 
-Development includes comprehensive test pages for all major features:
+### Public Pages
+- `/` - Landing page
+- `/polls` - Browse all published polls with filtering
+- `/polls/[slug]` - Poll overview page
+- `/polls/[slug]/vote` - Voting interface (card deck UI)
+- `/polls/[slug]/insights` - Personal AI-generated insights (requires minimum votes)
+- `/polls/[slug]/results` - Poll results and aggregate data
+- `/polls/[slug]/closed` - Closed poll view (accessible to all)
+
+### Authenticated Pages
+- `/polls/create` - Create new poll (requires sign-in)
+- `/polls/[slug]/manage` - Poll management interface (owner/manager only)
+- `/admin/dashboard` - Admin dashboard
+- `/admin/moderation` - Statement moderation interface
+- `/unauthorized` - Access denied page
+
+### Auth Pages
+- `/login` - Clerk sign-in page
+- `/signup` - Clerk sign-up page
+
+### Test Pages (Development)
+All test pages are publicly accessible in development:
 - `/test-auth` - Authentication flow testing
 - `/test-admin/*` - Admin functionality testing
 - `/test-polls/*` - Poll interaction testing
@@ -280,34 +312,90 @@ Development includes comprehensive test pages for all major features:
 
 ## Key Design Decisions
 
+### Architecture & Infrastructure
 - **Service Layer Architecture** - Business logic centralized in services, not scattered in queries/actions
 - **Supabase over Clerk for RBAC** - Database-managed roles allow poll-specific permissions and fine-grained control
+- **JWT-only authentication** - Simplified auth without webhook complexity, using Clerk JWTs directly
+- **Supabase pooler connections** - Using connection pooling for better IPv4 compatibility and performance
+- **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
+- **Context-based state** - UserContext and HeaderContext for global state management
+
+### Voting & Poll Features
 - **Card deck metaphor** - Visual design inspired by card deck with Stories progress bar for intuitive voting
 - **Statement batching** - 10 statements at a time with continuation pages for better UX on large polls
-- **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
-- **Universal closed poll access** - Both voters and non-voters can view results; voters get insights
-- **Minimum 6 statements** - Required (not just recommended) to create a poll for meaningful engagement
-- **User creation flexibility** - Users created on demographics save OR first vote (whichever first)
-- **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
-- **Statement lifecycle** - Rejected statements deleted (not archived) to avoid DB clutter
+- **Immutable votes** - Once cast, votes cannot be changed (enforced in voting logic)
 - **Voting thresholds** - Configurable minimum engagement ensures meaningful participation
-- **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
-- **Insight regeneration** - Personal insights recalculated when votes change, only latest version stored
-- **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
-- **JWT-only authentication** - Simplified auth without webhook complexity, using Clerk JWTs directly
-- **Profile caching strategy** - 24-hour cache for user profiles to minimize external API calls
-- **Supabase pooler connections** - Using connection pooling for better IPv4 compatibility and performance
+- **Universal closed poll access** - Both voters and non-voters can view results; voters get insights
+- **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
+- **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
 
-## Development Guidelines (NEW)
+### User Experience
+- **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
+- **Automatic upgrade flow** - Anonymous→authenticated transition preserves all user data
+- **User creation flexibility** - Users created on demographics save OR first vote (whichever first)
+- **Demographics prompt** - One-time optional prompt, never re-requested
+- **Adaptive header system** - Dynamic header variants (voting, management, admin, minimal, default)
+- **Real-time vote results** - Immediate feedback after voting with distribution overlay
+
+### Content & Data Management
+- **Minimum 6 statements** - Required (not just recommended) to create a poll for meaningful engagement
+- **Statement lifecycle** - Rejected statements deleted (not archived) to avoid DB clutter
+- **Mock AI insights** - AI service ready for API integration (currently using mock generators)
+- **Results caching** - AI-generated summaries cached for 24 hours to reduce API calls
+- **Profile caching strategy** - 24-hour cache for user profiles to minimize external API calls
+- **Insight regeneration** - Personal insights recalculated when votes change, only latest version stored
+
+## Component Architecture
+
+### UI Components
+- **`components/ui/`** - Radix UI primitives styled with Tailwind CSS v4
+- **`components/shared/`** - Shared layout components (AdaptiveHeader, MobileNav)
+- **`components/voting/`** - Voting interface components (StatementCard, ProgressBar, VoteResultOverlay, ContinuationPage)
+- **`components/polls/`** - Poll-specific components (PollCard, DemographicsModal, PollFilters, InsightActions)
+- **`components/modals/`** - Modal dialogs (PublishPollModal, UnpublishPollModal, AddStatementModal, EditStatementModal)
+- **`components/auth/`** - Authentication components (ProtectedRoute)
+
+### Header System
+- **AdaptiveHeader** (`components/shared/adaptive-header.tsx`) - Context-aware header with multiple variants
+- **HeaderContext** (`contexts/header-context.tsx`) - Global header configuration
+- **Header Variants**:
+  - `default` - Standard navigation with logo and auth
+  - `voting` - Compact header with progress bar and actions
+  - `management` - Poll owner/manager interface
+  - `admin` - Admin dashboard header
+  - `minimal` - Simple header for auth/results pages
+  - `hidden` - No header rendered
+
+### Voting Interface Components
+- **StatementCard** - Individual statement with vote buttons
+- **ProgressBar** - Stories-style progress indicator (Instagram-like)
+- **StatementCounter** - Shows current position in batch
+- **VoteResultOverlay** - Displays vote distribution after voting
+- **ContinuationPage** - Between-batch summary page
+- **StatementSubmissionModal** - User-submitted statements modal
+
+## Development Guidelines
 
 ### For New Features
 1. **Start with services** - Create or extend services in `lib/services/`
 2. **Add validation** - Define Zod schemas in `lib/validations/`
 3. **Create actions** - Wrap service calls in Server Actions
 4. **Build UI** - Use actions in React components
+5. **Use contexts** - Leverage UserContext and HeaderContext for state
 
 ### Code Quality Standards
 - **Always run `npm run build`** - Ensure TypeScript compilation before committing
 - **Use provided services** - Don't bypass services to call queries directly
 - **Follow validation patterns** - Use Zod schemas for all input validation
 - **Handle errors consistently** - Use the established error patterns
+- **Leverage contexts** - Use UserContext for user state, HeaderContext for header config
+- **Immutable votes** - Never allow vote updates once cast
+
+### Hooks & Utilities
+- **`hooks/use-current-user.ts`** - Access user context (wraps UserContext)
+- **`hooks/use-mobile.ts`** - Responsive breakpoint detection
+- **`hooks/use-toast.ts`** - Toast notification utilities
+- **`lib/utils/session.ts`** - Session ID generation and management
+- **`lib/utils/voting.ts`** - Vote calculation utilities
+- **`lib/utils/slug.ts`** - URL slug generation
+- **`lib/utils/permissions.ts`** - Permission checking helpers
