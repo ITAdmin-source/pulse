@@ -23,6 +23,7 @@ import { createVoteAction, getVotesByUserIdAction, getStatementVoteDistributionA
 import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions/user-demographics-actions";
 import { ensureUserExistsAction } from "@/actions/users-actions";
 import { toast } from "sonner";
+import { getMinimumVotingThreshold } from "@/lib/utils/voting";
 
 interface Statement {
   id: string;
@@ -46,7 +47,6 @@ interface VotingPageProps {
 }
 
 const BATCH_SIZE = 10;
-const MIN_THRESHOLD = 5;
 
 interface Poll {
   id: string;
@@ -56,7 +56,6 @@ interface Poll {
   status: string;
   startTime?: Date | null;
   endTime?: Date | null;
-  minStatementsVotedToEnd: number;
   supportButtonLabel?: string | null;
   opposeButtonLabel?: string | null;
   unsureButtonLabel?: string | null;
@@ -203,7 +202,8 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   const currentStatement = statements[currentStatementIndex];
   const votedCount = Object.keys(votes).length;
-  const canFinish = votedCount >= (poll?.minStatementsVotedToEnd || MIN_THRESHOLD);
+  const threshold = getMinimumVotingThreshold(statements.length);
+  const canFinish = votedCount >= threshold;
 
   const agreeCount = Object.values(votes).filter((v) => v === 1).length;
   const disagreeCount = Object.values(votes).filter((v) => v === -1).length;
@@ -245,7 +245,9 @@ export default function VotingPage({ params }: VotingPageProps) {
             <TooltipContent>
               {canFinish
                 ? "Complete voting and view your insights"
-                : `Vote on ${(poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount} more statement${((poll?.minStatementsVotedToEnd || MIN_THRESHOLD) - votedCount) > 1 ? 's' : ''} to finish`}
+                : threshold === statements.length
+                ? `Vote on all ${statements.length} statements to finish`
+                : `Complete the first 10 statements to finish`}
             </TooltipContent>
           </Tooltip>
         </>
@@ -363,7 +365,10 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   const handleFinish = async () => {
     if (!canFinish) {
-      toast.error(`Please vote on at least ${poll?.minStatementsVotedToEnd || MIN_THRESHOLD} statements`);
+      const message = threshold === statements.length
+        ? `Please vote on all ${statements.length} statements`
+        : `Please complete the first 10 statements`;
+      toast.error(message);
       return;
     }
 
@@ -440,7 +445,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         agreeCount={agreeCount}
         disagreeCount={disagreeCount}
         unsureCount={unsureCount}
-        minStatementsRequired={poll?.minStatementsVotedToEnd || MIN_THRESHOLD}
+        minStatementsRequired={threshold}
         onContinue={handleContinue}
         onFinish={handleFinish}
       />

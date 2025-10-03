@@ -88,7 +88,7 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 - **Unique voting** - One vote per user per statement via unique constraint
 - **Composite primary key** on user_poll_insights (user_id, poll_id) ensures only latest insight per user/poll
 - **Cascade deletes** - Statements/votes deleted when polls removed, insights deleted when users/polls removed
-- **Voting threshold** - Users must vote on `min_statements_voted_to_end` statements (default 5, min 1) for participation to count
+- **Fixed voting threshold** - Users must complete first batch (10 statements) OR all statements if poll has fewer than 10
 - **Statement moderation** - Only approved statements appear; rejected statements are deleted
 - **Anonymous user transition** - Anonymous users who sign up have their votes transferred to authenticated identity
 - **Poll results caching** - AI-generated summaries cached for 24 hours to reduce API calls
@@ -218,7 +218,7 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 1. Users see only approved statements
 2. Vote agree/disagree/neutral on statements (card deck metaphor)
 3. **Statement batching** - Polls with 10+ statements show in batches of 10 with continuation page
-4. Must reach minimum voting threshold for participation to count
+4. Must complete first batch (10 statements) or all statements if fewer than 10 to finish voting
 5. Personal insights generated after threshold met
 6. **Closed polls** - Accessible to both voters (with insights) and non-voters (results only)
 
@@ -324,7 +324,7 @@ All test pages are publicly accessible in development:
 - **Card deck metaphor** - Visual design inspired by card deck with Stories progress bar for intuitive voting
 - **Statement batching** - 10 statements at a time with continuation pages for better UX on large polls
 - **Immutable votes** - Once cast, votes cannot be changed (enforced in voting logic)
-- **Voting thresholds** - Configurable minimum engagement ensures meaningful participation
+- **Fixed voting threshold** - Users must complete first batch (10) or all statements if fewer to finish and see insights
 - **Universal closed poll access** - Both voters and non-voters can view results; voters get insights
 - **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
 - **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set

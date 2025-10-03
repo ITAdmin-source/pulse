@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, count } from "drizzle-orm";
 import { db } from "../db";
 import { votes, type Vote, type NewVote } from "../schema/votes";
 import { statements } from "../schema/statements";
@@ -100,13 +100,14 @@ export async function getUserVoteCountForPoll(userId: string, pollId: string): P
 }
 
 export async function hasUserMetVotingThreshold(userId: string, pollId: string): Promise<boolean> {
-  const [voteCount, pollResult] = await Promise.all([
+  const [voteCount, statementResult] = await Promise.all([
     getUserVoteCountForPoll(userId, pollId),
-    db.select().from(polls).where(eq(polls.id, pollId)).limit(1)
+    db.select({ count: count() }).from(statements).where(and(eq(statements.pollId, pollId), eq(statements.approved, true)))
   ]);
 
-  const poll = pollResult[0];
-  return poll ? voteCount >= poll.minStatementsVotedToEnd : false;
+  const totalStatements = statementResult[0]?.count || 0;
+  const threshold = Math.min(10, totalStatements);
+  return voteCount >= threshold;
 }
 
 /**

@@ -11,7 +11,6 @@ export const createPollSchema = z.object({
   supportButtonLabel: z.string().max(10, "Label too long").optional(),
   opposeButtonLabel: z.string().max(10, "Label too long").optional(),
   unsureButtonLabel: z.string().max(10, "Label too long").optional(),
-  minStatementsVotedToEnd: z.number().int().min(1).default(5),
 }).refine(
   (data) => {
     if (data.startTime && data.endTime) {

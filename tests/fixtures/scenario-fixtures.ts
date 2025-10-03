@@ -16,7 +16,6 @@ export const votingScenarios = {
       id: 'poll-polarized',
       slug: 'polarized-debate',
       question: 'Should we implement controversial policy X?',
-      minStatementsVotedToEnd: 3,
     }),
     statements: [
       createMockStatement({
@@ -80,7 +79,6 @@ export const votingScenarios = {
       id: 'poll-consensus',
       slug: 'community-consensus',
       question: 'What community improvements should we prioritize?',
-      minStatementsVotedToEnd: 4,
     }),
     statements: [
       createMockStatement({
@@ -167,7 +165,6 @@ export const votingScenarios = {
       id: 'poll-low-participation',
       slug: 'low-engagement',
       question: 'How should we address community issue Y?',
-      minStatementsVotedToEnd: 5, // High threshold
     }),
     statements: [
       createMockStatement({
@@ -522,7 +519,8 @@ export const scenarioHelpers = {
     if (!scenario.votes || !scenario.poll) return false
 
     const userVotes = scenario.votes.filter((vote: any) => vote.userId === userId)
-    const threshold = scenario.poll.minStatementsVotedToEnd || 1
+    const approvedStatements = scenario.statements.filter((stmt: any) => stmt.approved === true)
+    const threshold = Math.min(10, approvedStatements.length)
 
     return userVotes.length >= threshold
   },

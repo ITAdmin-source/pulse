@@ -3,7 +3,7 @@ import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
 import { createVoteSchema, updateVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/lib/validations/vote";
-import { VoteValue, calculateVoteDistribution } from "@/lib/utils/voting";
+import { VoteValue, calculateVoteDistribution, getMinimumVotingThreshold } from "@/lib/utils/voting";
 import { PollService } from "./poll-service";
 import { UserService } from "./user-service";
 import { z } from "zod";
@@ -187,19 +187,6 @@ export class VotingService {
   }> {
     const validatedData = userVotingProgressSchema.parse(data);
 
-    // Get poll info for threshold
-    const poll = await db
-      .select()
-      .from(polls)
-      .where(eq(polls.id, validatedData.pollId))
-      .limit(1);
-
-    if (!poll[0]) {
-      throw new Error("Poll not found");
-    }
-
-    const threshold = poll[0].minStatementsVotedToEnd;
-
     // Count user's votes on approved statements in this poll
     const userVotesResult = await db
       .select({ count: count() })
@@ -223,6 +210,9 @@ export class VotingService {
       ));
 
     const totalApprovedStatements = totalStatementsResult[0]?.count || 0;
+
+    // Calculate fixed threshold: first batch (10) or all statements if fewer
+    const threshold = getMinimumVotingThreshold(totalApprovedStatements);
 
     const hasReachedThreshold = votedStatements >= threshold;
     const remainingVotesNeeded = Math.max(0, threshold - votedStatements);

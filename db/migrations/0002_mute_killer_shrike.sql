@@ -1,0 +1,1 @@
+ALTER TABLE "polls" DROP COLUMN "min_statements_voted_to_end";

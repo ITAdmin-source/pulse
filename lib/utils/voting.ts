@@ -66,3 +66,11 @@ export function calculateVoteDistribution(votes: VoteValue[]): {
     percentages,
   };
 }
+
+/**
+ * Calculate the minimum voting threshold for a poll
+ * Users must complete the first batch (10 statements) OR all statements if fewer than 10
+ */
+export function getMinimumVotingThreshold(totalStatements: number): number {
+  return Math.min(10, totalStatements);
+}

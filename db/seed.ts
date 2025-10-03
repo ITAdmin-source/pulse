@@ -89,7 +89,6 @@ async function seed() {
       createdBy: user1.id,
       allowUserStatements: true,
       autoApproveStatements: false,
-      minStatementsVotedToEnd: 5,
       votingGoal: 1000,
       supportButtonLabel: "Support",
       opposeButtonLabel: "Oppose",
@@ -106,7 +105,6 @@ async function seed() {
       createdBy: user1.id,
       allowUserStatements: true,
       autoApproveStatements: false,
-      minStatementsVotedToEnd: 5,
       votingGoal: 500,
       startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       endTime: null,
@@ -120,7 +118,6 @@ async function seed() {
       createdBy: user1.id,
       allowUserStatements: false,
       autoApproveStatements: false,
-      minStatementsVotedToEnd: 5,
       votingGoal: null,
       startTime: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
       endTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
@@ -134,7 +131,6 @@ async function seed() {
       createdBy: user1.id,
       allowUserStatements: true,
       autoApproveStatements: true,
-      minStatementsVotedToEnd: 3,
       votingGoal: null,
       startTime: null,
       endTime: null,

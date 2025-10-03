@@ -361,9 +361,11 @@
 ##### Header Controls
 - Poll question (small, top)
 - Finish button (right side)
-  - Disabled state (grayed out)
-  - Enabled state (clickable)
-  - Tooltip when disabled: "Vote on X more to finish"
+  - Disabled state (grayed out) until threshold
+  - Enabled state (clickable) after threshold
+  - Tooltip when disabled:
+    - "Complete the first 10 statements to finish" (polls with 10+ statements)
+    - "Vote on all X statements to finish" (polls with <10 statements)
 - Submit Statement button (optional, in menu or header)
 
 ##### Vote Result Overlay
@@ -438,8 +440,9 @@
    - Votes are final and irreversible
 
 4. **Finish Button**
-   - Initially disabled (grayed out)
-   - Shows tooltip: "Vote on X more to finish"
+   - Initially disabled (grayed out) until threshold
+   - Threshold: First 10 statements OR all statements if poll has <10
+   - Shows tooltip when disabled (see Header Controls above)
    - Becomes enabled when threshold reached
    - Tap when enabled → End voting, show insights
 
@@ -455,10 +458,10 @@
    - When poll has more than 10 approved statements
    - User sees first 10 statements as a batch
    - After voting on 10th statement, continuation page appears
-   - User chooses: Continue voting OR Finish now
+   - User chooses: Continue voting OR Finish now (enabled after first batch complete)
    - If Continue → Load next batch of up to 10 statements
    - If Finish → End voting session, generate insights
-   - Finish button remains available throughout (enabled after threshold)
+   - Finish button in header enabled throughout after threshold met
    - **Cumulative counting system:**
      - Batch 1: Shows "Statement 1 of 10", "2 of 10"... "10 of 10"
      - Batch 2: Shows "Statement 11 of 20", "12 of 20"... "20 of 20"
@@ -579,7 +582,7 @@
 ## Results & Insights Pages
 
 ### 8. Personal Insights Page
-**Shown after completing voting (reaching threshold)**
+**Shown after completing voting (pressing Finish button after threshold met)**
 
 #### Layout
 ```
@@ -726,8 +729,8 @@
 │                         │
 │   ┌─────────────────┐   │
 │   │  Your Insights  │   │
-│   │  (if reached    │   │
-│   │   threshold)    │   │
+│   │  (if completed  │   │
+│   │    voting)      │   │
 │   └─────────────────┘   │
 │                         │
 │   [View Poll Results]   │ ← Navigates to Poll Results Page
@@ -782,8 +785,8 @@
     - Vote distribution (optional)
 
 #### Access Rules
-- **Voters (participated in poll):**
-  - See personal insights (if threshold reached)
+- **Voters (participated and completed):**
+  - See personal insights (if they completed voting/reached threshold)
   - See their vote history (read-only)
   - Can view poll results page
 - **Non-voters (did not participate):**
@@ -953,7 +956,6 @@
   - Text input (question)
   - Textarea (description)
   - Checkbox toggles (settings)
-  - Number input with min/max (threshold)
   - Text inputs with character limits (button labels)
   - Date/time pickers
   - Dynamic statement list with add/remove

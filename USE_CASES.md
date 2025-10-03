@@ -143,7 +143,6 @@
    - Process repeats for each statement in sequence
    - Vote → See results → Auto-advance to next
    - Stories-style progress bar shows overall completion
-   - Minimum threshold reminder may appear: "Vote on at least N more statements to see your insights"
    - **No ability to review or change previous votes**
    - One-way journey through all statements
 
@@ -165,27 +164,24 @@
      - Batch 3: Shows "Statement 21 of 30", "22 of 30"... "30 of 30"
      - Final batch: Continues pattern (e.g., "31 of 32", "32 of 32")
    - **Progress bar resets visually** after each batch but counter remains cumulative
-   - **Finish button remains available** throughout voting (enabled after threshold reached)
+   - **Finish button** - Disabled until threshold reached, then enabled throughout voting
    - Process repeats every 10 statements until poll exhausted or user finishes
 
 7. **Completion Options**
    - User can vote through **all statements** in the poll, OR
-   - User can press **"Finish" button** at any time to end early
-   - Finish button always available (in header or as skip option)
-   - If user finishes before threshold: may see "Vote on X more for insights" prompt with option to continue or exit
+   - User can press **"Finish" button** after reaching threshold
+   - **Finish button disabled until threshold met:**
+     - Polls with 10+ statements: Disabled until first 10 statements voted
+     - Polls with <10 statements: Disabled until all statements voted
+   - Tooltip on disabled button: "Complete the first 10 statements to finish" or "Vote on all X statements to finish"
 
 8. **Insight Generation After Completion**
-   - **When user finishes** (all statements voted OR pressed Finish):
-     - System checks if voting threshold reached (default: 5 statements)
-     - **If threshold met:**
-       - System generates AI-powered personal insights
-       - Loading state: "Analyzing your responses..."
-       - Personal insight screen appears with analysis
-       - Shows title and detailed body text
-       - Option to share, save, or continue to results summary
-     - **If threshold not met:**
-       - Message: "Vote on X more statements to unlock your personalized insights"
-       - Option to continue voting or exit
+   - **When user finishes** (threshold reached and Finish button pressed):
+     - System generates AI-powered personal insights
+     - Loading state: "Analyzing your responses..."
+     - Personal insight screen appears with analysis
+     - Shows title and detailed body text
+     - Option to share, save, or continue to results summary
 
 9. **Optional: Statement Submission** (if poll allows)
    - **Available during voting via popup/modal**
@@ -223,8 +219,8 @@
 
 4. **Completion Options:**
    - Can continue voting through remaining statements
-   - Can press Finish button to see insights (if threshold already met)
-   - If threshold not yet met, must vote on more statements
+   - Can press Finish button to see insights (once threshold reached)
+   - Finish button disabled until threshold met (first 10 or all statements)
 
 5. **No Restart Option:**
    - Cannot reset or start poll over
@@ -425,36 +421,34 @@
 5. **Progress Tracking**
    - **Instagram-style segmented progress bar** (primary indicator)
    - Optional text: "Statement X of Y"
-   - Threshold reminder may appear: "Vote on Z more to unlock insights"
    - Clear visual of how far through poll
 
 6. **Completion Trigger**
    - User can **vote through all statements** to auto-complete, OR
-   - **Press "Finish" button** to end early
+   - **Press "Finish" button** after reaching threshold
    - **Finish button behavior:**
-     - **Disabled until threshold reached** (e.g., grayed out until 5 votes cast)
+     - **Disabled until threshold reached** (grayed out)
+     - Threshold: First 10 statements OR all statements if poll has fewer than 10
      - **Enabled once threshold met** (becomes clickable)
      - Always visible in header/menu with state indicator
-     - Shows tooltip: "Vote on X more to finish" when disabled
+     - Shows tooltip when disabled:
+       - "Complete the first 10 statements to finish" (for polls with 10+ statements)
+       - "Vote on all X statements to finish" (for polls with <10 statements)
 
 7. **Post-Completion: Insight Generation & Results Summary**
-   - System checks if threshold reached (default: 5 statements)
-   - **If threshold met:**
-     - Loading screen: "Analyzing your responses..."
-     - AI generates personalized insight
-     - **Personal Insight screen appears:**
-       - Title (summary of user's position)
-       - Body (detailed analysis of user's voting patterns)
-       - Visual design matching poll theme
-       - Actions: Share Insight, Save (if authenticated), View Results Summary
-     - **Poll Results Summary (accessible after viewing insight):**
-       - AI-generated text summarizing main takeaways from ALL votes on ALL statements
-       - Shows overall poll trends and consensus
-       - Read-only summary view
-       - Option to return to poll listing
-   - **If threshold NOT met:**
-     - This scenario should not occur since Finish button is disabled until threshold met
-     - Safety fallback: Message with option to exit
+   - User pressed Finish button (threshold already met by design)
+   - Loading screen: "Analyzing your responses..."
+   - AI generates personalized insight
+   - **Personal Insight screen appears:**
+     - Title (summary of user's position)
+     - Body (detailed analysis of user's voting patterns)
+     - Visual design matching poll theme
+     - Actions: Share Insight, Save (if authenticated), View Results Summary
+   - **Poll Results Summary (accessible after viewing insight):**
+     - AI-generated text summarizing main takeaways from ALL votes on ALL statements
+     - Shows overall poll trends and consensus
+     - Read-only summary view
+     - Option to return to poll listing
 
 8. **Voting Rules**
    - One vote per statement per user
@@ -518,14 +512,14 @@
 ### Journey 6: Personal Insights
 
 #### Trigger Conditions
-- **User completes voting session** (votes on all statements OR presses "Finish" button)
-- User has voted on minimum required statements (threshold, default: 5)
+- **User completes voting session** (presses "Finish" button after threshold met)
+- Threshold: First 10 statements OR all statements if poll has fewer than 10
 
 #### Generation Process
 1. **Triggered After Completion**
-   - User finishes voting by completing all statements OR pressing "Finish"
-   - System checks if threshold met
-   - If met: insight generation begins immediately
+   - User finishes voting by pressing "Finish" button
+   - Threshold already met (button only enabled after threshold)
+   - Insight generation begins immediately
 
 2. **Generation Flow**
    - Loading screen appears: "Analyzing your responses..."
@@ -631,8 +625,8 @@
    - Available for both active and closed polls
 
 4. **Closed Poll Access:**
-   - **For voters (users who participated):**
-     - Can view their personal insight (if they reached threshold)
+   - **For voters (users who participated and reached threshold):**
+     - Can view their personal insight
      - Can view Poll Results Summary (overall trends) via "View Poll Results" button
      - Can view their vote summary: Read-only list of all their votes on each statement
      - No ability to change votes (already final during voting)
@@ -767,7 +761,6 @@
 1. **Update Metadata**
    - Change question, description
    - Modify button labels
-   - Adjust threshold
 
 2. **Control Toggles**
    - Enable/disable user submissions
@@ -789,8 +782,8 @@
   - Most agreed/disagreed statements
   - Participation over time (if tracking implemented)
 
-- **Threshold Completion:**
-  - Number of users who reached threshold
+- **Completion Metrics:**
+  - Number of users who completed voting (reached threshold)
   - Average votes per user
 
 ---
@@ -1095,41 +1088,42 @@ Draft ←→ Published → Closed
 
 ---
 
-### Feature 4: Voting Threshold System
+### Feature 4: Fixed Voting Threshold
 
 #### Purpose
-- Ensure meaningful participation
+- Ensure meaningful participation through first batch completion
 - Gate insights generation
 - Track engagement quality
 
-#### Configuration
-- **Poll Setting:** `minStatementsVotedToEnd`
-- **Default:** 5 statements
-- **Minimum:** 1 statement
-- **Set by:** Poll creator
+#### Threshold Rules
+- **Fixed Threshold:** Not configurable per poll
+- **For polls with 10+ statements:** First 10 statements (one full batch)
+- **For polls with <10 statements:** All statements
+- **Cannot be changed** - consistent across all polls
 
 #### Enforcement
 1. **Insights Gating**
-   - User must vote on threshold number of statements
+   - User must complete threshold before finishing
+   - Finish button disabled until threshold met
    - Only then are personal insights generated
    - Prevents shallow engagement
 
 2. **Participation Counting**
-   - Users below threshold: not counted as "full participants"
-   - Statistics distinguish engaged vs. casual voters
+   - Users who reach threshold: counted as "full participants"
+   - Statistics track completion rates
 
-3. **Progress Display**
-   - UI shows: "X of Y statements voted"
-   - Reminds: "Z more votes needed for insights"
-   - Motivates completion
+3. **UI Behavior**
+   - Finish button disabled (grayed out) until threshold
+   - Tooltip shows requirement when disabled
+   - No counter needed - threshold is always first batch or all
 
 ---
 
 ### Feature 5: Personal Insights Generation
 
 #### Triggering Events
-- **User completes voting session** by voting on all statements OR pressing "Finish" button
-- User has met minimum voting threshold (default: 5 statements)
+- **User completes voting session** by pressing "Finish" button
+- Threshold automatically met (button only enabled after threshold)
 
 #### Generation Process
 1. **Data Collection**
@@ -1162,7 +1156,7 @@ Draft ←→ Published → Closed
 - **Persistence:** Across sessions for authenticated users
 
 #### Display
-- **Shown immediately after completing voting session** (if threshold met)
+- **Shown immediately after completing voting session**
 - Full-screen presentation with title and body
 - Actions: Share, Save, View Results
 - Accessible later in user dashboard (if authenticated)
@@ -1277,7 +1271,7 @@ Draft ←→ Published → Closed
 - If statements user hasn't voted on are deleted:
   - User sees message: "This poll has been updated. Returning to poll list."
   - User's existing votes are preserved in database
-  - User can still see their insights if they met threshold
+  - User can still see their insights if they completed voting (reached threshold)
 - Extremely rare edge case, handled gracefully
 - No data loss for user
 
@@ -1289,7 +1283,7 @@ Draft ←→ Published → Closed
 - Votes cast before closing remain valid
 - When user tries to move to next statement or press Finish:
   - Show message: "This poll has closed. Your votes have been saved."
-  - Automatically take them to insights (if threshold met)
+  - Automatically take them to insights (if they reached threshold)
   - Or take them to poll results summary
 - All votes counted despite poll closing
 - Graceful user experience
@@ -1413,7 +1407,7 @@ This document outlines the complete functionality of Pulse, a participatory poll
      - Secondary action (Pass/Unsure) BELOW card with subdued styling
    - **Vote Flow:** Clean card → Vote → Animated results → Auto-advance (3-5s) → Next clean card
    - **No Navigation Back:** Forward-only, no review mode, votes are final
-   - **Finish Button:** Disabled until threshold, always visible with state indicator
+   - **Finish Button:** Disabled until threshold (first 10 or all statements), always visible with state indicator
    - **Insight Presentation:** Full-screen, polished display after completion with share/save options
    - **Poll Results Summary:** AI-generated poll-level summary accessible after personal insights
    - **Demographics:** One-time prompt before first card, cannot be changed later

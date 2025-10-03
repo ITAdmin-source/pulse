@@ -104,7 +104,6 @@ export default function ManagePage({ params }: ManagePageProps) {
     supportButtonLabel: "",
     opposeButtonLabel: "",
     unsureButtonLabel: "",
-    minStatementsVotedToEnd: 5,
     votingGoal: "",
   });
 
@@ -148,7 +147,6 @@ export default function ManagePage({ params }: ManagePageProps) {
           supportButtonLabel: fetchedPoll.supportButtonLabel || "",
           opposeButtonLabel: fetchedPoll.opposeButtonLabel || "",
           unsureButtonLabel: fetchedPoll.unsureButtonLabel || "",
-          minStatementsVotedToEnd: fetchedPoll.minStatementsVotedToEnd || 5,
           votingGoal: fetchedPoll.votingGoal?.toString() || "",
         });
 
@@ -398,7 +396,6 @@ export default function ManagePage({ params }: ManagePageProps) {
         supportButtonLabel: settingsForm.supportButtonLabel || null,
         opposeButtonLabel: settingsForm.opposeButtonLabel || null,
         unsureButtonLabel: settingsForm.unsureButtonLabel || null,
-        minStatementsVotedToEnd: settingsForm.minStatementsVotedToEnd,
         votingGoal: settingsForm.votingGoal ? parseInt(settingsForm.votingGoal) : null,
       };
 
@@ -820,19 +817,6 @@ export default function ManagePage({ params }: ManagePageProps) {
                   {/* Voting Settings */}
                   <div className="space-y-4 pt-4 border-t">
                     <h3 className="text-lg font-semibold text-gray-900">Voting Settings</h3>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="minStatements">Minimum Votes Required *</Label>
-                      <Input
-                        id="minStatements"
-                        type="number"
-                        min="1"
-                        value={settingsForm.minStatementsVotedToEnd}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, minStatementsVotedToEnd: parseInt(e.target.value) || 1 })}
-                        required
-                      />
-                      <p className="text-sm text-gray-500">Users must vote on at least this many statements</p>
-                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="votingGoal">Voting Goal (Optional)</Label>

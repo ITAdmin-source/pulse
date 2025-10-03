@@ -52,7 +52,6 @@ export const testPolls = {
     createdBy: testUsers.pollOwner.id,
     allowUserStatements: true,
     autoApproveStatements: false,
-    minStatementsVotedToEnd: 3,
     startTime: new Date('2024-03-01T10:00:00Z'),
     endTime: new Date('2024-03-15T10:00:00Z'),
   }),
@@ -66,7 +65,6 @@ export const testPolls = {
     createdBy: testUsers.pollOwner.id,
     allowUserStatements: true,
     autoApproveStatements: true,
-    minStatementsVotedToEnd: 5,
     startTime: new Date('2024-02-01T10:00:00Z'),
     endTime: new Date('2024-04-01T10:00:00Z'),
   }),
@@ -80,7 +78,6 @@ export const testPolls = {
     createdBy: testUsers.pollOwner.id,
     allowUserStatements: false,
     autoApproveStatements: false,
-    minStatementsVotedToEnd: 4,
     startTime: new Date('2024-01-01T10:00:00Z'),
     endTime: new Date('2024-01-31T10:00:00Z'),
   }),
@@ -94,7 +91,6 @@ export const testPolls = {
     createdBy: testUsers.pollOwner.id,
     allowUserStatements: true,
     autoApproveStatements: true,
-    minStatementsVotedToEnd: 2,
     startTime: new Date('2024-02-15T10:00:00Z'),
     endTime: new Date('2024-03-15T10:00:00Z'),
   }),
@@ -441,6 +437,7 @@ export const fixtureHelpers = {
 
   /**
    * Check if user has met voting threshold for a poll
+   * Threshold is first batch (10 statements) or all statements if fewer than 10
    */
   hasUserMetThreshold(userId: string, pollId: string): boolean {
     const poll = Object.values(testPolls).find(p => p.id === pollId)
@@ -453,6 +450,7 @@ export const fixtureHelpers = {
       statements.some(statement => statement.id === vote.statementId)
     )
 
-    return pollVotes.length >= poll.minStatementsVotedToEnd
+    const threshold = Math.min(10, statements.length)
+    return pollVotes.length >= threshold
   },
 }

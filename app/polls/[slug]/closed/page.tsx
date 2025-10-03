@@ -76,7 +76,8 @@ export default async function ClosedPollPage({ params }: ClosedPollPageProps) {
     : [];
 
   const userParticipated = userVotes.length > 0;
-  const hasInsights = effectiveUserId && userVotes.length >= (poll.minStatementsVotedToEnd || 5);
+  const threshold = Math.min(10, statements.length);
+  const hasInsights = effectiveUserId && userVotes.length >= threshold;
 
   // Fetch insight if user has one
   const insightResult = hasInsights && effectiveUserId

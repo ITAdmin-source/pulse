@@ -30,7 +30,6 @@ export default function CreatePollPage() {
   const [description, setDescription] = useState("");
   const [allowUserStatements, setAllowUserStatements] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
-  const [threshold, setThreshold] = useState("5");
   const [votingGoal, setVotingGoal] = useState("");
   const [agreeLabel, setAgreeLabel] = useState("Agree");
   const [disagreeLabel, setDisagreeLabel] = useState("Disagree");
@@ -142,7 +141,6 @@ export default function CreatePollPage() {
         supportButtonLabel: agreeLabel !== "Agree" ? agreeLabel : null,
         opposeButtonLabel: disagreeLabel !== "Disagree" ? disagreeLabel : null,
         unsureButtonLabel: passLabel !== "Pass" ? passLabel : null,
-        minStatementsVotedToEnd: parseInt(threshold),
         status: "draft" as const,
       };
 
@@ -269,25 +267,6 @@ export default function CreatePollPage() {
                   >
                     Auto-approve user statements (requires above)
                   </Label>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="threshold">Voting Threshold *</Label>
-                  <Select value={threshold} onValueChange={setThreshold}>
-                    <SelectTrigger id="threshold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                        <SelectItem key={n} value={n.toString()}>
-                          {n} statement{n > 1 ? "s" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500">
-                    Minimum statements users must vote on to see insights
-                  </p>
                 </div>
 
                 <div className="space-y-2">
