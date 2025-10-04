@@ -11,6 +11,8 @@ interface ContinuationPageProps {
   minStatementsRequired: number;
   onContinue: () => void;
   onFinish: () => void;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function ContinuationPage({
@@ -21,6 +23,8 @@ export function ContinuationPage({
   minStatementsRequired,
   onContinue,
   onFinish,
+  error,
+  onRetry,
 }: ContinuationPageProps) {
   const canFinish = statementsVoted >= minStatementsRequired;
   const remainingVotes = minStatementsRequired - statementsVoted;
@@ -61,8 +65,17 @@ export function ContinuationPage({
           <p className="mt-1">What would you like to do?</p>
         </div>
 
+        {error && onRetry && (
+          <div className="text-center space-y-2">
+            <p className="text-sm text-red-600">{error}</p>
+            <Button onClick={onRetry} variant="outline" size="sm" className="w-full">
+              Retry Loading Next Batch
+            </Button>
+          </div>
+        )}
+
         <div className="space-y-3">
-          <Button onClick={onContinue} className="w-full h-12" size="lg">
+          <Button onClick={onContinue} className="w-full h-12" size="lg" disabled={!!error}>
             Continue Voting
           </Button>
           <Button

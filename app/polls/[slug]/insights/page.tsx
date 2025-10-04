@@ -66,6 +66,34 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
 
   const effectiveUserId = dbUser.id;
 
+  // Check if user has met voting threshold before allowing insights
+  const { getVotingProgressAction } = await import("@/actions/votes-actions");
+  const progressResult = await getVotingProgressAction(poll.id, effectiveUserId);
+
+  if (!progressResult.success || !progressResult.data?.thresholdReached) {
+    const remainingVotes = progressResult.data?.remainingVotesNeeded || 0;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center space-y-6 max-w-md px-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Complete Voting First
+          </h1>
+          <p className="text-gray-600 leading-relaxed">
+            You need to vote on {remainingVotes} more statement{remainingVotes !== 1 ? 's' : ''} to unlock your personalized insights.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button size="lg" asChild>
+              <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href={`/polls/${slug}`}>Back to Poll</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Try to fetch existing insight
   const insightResult = await getUserPollInsightAction(effectiveUserId, poll.id);
 
@@ -82,16 +110,35 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     } catch (error) {
       console.error("Failed to generate insight:", error);
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">Not Enough Votes Yet</h1>
-            <p className="text-gray-600">
-              You need to vote on more statements before we can generate insights.
-              Please continue voting and try again.
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="text-center space-y-6 max-w-md px-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Could Not Generate Insights
+            </h1>
+            <p className="text-gray-600 leading-relaxed">
+              We encountered an error generating your personalized insights.
+              This might be due to insufficient votes or a temporary service issue.
             </p>
-            <Button asChild>
-              <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
-            </Button>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" asChild>
+                <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link href={`/polls/${slug}/results`}>
+                  View Poll Results Instead
+                </Link>
+              </Button>
+            </div>
+            <p className="text-sm text-gray-500 pt-2">
+              You can also access your insights later from your dashboard
+            </p>
           </div>
         </div>
       );

@@ -223,7 +223,7 @@ export class UserService {
   }
 
   /**
-   * Save or update user demographics
+   * Save user demographics (one-time only - cannot be updated after initial submission)
    */
   private static async saveDemographics(
     userId: string,
@@ -234,7 +234,8 @@ export class UserService {
       politicalPartyId?: number;
     }
   ): Promise<void> {
-    // Use INSERT ... ON CONFLICT to handle upsert
+    // Demographics are immutable - only INSERT, no updates allowed
+    // If conflict occurs, the existing demographics are preserved
     await db
       .insert(userDemographics)
       .values({
@@ -244,15 +245,6 @@ export class UserService {
         ethnicityId: demographics.ethnicityId || null,
         politicalPartyId: demographics.politicalPartyId || null,
       })
-      .onConflictDoUpdate({
-        target: userDemographics.userId,
-        set: {
-          ageGroupId: demographics.ageGroupId || null,
-          genderId: demographics.genderId || null,
-          ethnicityId: demographics.ethnicityId || null,
-          politicalPartyId: demographics.politicalPartyId || null,
-          updatedAt: new Date(),
-        },
-      });
+      .onConflictDoNothing({ target: userDemographics.userId });
   }
 }

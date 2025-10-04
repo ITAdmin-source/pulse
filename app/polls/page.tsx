@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedPollsAction } from "@/actions/polls-actions";
 import { toast } from "sonner";
@@ -192,15 +192,10 @@ export default function PollsPage() {
           <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="flex flex-col h-full">
-                <CardHeader>
+                <CardHeader className="flex-grow">
                   <Skeleton className="h-6 w-20 mb-4" />
                   <Skeleton className="h-8 w-full mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <Skeleton className="h-4 w-32" />
-                </CardContent>
                 <CardFooter>
                   <Skeleton className="h-10 w-full" />
                 </CardFooter>
@@ -215,8 +210,8 @@ export default function PollsPage() {
             {filteredPolls.map((poll) => {
               const displayStatus = getPollStatus(poll);
               return (
-                <Card key={poll.id} className="flex flex-col hover:shadow-lg transition-shadow">
-                  <CardHeader>
+                <Card key={poll.id} className="flex flex-col hover:shadow-lg transition-shadow h-full">
+                  <CardHeader className="flex-grow">
                     <div className="flex items-start justify-between mb-2">
                       <Badge variant={displayStatus === "active" ? "default" : "secondary"}>
                         {displayStatus === "active" ? "Active" : "Closed"}
@@ -225,24 +220,7 @@ export default function PollsPage() {
                     <CardTitle className="text-xl leading-tight">
                       {poll.question}
                     </CardTitle>
-                    {poll.description && (
-                      <CardDescription className="line-clamp-2">
-                        {poll.description}
-                      </CardDescription>
-                    )}
                   </CardHeader>
-
-                  <CardContent className="flex-grow">
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>{poll.totalVoters || 0} voters</span>
-                      <span>{poll.statementCount || 0} statements</span>
-                    </div>
-                    {displayStatus === "active" && poll.endTime && (
-                      <p className="text-sm text-gray-500 mt-2">
-                        Ends {new Date(poll.endTime).toLocaleDateString()}
-                      </p>
-                    )}
-                  </CardContent>
 
                   <CardFooter>
                     <Button asChild className="w-full">

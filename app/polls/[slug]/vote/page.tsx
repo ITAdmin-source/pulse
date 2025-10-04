@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -19,11 +19,12 @@ import {
 import { DemographicsModal, type DemographicsData } from "@/components/polls/demographics-modal";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
-import { createVoteAction, getVotesByUserIdAction, getStatementVoteDistributionAction, getVoteByUserAndStatementAction } from "@/actions/votes-actions";
+import { createVoteAction, getStatementVoteDistributionAction, getVoteByUserAndStatementAction, getStatementBatchAction, getVotingProgressAction, getUserVotesForPollAction } from "@/actions/votes-actions";
 import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions/user-demographics-actions";
 import { ensureUserExistsAction } from "@/actions/users-actions";
 import { toast } from "sonner";
-import { getMinimumVotingThreshold } from "@/lib/utils/voting";
+import { StatementManager } from "@/lib/services/statement-manager";
+import { OfflineVoteQueue } from "@/lib/utils/offline-queue";
 
 interface Statement {
   id: string;
@@ -68,43 +69,103 @@ export default function VotingPage({ params }: VotingPageProps) {
   const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
   const { setConfig, resetConfig } = useHeader();
 
+  // Core app state
   const [poll, setPoll] = useState<Poll | null>(null);
-  const [statements, setStatements] = useState<Statement[]>([]);
+  const [statementManager, setStatementManager] = useState<StatementManager | null>(null);
+  const [totalStatementsInPoll, setTotalStatementsInPoll] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentStatementIndex, setCurrentStatementIndex] = useState(0);
-  const [votes, setVotes] = useState<Record<string, 1 | 0 | -1>>({});
-  const [showResults, setShowResults] = useState(false);
-  const [showContinuation, setShowContinuation] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSavingVote, setIsSavingVote] = useState(false);
+  const [isPreloading, setIsPreloading] = useState(false);
+
+  // Modal states
   const [showDemographicsModal, setShowDemographicsModal] = useState(false);
   const [showStatementModal, setShowStatementModal] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentVoteDistribution, setCurrentVoteDistribution] = useState<{
-    agreeCount: number;
-    disagreeCount: number;
-    unsureCount: number;
-    totalVotes: number;
-    agreePercent: number;
-    disagreePercent: number;
-    unsurePercent: number;
-  } | null>(null);
+  const [batchLoadError, setBatchLoadError] = useState<string | null>(null);
 
-  // Auto-advance timer with cleanup after showing results
-  
+  // Timer ref for auto-advance cleanup
+  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Voting state machine - single source of truth for voting flow
+  type VotingPhase = 'viewing' | 'results' | 'continuation' | 'finished';
+  const [votingState, setVotingState] = useState<{
+    phase: VotingPhase;
+    currentStatement: Statement | null;
+    votedStatement?: Statement;
+    voteDistribution?: {
+      agreeCount: number;
+      disagreeCount: number;
+      unsureCount: number;
+      totalVotes: number;
+      agreePercent: number;
+      disagreePercent: number;
+      unsurePercent: number;
+    };
+  }>({
+    phase: 'viewing',
+    currentStatement: null,
+  });
+
+  // Auto-advance timer - transitions from 'results' to next phase
   useEffect(() => {
-    if (!showResults) return;
+    if (votingState.phase !== 'results' || !statementManager) return;
 
     const timer = setTimeout(() => {
-      setShowResults(false);
-      setCurrentVoteDistribution(null); // Clear stored distribution
-      advanceToNext();
+      // Advance the statement manager index
+      statementManager.advanceIndex();
+
+      // Get next statement
+      const nextStmt = statementManager.getNextStatement();
+
+      if (nextStmt) {
+        // More statements in current batch - transition to viewing next statement
+        setVotingState({
+          phase: 'viewing',
+          currentStatement: nextStmt,
+        });
+      } else {
+        // Batch complete - transition to continuation page
+        setVotingState({
+          phase: 'continuation',
+          currentStatement: null,
+        });
+      }
     }, 5000);
 
-    // Cleanup timer on unmount or when showResults changes
-    return () => clearTimeout(timer);
-  }, [showResults]);
+    // Store timer ref for manual cleanup
+    autoAdvanceTimerRef.current = timer;
+
+    // Cleanup timer on unmount or when phase changes
+    return () => {
+      clearTimeout(timer);
+      autoAdvanceTimerRef.current = null;
+    };
+  }, [votingState.phase, statementManager]);
+
+  // Preload next batch when user reaches 8th statement of current batch
+  useEffect(() => {
+    if (!statementManager || !poll || !userId || isPreloading || votingState.phase !== 'viewing') return;
+
+    const progress = statementManager.getProgress();
+
+    // When on 8th statement of batch, preload next batch
+    if (progress.positionInBatch === 8) {
+      setIsPreloading(true);
+
+      const nextBatchNumber = progress.currentBatch + 1;
+      getStatementBatchAction(poll.id, userId, nextBatchNumber)
+        .then(() => {
+          console.log('Next batch preloaded successfully');
+        })
+        .catch((err) => {
+          console.error('Preload failed:', err);
+        })
+        .finally(() => {
+          setIsPreloading(false);
+        });
+    }
+  }, [votingState.phase, votingState.currentStatement, statementManager, poll, userId, isPreloading]);
 
   // Load poll data and statements
   useEffect(() => {
@@ -131,18 +192,22 @@ export default function VotingPage({ params }: VotingPageProps) {
 
         // Check if poll is closed (past end time)
         if (fetchedPoll.endTime && new Date(fetchedPoll.endTime) < new Date()) {
-          toast.error("This poll has closed");
-          router.push(`/polls/${resolvedParams.slug}/closed`);
-          return;
+          // Check if within grace period (10 minutes)
+          const minutesSinceClosed = (Date.now() - new Date(fetchedPoll.endTime).getTime()) / (1000 * 60);
+          if (minutesSinceClosed <= 10) {
+            toast.warning(
+              "This poll has closed, but you can finish voting on your current session. " +
+              "Your votes will still be counted in the results.",
+              { duration: 6000 }
+            );
+          } else {
+            toast.error("This poll has closed");
+            router.push(`/polls/${resolvedParams.slug}/closed`);
+            return;
+          }
         }
 
         setPoll(fetchedPoll);
-
-        // Fetch approved statements for this poll
-        const statementsResult = await getApprovedStatementsByPollIdAction(fetchedPoll.id);
-        if (statementsResult.success && statementsResult.data) {
-          setStatements(statementsResult.data);
-        }
 
         // Handle user ID - use database user from context
         if (dbUser?.id) {
@@ -150,37 +215,87 @@ export default function VotingPage({ params }: VotingPageProps) {
           setUserId(dbUser.id);
           setSessionId(contextSessionId);
 
-          // Load existing votes for this user
-          const votesResult = await getVotesByUserIdAction(dbUser.id);
-          if (votesResult.success && votesResult.data) {
-            const existingVotes: Record<string, 1 | 0 | -1> = {};
-            votesResult.data.forEach((vote) => {
-              existingVotes[vote.statementId] = vote.value as 1 | 0 | -1;
-            });
-            setVotes(existingVotes);
+          // Load user's votes for THIS poll only
+          const votesResult = await getUserVotesForPollAction(dbUser.id, fetchedPoll.id);
+          const userVotesLookup = votesResult.success ? votesResult.data || {} : {};
+
+          // Load user's voting progress to restore their position
+          const progressResult = await getVotingProgressAction(fetchedPoll.id, dbUser.id);
+          if (progressResult.success && progressResult.data) {
+            const { totalVoted, totalStatements, currentBatch, thresholdReached } = progressResult.data;
+
+            setTotalStatementsInPoll(totalStatements);
 
             // Only show demographics modal if user has NO demographics AND no votes
-            if (votesResult.data.length === 0) {
-              // Check if user already has demographics
+            if (totalVoted === 0) {
               const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
               if (!demographicsResult.success || !demographicsResult.data) {
-                // User has no demographics - show modal
                 setShowDemographicsModal(true);
               }
             }
-          } else {
-            // User exists but has no votes - check demographics
-            const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
-            if (!demographicsResult.success || !demographicsResult.data) {
-              setShowDemographicsModal(true);
+
+            // Load the current batch of unvoted statements
+            const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
+
+            if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
+              // Create StatementManager instance
+              const manager = new StatementManager(
+                batchResult.data,
+                userVotesLookup,
+                fetchedPoll.id,
+                dbUser.id,
+                totalStatements
+              );
+
+              setStatementManager(manager);
+
+              // Get first unvoted statement and set initial voting state
+              const firstStatement = manager.getNextStatement();
+              setVotingState({
+                phase: 'viewing',
+                currentStatement: firstStatement,
+              });
+            } else {
+              // No more unvoted statements - user has completed voting
+              if (thresholdReached) {
+                toast.success("You've completed voting on this poll!");
+                router.push(`/polls/${resolvedParams.slug}/insights`);
+              } else {
+                toast.error("No statements available to vote on");
+                router.push(`/polls/${resolvedParams.slug}`);
+              }
+              return;
             }
           }
         } else if (contextSessionId) {
           // Anonymous user without DB record yet
           // Will be created on first action (vote or demographics save)
           setSessionId(contextSessionId);
-          // Show demographics modal for new users
           setShowDemographicsModal(true);
+
+          // Load first batch of statements (all approved, since user has no votes yet)
+          const statementsResult = await getApprovedStatementsByPollIdAction(fetchedPoll.id);
+          if (statementsResult.success && statementsResult.data) {
+            const firstBatch = statementsResult.data.slice(0, BATCH_SIZE);
+
+            // Create StatementManager with empty votes
+            const manager = new StatementManager(
+              firstBatch,
+              {},
+              fetchedPoll.id,
+              '', // No userId yet
+              statementsResult.data.length
+            );
+
+            setStatementManager(manager);
+            setTotalStatementsInPoll(statementsResult.data.length);
+
+            // Set initial voting state for new users
+            setVotingState({
+              phase: 'viewing',
+              currentStatement: manager.getNextStatement(),
+            });
+          }
         }
       } catch (error) {
         console.error("Error loading poll data:", error);
@@ -195,23 +310,64 @@ export default function VotingPage({ params }: VotingPageProps) {
     }
   }, [params, router, dbUser, contextSessionId, isUserLoading]);
 
-  const currentBatchStart = Math.floor(currentStatementIndex / BATCH_SIZE) * BATCH_SIZE;
-  const currentBatchEnd = Math.min(currentBatchStart + BATCH_SIZE, statements.length);
-  const currentBatch = statements.slice(currentBatchStart, currentBatchEnd);
-  const positionInBatch = currentStatementIndex - currentBatchStart;
-
-  const currentStatement = statements[currentStatementIndex];
-  const votedCount = Object.keys(votes).length;
-  const threshold = getMinimumVotingThreshold(statements.length);
-  const canFinish = votedCount >= threshold;
-
-  const agreeCount = Object.values(votes).filter((v) => v === 1).length;
-  const disagreeCount = Object.values(votes).filter((v) => v === -1).length;
-  const unsureCount = Object.values(votes).filter((v) => v === 0).length;
-
-  // Configure header with poll context (placed after variable calculations)
+  // Sync offline votes when user ID is available
   useEffect(() => {
-    if (!poll) return;
+    if (userId && typeof window !== 'undefined') {
+      if (OfflineVoteQueue.hasQueuedVotes()) {
+        OfflineVoteQueue.syncAll(userId).then(({ synced, failed, errors }) => {
+          if (synced > 0) {
+            toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced successfully`);
+          }
+          if (failed > 0) {
+            toast.error(`Failed to sync ${failed} vote${failed > 1 ? 's' : ''}`);
+          }
+        });
+      }
+    }
+  }, [userId]);
+
+  // Get progress from StatementManager
+  const progress = statementManager?.getProgress();
+  const voteDistribution = statementManager?.getVoteDistribution();
+
+  const votedCount = progress?.totalVoted || 0;
+  const threshold = progress?.threshold || 10;
+  const canFinish = progress?.canFinish || false;
+
+  const agreeCount = voteDistribution?.agreeCount || 0;
+  const disagreeCount = voteDistribution?.disagreeCount || 0;
+  const unsureCount = voteDistribution?.unsureCount || 0;
+
+  // Handle finishing voting session
+  const handleFinish = useCallback(async () => {
+    if (!canFinish || !statementManager) {
+      const progress = statementManager?.getProgress();
+      const message = progress && progress.threshold === progress.totalStatementsInPoll
+        ? `Please vote on all ${progress.totalStatementsInPoll} statements`
+        : `Please complete the first 10 statements`;
+      toast.error(message);
+      return;
+    }
+
+    setVotingState({
+      phase: 'finished',
+      currentStatement: null,
+    });
+
+    // Navigate to insights page after ensuring database writes are complete
+    // Longer delay to avoid race conditions with database writes
+    setTimeout(() => {
+      if (poll?.slug) {
+        router.push(`/polls/${poll.slug}/insights`);
+      }
+    }, 3000);
+  }, [canFinish, statementManager, poll, router]);
+
+  // Configure header with poll context
+  useEffect(() => {
+    if (!poll || !statementManager) return;
+
+    const progress = statementManager.getProgress();
 
     setConfig({
       variant: "voting",
@@ -235,18 +391,18 @@ export default function VotingPage({ params }: VotingPageProps) {
             <TooltipTrigger asChild>
               <Button
                 size="sm"
-                variant={canFinish ? "default" : "ghost"}
-                disabled={!canFinish || isSavingVote}
+                variant={progress.canFinish ? "default" : "ghost"}
+                disabled={!progress.canFinish || isSavingVote}
                 onClick={handleFinish}
               >
                 Finish
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {canFinish
+              {progress.canFinish
                 ? "Complete voting and view your insights"
-                : threshold === statements.length
-                ? `Vote on all ${statements.length} statements to finish`
+                : progress.threshold === progress.totalStatementsInPoll
+                ? `Vote on all ${progress.totalStatementsInPoll} statements to finish`
                 : `Complete the first 10 statements to finish`}
             </TooltipContent>
           </Tooltip>
@@ -254,16 +410,19 @@ export default function VotingPage({ params }: VotingPageProps) {
       ),
       customContent: (
         <ProgressBar
-          totalSegments={Math.min(BATCH_SIZE, currentBatch.length)}
-          currentSegment={positionInBatch}
+          totalSegments={progress.statementsInCurrentBatch}
+          currentSegment={progress.positionInBatch}
+          showingResults={votingState.phase === 'results'}
         />
       ),
     });
 
     return () => resetConfig();
-  }, [poll, canFinish, votedCount, isSavingVote, setConfig, resetConfig, currentBatch.length, positionInBatch]);
+  }, [poll, statementManager, isSavingVote, votingState.phase, setConfig, resetConfig, handleFinish]);
 
   const handleVote = async (value: 1 | 0 | -1) => {
+    if (!statementManager || !votingState.currentStatement) return;
+
     setIsSavingVote(true);
 
     try {
@@ -284,52 +443,119 @@ export default function VotingPage({ params }: VotingPageProps) {
 
         effectiveUserId = userResult.data.id;
         setUserId(effectiveUserId);
+
+        // Update manager with userId
+        statementManager.userId = effectiveUserId;
       }
 
       // Check if user has already voted on this statement (votes are final)
-      const existingVote = await getVoteByUserAndStatementAction(effectiveUserId, currentStatement.id);
+      const existingVote = await getVoteByUserAndStatementAction(effectiveUserId, votingState.currentStatement.id);
       if (existingVote.success && existingVote.data) {
-        toast.error("You've already voted on this statement");
+        toast.error("You've already voted on this statement. Votes are final and cannot be changed.");
         // Skip to next statement since vote already exists
-        advanceToNext();
+        statementManager.advanceIndex();
+        const nextStmt = statementManager.getNextStatement();
+        setVotingState({
+          phase: nextStmt ? 'viewing' : 'continuation',
+          currentStatement: nextStmt,
+        });
         setIsSavingVote(false);
         return;
       }
 
       // Save vote to database (no updates allowed - votes are final)
-      const result = await createVoteAction({
-        userId: effectiveUserId,
-        statementId: currentStatement.id,
-        value,
-      });
+      try {
+        const result = await createVoteAction({
+          userId: effectiveUserId,
+          statementId: votingState.currentStatement.id,
+          value,
+        });
 
-      if (result.success) {
-        // Update local state on success
-        setVotes((prev) => ({ ...prev, [currentStatement.id]: value }));
+        if (result.success) {
+          // Update StatementManager
+          statementManager.recordVote(votingState.currentStatement.id, value);
 
-        // Fetch actual vote distribution for this statement
-        const distributionResult = await getStatementVoteDistributionAction(currentStatement.id);
-        if (distributionResult.success && distributionResult.data) {
-          setStatements((prev) =>
-            prev.map((s) =>
-              s.id === currentStatement.id
-                ? { ...s, voteDistribution: distributionResult.data }
-                : s
-            )
-          );
-          // Store distribution separately so it doesn't get lost when currentStatement changes
-          setCurrentVoteDistribution(distributionResult.data);
+          // Fetch actual vote distribution for this statement
+          const distributionResult = await getStatementVoteDistributionAction(votingState.currentStatement.id);
+
+          // Transition to results phase
+          setVotingState({
+            phase: 'results',
+            currentStatement: votingState.currentStatement,
+            votedStatement: votingState.currentStatement,
+            voteDistribution: distributionResult.success && distributionResult.data
+              ? distributionResult.data
+              : undefined,
+          });
+        } else {
+          // Server returned error - check error type
+          if (result.error?.includes("Statement not found")) {
+            // Statement was deleted by admin - skip gracefully
+            toast.error(
+              "This statement was removed by the poll owner. Skipping to next statement...",
+              { duration: 5000 }
+            );
+
+            // Skip to next statement without recording vote
+            statementManager.advanceIndex();
+            const nextStmt = statementManager.getNextStatement();
+            setVotingState({
+              phase: nextStmt ? 'viewing' : 'continuation',
+              currentStatement: nextStmt,
+            });
+          } else if (result.error?.includes("fetch") || result.error?.includes("network")) {
+            // Network error - queue for offline sync
+            if (poll) {
+              OfflineVoteQueue.add({
+                pollId: poll.id,
+                statementId: votingState.currentStatement.id,
+                value,
+              });
+            }
+
+            // Optimistically update UI
+            statementManager.recordVote(votingState.currentStatement.id, value);
+            toast.warning("Vote saved offline - will sync when connection restored");
+
+            // Continue to results phase with offline indicator
+            setVotingState({
+              phase: 'results',
+              currentStatement: votingState.currentStatement,
+              votedStatement: votingState.currentStatement,
+              voteDistribution: undefined, // No distribution available offline
+            });
+          } else {
+            // Other error - show retry option
+            const retry = confirm(`Failed to save vote: ${result.error || "Unknown error"}.\n\nWould you like to retry?`);
+            if (retry) {
+              handleVote(value); // Recursive retry
+              return;
+            }
+          }
+        }
+      } catch (networkError) {
+        // Network exception - queue for offline sync
+        console.error("Network error saving vote:", networkError);
+
+        if (poll) {
+          OfflineVoteQueue.add({
+            pollId: poll.id,
+            statementId: votingState.currentStatement.id,
+            value,
+          });
         }
 
-        // Show results overlay
-        setShowResults(true);
-      } else {
-        // Show error with retry option
-        const retry = confirm(`Failed to save vote: ${result.error || "Unknown error"}.\n\nWould you like to retry?`);
-        if (retry) {
-          handleVote(value); // Recursive retry
-          return;
-        }
+        // Optimistically update UI
+        statementManager.recordVote(votingState.currentStatement.id, value);
+        toast.warning("Connection lost - vote saved offline and will sync automatically");
+
+        // Continue to results phase with offline indicator
+        setVotingState({
+          phase: 'results',
+          currentStatement: votingState.currentStatement,
+          votedStatement: votingState.currentStatement,
+          voteDistribution: undefined, // No distribution available offline
+        });
       }
     } catch (error) {
       console.error("Error saving vote:", error);
@@ -344,43 +570,67 @@ export default function VotingPage({ params }: VotingPageProps) {
     }
   };
 
-  const advanceToNext = () => {
-    const nextIndex = currentStatementIndex + 1;
+  // Manual advance to next statement - bypasses auto-advance timer
+  const handleManualNext = useCallback(() => {
+    if (!statementManager) return;
 
-    // Check if we've reached the end of a batch (every 10 statements)
-    if (nextIndex % BATCH_SIZE === 0 && nextIndex < statements.length) {
-      setShowContinuation(true);
-    } else if (nextIndex >= statements.length) {
-      // Reached end of all statements
-      handleFinish();
-    } else {
-      setCurrentStatementIndex(nextIndex);
+    // Clear the auto-advance timer if it's running
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
     }
-  };
 
-  const handleContinue = () => {
-    setShowContinuation(false);
-    setCurrentStatementIndex(currentStatementIndex + 1);
-  };
+    // Advance the statement manager index
+    statementManager.advanceIndex();
 
-  const handleFinish = async () => {
-    if (!canFinish) {
-      const message = threshold === statements.length
-        ? `Please vote on all ${statements.length} statements`
-        : `Please complete the first 10 statements`;
-      toast.error(message);
+    // Get next statement
+    const nextStmt = statementManager.getNextStatement();
+
+    if (nextStmt) {
+      // More statements in current batch - transition to viewing next statement
+      setVotingState({
+        phase: 'viewing',
+        currentStatement: nextStmt,
+      });
+    } else {
+      // Batch complete - transition to continuation page
+      setVotingState({
+        phase: 'continuation',
+        currentStatement: null,
+      });
+    }
+  }, [statementManager]);
+
+  const handleContinue = async () => {
+    if (!statementManager) return;
+
+    setBatchLoadError(null);
+
+    // Check if user has voted on all statements
+    if (statementManager.hasVotedOnAll()) {
+      handleFinish();
       return;
     }
 
-    setIsFinished(true);
+    try {
+      // Load next batch
+      const hasMore = await statementManager.loadNextBatch();
 
-    // Navigate to insights page after ensuring database writes are complete
-    // Longer delay to avoid race conditions with database writes
-    setTimeout(() => {
-      if (poll?.slug) {
-        router.push(`/polls/${poll.slug}/insights`);
+      if (hasMore) {
+        const nextStmt = statementManager.getNextStatement();
+        setVotingState({
+          phase: 'viewing',
+          currentStatement: nextStmt,
+        });
+      } else {
+        // No more statements - finish voting
+        handleFinish();
       }
-    }, 3000);
+    } catch (error) {
+      console.error("Error loading next batch:", error);
+      setBatchLoadError("Failed to load next batch of statements. Please try again.");
+      // Stay in continuation phase to show error
+    }
   };
 
   const handleDemographicsSubmit = async (demographics: DemographicsData) => {
@@ -425,7 +675,7 @@ export default function VotingPage({ params }: VotingPageProps) {
   }
 
   // Error state
-  if (!poll || statements.length === 0) {
+  if (!poll || !votingState.currentStatement && votingState.phase === 'viewing') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -438,7 +688,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     );
   }
 
-  if (showContinuation) {
+  if (votingState.phase === 'continuation') {
     return (
       <ContinuationPage
         statementsVoted={votedCount}
@@ -448,11 +698,13 @@ export default function VotingPage({ params }: VotingPageProps) {
         minStatementsRequired={threshold}
         onContinue={handleContinue}
         onFinish={handleFinish}
+        error={batchLoadError}
+        onRetry={batchLoadError ? handleContinue : undefined}
       />
     );
   }
 
-  if (isFinished) {
+  if (votingState.phase === 'finished') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-4">
@@ -464,21 +716,15 @@ export default function VotingPage({ params }: VotingPageProps) {
     );
   }
 
-  // Use stored vote distribution (doesn't change when currentStatement changes)
-  const agreePercent = currentVoteDistribution?.agreePercent || 0;
-  const disagreePercent = currentVoteDistribution?.disagreePercent || 0;
-  const unsurePercent = currentVoteDistribution?.unsurePercent || 0;
-  const totalVotes = currentVoteDistribution?.totalVotes || 0;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
         <div className="w-full max-w-md space-y-6">
-          {!showResults ? (
+          {votingState.phase === 'viewing' && votingState.currentStatement ? (
             <>
               <StatementCard
-                statement={currentStatement.text}
+                statement={votingState.currentStatement.text}
                 agreeLabel={poll?.supportButtonLabel || "Agree"}
                 disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
                 passLabel={poll?.unsureButtonLabel || "Pass"}
@@ -486,24 +732,33 @@ export default function VotingPage({ params }: VotingPageProps) {
                 disabled={isSavingVote}
               />
               <StatementCounter
-                currentStatement={currentStatementIndex + 1}
-                totalInBatch={currentBatchEnd}
+                currentStatement={progress?.totalVoted ? progress.totalVoted + 1 : 1}
+                totalInBatch={Math.min(
+                  (progress?.currentBatch || 1) * 10,
+                  progress?.totalStatementsInPoll || totalStatementsInPoll
+                )}
                 className="text-center text-sm text-gray-600"
               />
             </>
-          ) : (
+          ) : votingState.phase === 'results' && votingState.votedStatement && votingState.voteDistribution ? (
             <VoteResultOverlay
-              statement={currentStatement.text}
-              userVote={votes[currentStatement.id]}
-              agreePercent={agreePercent}
-              disagreePercent={disagreePercent}
-              unsurePercent={unsurePercent}
-              totalVotes={totalVotes}
+              statement={votingState.votedStatement.text}
+              userVote={statementManager?.getUserVote(votingState.votedStatement.id) || 0}
+              agreePercent={votingState.voteDistribution.agreePercent}
+              disagreePercent={votingState.voteDistribution.disagreePercent}
+              unsurePercent={votingState.voteDistribution.unsurePercent}
+              totalVotes={votingState.voteDistribution.totalVotes}
               agreeLabel={poll?.supportButtonLabel || "Agree"}
               disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
               unsureLabel={poll?.unsureButtonLabel || "Unsure"}
-              onNext={advanceToNext}
+              onNext={handleManualNext}
             />
+          ) : (
+            // Transitioning between states
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-gray-600">Loading...</p>
+            </div>
           )}
         </div>
       </main>
@@ -511,7 +766,13 @@ export default function VotingPage({ params }: VotingPageProps) {
       {/* Demographics Modal */}
       <DemographicsModal
         open={showDemographicsModal}
-        onOpenChange={setShowDemographicsModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            // When modal is closed via X button, treat it as skip
+            handleDemographicsSkip();
+          }
+          setShowDemographicsModal(open);
+        }}
         onSubmit={handleDemographicsSubmit}
         onSkip={handleDemographicsSkip}
       />

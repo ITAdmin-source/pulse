@@ -176,3 +176,21 @@ export async function getStatementVoteDistributionAction(statementId: string) {
     return { success: false, error: "Failed to fetch vote distribution" };
   }
 }
+
+export async function getUserVotesForPollAction(userId: string, pollId: string) {
+  try {
+    const { VotingService } = await import("@/lib/services/voting-service");
+    const votes = await VotingService.getUserVotesForPoll(userId, pollId);
+
+    // Convert to lookup object for O(1) access
+    const votesLookup: Record<string, -1 | 0 | 1> = {};
+    votes.forEach((vote) => {
+      votesLookup[vote.statementId] = vote.value as -1 | 0 | 1;
+    });
+
+    return { success: true, data: votesLookup };
+  } catch (error) {
+    console.error("Error fetching user votes for poll:", error);
+    return { success: false, error: "Failed to fetch user votes for poll" };
+  }
+}

@@ -202,29 +202,59 @@
     - Progress bar reflects completed statements
 
 #### Flow: Returning Anonymous User (Incomplete Session)
+
+**Note:** Poll entry page now adapts to user state. See `POLL_PAGE_STATES_GUIDE.md` for visual reference.
+
 1. **Session Recognition:**
    - Browser session recognized (via session_id cookie)
    - Previous votes and progress restored from database
+   - System fetches voting progress from server
 
-2. **Visual Restoration:**
-   - **Progress bar immediately shows completed segments** (e.g., 3 of 10 filled)
-   - User sees: "Welcome back! Continue voting where you left off"
-   - Clear indication of progress: "You've voted on 3 statements"
+2. **Adaptive Poll Entry Page:**
+   - **If below threshold (State B - In Progress):**
+     - Shows welcome back banner: "Welcome back! You've voted on X of Y statements"
+     - Displays progress badge: "X/Y Statements"
+     - CTA button changes to "Continue Voting" (instead of "Start Voting")
+     - Helper text: "Vote on N more statements to see your insights"
 
-3. **Resume Voting:**
-   - Automatically shows **next unvoted statement** (statement #4 in example)
+   - **If threshold reached but not all voted (State C):**
+     - Shows insights-ready banner: "Your insights are ready!"
+     - Displays "✨ Insights Ready" badge
+     - Primary CTA: "View Your Insights"
+     - Secondary CTA: "Continue Voting"
+     - Helper text: "You've unlocked your insights! Continue voting or view your results"
+
+   - **If all statements voted (State D - Completed):**
+     - Shows completion banner: "Poll completed! You've voted on all X statements"
+     - Displays "✨ Insights Ready" badge
+     - Primary CTA: "View Your Insights"
+     - Secondary CTA: "View Poll Results"
+     - No "Continue Voting" option (all done)
+     - Helper text: "You've completed this poll! View your insights and see how others voted"
+
+3. **Resume Voting (from States B or C):**
+   - Click "Continue Voting" → Navigate to `/polls/[slug]/vote`
+   - Vote page automatically shows **next unvoted statement** (statement #4 in example)
+   - Progress bar immediately shows completed segments (e.g., 3 of 10 filled)
    - Continues exactly as if they never left
    - Same forward-only flow
    - **Cannot review or change previous votes**
 
-4. **Completion Options:**
-   - Can continue voting through remaining statements
-   - Can press Finish button to see insights (once threshold reached)
+4. **Access Insights (from States C or D):**
+   - Click "View Your Insights" → Navigate to `/polls/[slug]/insights`
+   - Shows previously generated insights
+   - Can return to poll page and continue voting (if State C)
+
+5. **Completion Options:**
+   - Can continue voting through remaining statements (States B and C)
+   - Can press Finish button during voting to see insights (once threshold reached)
+   - Can access insights directly from poll page (States C and D)
    - Finish button disabled until threshold met (first 10 or all statements)
 
-5. **No Restart Option:**
+6. **No Restart Option:**
    - Cannot reset or start poll over
    - Previous votes are locked in
+   - Poll entry page always shows current progress state
 
 ---
 
@@ -329,12 +359,10 @@
 #### Public Poll Listing
 1. **Homepage/Poll Directory**
    - User sees list of published polls
-   - Each poll shows:
+   - Each poll card shows:
      - Question/title
-     - Description
-     - Status (active/closed)
-     - Participation stats (voters, statements)
-     - Time remaining (if applicable)
+     - Status badge (active/closed)
+     - CTA button ("Vote Now" or "View Results")
 
 2. **Filtering & Search**
    - Filter by status (active/closed)
@@ -342,10 +370,15 @@
    - Sort by recent, popular, ending soon
 
 3. **Poll Entry**
-   - Click poll to enter voting interface
-   - **No preview of statements or distributions**
-   - Goes directly to card-based voting flow
-   - May show poll description/instructions first
+   - Click poll to view poll entry page (`/polls/[slug]`)
+   - **Poll entry page adapts to user's voting state:**
+     - **New users:** Shows "Start Voting" button with poll description
+     - **Returning users (in progress):** Shows "Welcome back!" banner + "Continue Voting" button
+     - **Users who reached threshold:** Shows "View Your Insights" button (primary) + "Continue Voting" (secondary)
+     - **Users who completed poll:** Shows "View Your Insights" + "View Poll Results" buttons
+   - **No preview of statements or vote distributions** on entry page
+   - Click appropriate CTA to proceed to voting interface, insights, or results
+   - Entry page provides clear orientation for user's current status
 
 #### Direct Link Access
 1. **Shareable URLs**

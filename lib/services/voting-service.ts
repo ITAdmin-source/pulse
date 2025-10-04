@@ -49,7 +49,7 @@ export class VotingService {
   }
 
   /**
-   * Cast vote - creates anonymous user if needed
+   * Cast vote - votes are final and cannot be changed once submitted
    */
   static async castVote(data: z.infer<typeof createVoteSchema>): Promise<Vote> {
     const validatedData = createVoteSchema.parse(data);
@@ -86,10 +86,34 @@ export class VotingService {
 
     const isVotingActive = await PollService.isVotingActive(poll[0]);
     if (!isVotingActive) {
-      throw new Error("Voting is not active for this poll");
+      // Allow votes within grace period after poll closes (10 minutes)
+      const gracePeriodMinutes = 10;
+      if (poll[0].endTime) {
+        const minutesSinceClosed = (Date.now() - new Date(poll[0].endTime).getTime()) / (1000 * 60);
+        if (minutesSinceClosed <= gracePeriodMinutes) {
+          // Within grace period - allow vote and log for monitoring
+          console.log(`Vote allowed in ${gracePeriodMinutes}min grace period (${minutesSinceClosed.toFixed(1)}min since close)`);
+        } else {
+          throw new Error("Voting is not active for this poll");
+        }
+      } else {
+        throw new Error("Voting is not active for this poll");
+      }
     }
 
-    // Use INSERT ... ON CONFLICT to handle vote updates
+    // Check if vote already exists - votes are final and immutable
+    const existingVote = await this.getUserVote(
+      validatedData.userId,
+      validatedData.statementId
+    );
+
+    if (existingVote) {
+      throw new Error(
+        "Vote already cast - votes are final and cannot be changed"
+      );
+    }
+
+    // Insert vote (no conflict handling - votes are immutable)
     const [vote] = await db
       .insert(votes)
       .values({
@@ -97,21 +121,16 @@ export class VotingService {
         statementId: validatedData.statementId,
         value: validatedData.value,
       })
-      .onConflictDoUpdate({
-        target: [votes.userId, votes.statementId],
-        set: {
-          value: validatedData.value,
-          createdAt: new Date(),
-        },
-      })
       .returning();
 
     return vote;
   }
 
   static async updateVote(data: z.infer<typeof updateVoteSchema>): Promise<Vote> {
-    // Update vote is the same as cast vote due to UPSERT behavior
-    return this.castVote(data);
+    // Votes are immutable - updates are not allowed
+    throw new Error(
+      "Vote updates are not allowed - votes are final and irreversible"
+    );
   }
 
   static async getUserVote(userId: string, statementId: string): Promise<Vote | null> {
@@ -179,6 +198,19 @@ export class VotingService {
       ));
   }
 
+  /**
+   * Get user's voting progress for a poll
+   *
+   * IMPORTANT: Handles deleted statements correctly via INNER JOIN
+   * - If a statement is deleted, its votes are cascade-deleted (see statements schema)
+   * - INNER JOIN automatically excludes votes for deleted statements
+   * - Only counts votes on currently approved statements
+   * - Threshold dynamically recalculates based on remaining statements
+   *
+   * Example: User votes on 10/15 statements, admin deletes 3 voted statements
+   * Result: votedStatements = 7, totalStatements = 12, threshold = 10 (unchanged)
+   * User needs 3 more votes to reach threshold (not 0, as expected)
+   */
   static async getUserVotingProgress(data: z.infer<typeof userVotingProgressSchema>): Promise<{
     votedStatements: number;
     totalApprovedStatements: number;
@@ -188,6 +220,7 @@ export class VotingService {
     const validatedData = userVotingProgressSchema.parse(data);
 
     // Count user's votes on approved statements in this poll
+    // INNER JOIN ensures deleted statements (cascade deleted votes) are excluded
     const userVotesResult = await db
       .select({ count: count() })
       .from(votes)
@@ -195,7 +228,7 @@ export class VotingService {
       .where(and(
         eq(votes.userId, validatedData.userId),
         eq(statements.pollId, validatedData.pollId),
-        eq(statements.approved, true)
+        eq(statements.approved, true) // Only count votes on approved statements
       ));
 
     const votedStatements = userVotesResult[0]?.count || 0;
@@ -369,6 +402,7 @@ export class VotingService {
     userId: string
   ): Promise<{
     totalVoted: number;
+    totalStatements: number;
     currentBatch: number;
     hasMoreStatements: boolean;
     thresholdReached: boolean;
@@ -385,6 +419,7 @@ export class VotingService {
 
     return {
       totalVoted: progress.votedStatements,
+      totalStatements: progress.totalApprovedStatements,
       currentBatch,
       hasMoreStatements,
       thresholdReached: progress.hasReachedThreshold,

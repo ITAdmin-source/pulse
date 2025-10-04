@@ -109,10 +109,7 @@
 
 - **Poll Card Component**
   - Poll question (headline)
-  - Description (truncated, expandable)
   - Status badge (Active/Closed)
-  - Participation stats: "X voters, Y statements"
-  - Time remaining (if active and has end_time)
   - CTA button: "Vote Now" or "View Results"
 
 - **Filter Bar Component**
@@ -137,7 +134,11 @@
 ### 2. Poll Entry / Landing Page
 **Route:** `/polls/[slug]`
 
-#### Layout (Pre-Voting)
+**IMPORTANT:** This page now adapts to 4 distinct user states based on voting progress. See detailed state guide in `POLL_PAGE_STATES_GUIDE.md`.
+
+#### Layout States (Adaptive)
+
+##### State A: New User (No Votes)
 ```
 ┌─────────────────────────┐
 │   [< Back] [Sign In]    │
@@ -152,22 +153,165 @@
 │   [Start Voting]        │
 │   (Large CTA button)    │
 │                         │
+│   Helper text: Vote on  │
+│   statements one at a   │
+│   time and discover...  │
+│                         │
+└─────────────────────────┘
+```
+
+##### State B: In Progress (Below Threshold)
+```
+┌─────────────────────────┐
+│   [< Back] [Sign In]    │
+├─────────────────────────┤
+│  ┌────────────────────┐ │
+│  │ ℹ️  Welcome back!  │ │
+│  │ You've voted on 5  │ │
+│  │ of 15 statements   │ │
+│  │ [5/15 statements]  │ │
+│  └────────────────────┘ │
+│                         │
+│   Poll Question         │
+│   (Large, centered)     │
+│                         │
+│   Poll Description      │
+│   (if provided)         │
+│                         │
+│   [5/15 Statements]     │
+│   (Badge)               │
+│                         │
+│   [Continue Voting]     │
+│   (Large CTA button)    │
+│                         │
+│   Helper: Vote on 10    │
+│   more to see insights  │
+│                         │
+└─────────────────────────┘
+```
+
+##### State C: Threshold Reached (Not All Voted)
+```
+┌─────────────────────────┐
+│   [< Back] [Sign In]    │
+├─────────────────────────┤
+│  ┌────────────────────┐ │
+│  │ ✨ Your insights   │ │
+│  │ are ready!         │ │
+│  │ You've voted on 10 │ │
+│  │ statements...      │ │
+│  └────────────────────┘ │
+│                         │
+│   Poll Question         │
+│                         │
+│   Poll Description      │
+│                         │
+│   [✨ Insights Ready]   │
+│   (Badge)               │
+│                         │
+│   [View Your Insights]  │
+│   (Primary CTA)         │
+│                         │
+│   [Continue Voting]     │
+│   (Secondary button)    │
+│                         │
+│   Helper: You've        │
+│   unlocked insights!    │
+│                         │
+└─────────────────────────┘
+```
+
+##### State D: Completed (All Statements Voted)
+```
+┌─────────────────────────┐
+│   [< Back] [Sign In]    │
+├─────────────────────────┤
+│  ┌────────────────────┐ │
+│  │ ✨ Poll completed! │ │
+│  │ You've voted on    │ │
+│  │ all 15 statements  │ │
+│  └────────────────────┘ │
+│                         │
+│   Poll Question         │
+│                         │
+│   Poll Description      │
+│                         │
+│   [✨ Insights Ready]   │
+│   (Badge)               │
+│                         │
+│   [View Your Insights]  │
+│   (Primary CTA)         │
+│                         │
+│   [View Poll Results]   │
+│   (Secondary button)    │
+│                         │
+│   Helper: You've        │
+│   completed this poll!  │
+│                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Poll Header**
+- **Poll Header** (AdaptiveHeader - minimal variant)
   - Back button
   - Sign In button (if anonymous)
   - User avatar menu (if authenticated)
 
-- **Poll Intro Card**
+- **Welcome Back Banner** (NEW - `components/polls/welcome-back-banner.tsx`)
+  - Three variants: in-progress, threshold-reached, completed
+  - Info/Sparkles icon
+  - Progress message
+  - Optional badge showing vote count
+
+- **Progress Badge** (NEW)
+  - Shows "X/Y Statements" (in progress)
+  - Shows "✨ Insights Ready" (threshold reached/completed)
+  - Variant changes based on state
+
+- **Poll Intro Section**
   - Poll question (H1)
   - Description text
-  - Start voting CTA button
+  - Adaptive CTA buttons (changes based on state)
+  - Helper text (adaptive)
+
+#### State Detection Logic
+1. **Check if user exists in database:**
+   - Authenticated: Look up by Clerk ID
+   - Anonymous: Look up by session ID
+
+2. **If user exists, fetch voting progress:**
+   - Total votes cast
+   - Total statements in poll
+   - Whether threshold reached
+
+3. **Determine UI state:**
+   - **State A:** No user OR votes = 0
+   - **State B:** votes > 0 AND !thresholdReached
+   - **State C:** thresholdReached AND votes < totalStatements
+   - **State D:** votes >= totalStatements
+
+4. **Render appropriate UI** based on state
 
 #### Interactions
-- Click "Start Voting" → Show demographics modal (if first time) OR go to first statement card
+
+##### State A (New User)
+- Click "Start Voting" → Navigate to `/polls/[slug]/vote`
+- Show demographics modal (if first time)
+
+##### State B (In Progress)
+- Click "Continue Voting" → Navigate to `/polls/[slug]/vote`
+- Resumes from next unvoted statement
+
+##### State C (Threshold Reached)
+- Click "View Your Insights" (Primary) → Navigate to `/polls/[slug]/insights`
+- Click "Continue Voting" (Secondary) → Navigate to `/polls/[slug]/vote`
+
+##### State D (Completed)
+- Click "View Your Insights" (Primary) → Navigate to `/polls/[slug]/insights`
+- Click "View Poll Results" (Secondary) → Navigate to `/polls/[slug]/results`
+- No "Continue Voting" option (all statements done)
+
+##### All States
 - Back button → Return to poll directory
 - Sign In → Redirect to authentication flow
 
@@ -1431,6 +1575,16 @@ useEffect(() => {
 - **Insight Card**
 - **Results Summary Card**
 - **Stat Card** (analytics)
+- **Welcome Back Banner** (NEW - poll entry page)
+  - File: `components/polls/welcome-back-banner.tsx`
+  - Three variants:
+    - **in-progress**: Info icon, "Welcome back!" message with vote count
+    - **threshold-reached**: Sparkles icon, "Your insights are ready!" message
+    - **completed**: Sparkles icon, "Poll completed!" message
+  - Uses Alert, AlertTitle, AlertDescription components
+  - Blue color scheme (border-blue-200 bg-blue-50)
+  - Optional badge showing vote progress
+  - Props: `votedCount`, `totalCount`, `variant`
 
 #### 3. Form Components
 - **Text Input**

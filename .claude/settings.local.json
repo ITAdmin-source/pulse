@@ -2,16 +2,13 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
-      "Bash(npm run build:*)",
       "Bash(npm run lint)",
       "Bash(find:*)",
       "Bash(dir C:UsersGuyDownloadsProjectspulse)",
       "Bash(cat:*)",
       "Bash(npm test)",
-      "Bash(npm run test:coverage:*)",
       "Bash(rm:*)",
       "Bash(npm cache clean:*)",
-      "Bash(npm run dev:*)",
       "Bash(tasklist)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
@@ -19,7 +16,6 @@
       "Bash(powershell:*)",
       "WebSearch",
       "WebFetch(domain:clerk.com)",
-      "Bash(npm run:*)",
       "Bash(npx drizzle-kit generate:*)",
       "Bash(dir:*)",
       "Bash(curl:*)",
@@ -28,6 +24,24 @@
       "Bash(node:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm run test:ui:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npm run test:quick:*)",
+      "Bash(npm run test:integration:*)",
+      "Bash(npm run test:all:*)",
+      "Bash(npm run db:generate:*)",
+      "Bash(npm run db:migrate:*)",
+      "Bash(npm run db:seed:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run test:*)"
+    ]
   }
 }
