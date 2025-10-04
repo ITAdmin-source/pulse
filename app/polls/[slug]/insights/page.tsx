@@ -71,7 +71,12 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
   const progressResult = await getVotingProgressAction(poll.id, effectiveUserId);
 
   if (!progressResult.success || !progressResult.data?.thresholdReached) {
-    const remainingVotes = progressResult.data?.remainingVotesNeeded || 0;
+    // Calculate remaining votes needed (threshold is min(10, totalStatements))
+    const totalVoted = progressResult.data?.totalVoted || 0;
+    const totalStatements = progressResult.data?.totalStatements || 0;
+    const threshold = Math.min(10, totalStatements);
+    const remainingVotes = Math.max(0, threshold - totalVoted);
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-6 max-w-md px-4">
