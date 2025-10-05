@@ -204,6 +204,11 @@ export default function VotingPage({ params }: VotingPageProps) {
               const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
               if (!demographicsResult.success || !demographicsResult.data) {
                 setShowDemographicsModal(true);
+                // Don't load statements yet - wait for demographics modal to be handled
+                // This ensures modal appears BEFORE first statement card
+                setIsLoading(false);
+                hasInitializedRef.current = true;
+                return;
               }
             }
 
@@ -286,19 +291,73 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   // Sync offline votes when user ID is available
   useEffect(() => {
-    if (userId && typeof window !== 'undefined') {
-      if (OfflineVoteQueue.hasQueuedVotes()) {
-        OfflineVoteQueue.syncAll(userId).then(({ synced, failed, errors }) => {
-          if (synced > 0) {
-            toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced successfully`);
+    const syncOfflineVotes = async () => {
+      if (!userId || typeof window === 'undefined') return;
+      if (!OfflineVoteQueue.hasQueuedVotes()) return;
+
+      const { synced, failed, errors } = await OfflineVoteQueue.syncAll(userId);
+
+      if (synced > 0) {
+        toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced successfully`);
+
+        // Reload voting progress to update UI with synced votes
+        if (poll && statementManager) {
+          const votesResult = await getUserVotesForPollAction(userId, poll.id);
+          if (votesResult.success && votesResult.data) {
+            // Update statement manager with synced votes
+            const updatedVotes = votesResult.data;
+            Object.entries(updatedVotes).forEach(([stmtId, value]) => {
+              statementManager.recordVote(stmtId, value as -1 | 0 | 1);
+            });
+
+            // Trigger re-render to show updated progress
+            setVotingState(prev => ({ ...prev }));
           }
-          if (failed > 0) {
-            toast.error(`Failed to sync ${failed} vote${failed > 1 ? 's' : ''}`);
-          }
-        });
+        }
       }
-    }
-  }, [userId]);
+
+      if (failed > 0) {
+        toast.error(`Failed to sync ${failed} vote${failed > 1 ? 's' : ''}`);
+
+        // Retry failed syncs after 30 seconds
+        setTimeout(() => {
+          syncOfflineVotes();
+        }, 30000);
+      }
+    };
+
+    syncOfflineVotes();
+  }, [userId, poll, statementManager]);
+
+  // Listen for online/offline events to sync immediately when connection restored
+  useEffect(() => {
+    const handleOnline = async () => {
+      if (!userId || typeof window === 'undefined') return;
+      if (!OfflineVoteQueue.hasQueuedVotes()) return;
+
+      toast.info("Connection restored, syncing offline votes...");
+
+      const { synced, failed } = await OfflineVoteQueue.syncAll(userId);
+
+      if (synced > 0) {
+        toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced`);
+
+        // Reload votes to update UI
+        if (poll && statementManager) {
+          const votesResult = await getUserVotesForPollAction(userId, poll.id);
+          if (votesResult.success && votesResult.data) {
+            Object.entries(votesResult.data).forEach(([stmtId, value]) => {
+              statementManager.recordVote(stmtId, value as -1 | 0 | 1);
+            });
+            setVotingState(prev => ({ ...prev }));
+          }
+        }
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [userId, poll, statementManager]);
 
   // Get progress from StatementManager
   const progress = statementManager?.getProgress();
@@ -328,13 +387,10 @@ export default function VotingPage({ params }: VotingPageProps) {
       currentStatement: null,
     });
 
-    // Navigate to insights page after ensuring database writes are complete
-    // Longer delay to avoid race conditions with database writes
-    setTimeout(() => {
-      if (poll?.slug) {
-        router.push(`/polls/${poll.slug}/insights`);
-      }
-    }, 3000);
+    // Navigate to insights immediately - insights page will handle loading state
+    if (poll?.slug) {
+      router.push(`/polls/${poll.slug}/insights`);
+    }
   }, [canFinish, statementManager, poll, router]);
 
   // Configure header with poll context
@@ -395,19 +451,43 @@ export default function VotingPage({ params }: VotingPageProps) {
   }, [poll, statementManager, isSavingVote, votingState.phase, setConfig, resetConfig, handleFinish]);
 
   const handleVote = async (value: 1 | 0 | -1) => {
-    if (!statementManager || !votingState.currentStatement) return;
+    // Check ref-based lock FIRST and set immediately (atomic operation)
+    if (isVotingRef.current) return;
+    isVotingRef.current = true;
+
+    // Now perform all validation checks - unlock if any check fails
+    if (!statementManager || !votingState.currentStatement) {
+      isVotingRef.current = false;
+      return;
+    }
 
     // Check if we've already voted on this statement locally (prevents duplicate votes)
-    if (statementManager.hasVotedOn(votingState.currentStatement.id)) return;
-
-    // Check ref-based lock (synchronous, not affected by React batching)
-    if (isVotingRef.current) return;
+    if (statementManager.hasVotedOn(votingState.currentStatement.id)) {
+      isVotingRef.current = false;
+      return;
+    }
 
     // Prevent voting if already saving or not in viewing phase
-    if (isSavingVote || votingState.phase !== 'viewing') return;
+    if (isSavingVote || votingState.phase !== 'viewing') {
+      isVotingRef.current = false;
+      return;
+    }
 
-    // Lock voting
-    isVotingRef.current = true;
+    // Check if poll has closed during voting session (grace period logic)
+    if (poll?.endTime && new Date(poll.endTime) < new Date()) {
+      const minutesSinceClosed = (Date.now() - new Date(poll.endTime).getTime()) / (1000 * 60);
+      if (minutesSinceClosed > 10) {
+        toast.error("This poll has closed. Your previous votes have been saved.");
+        router.push(`/polls/${poll.slug}/closed`);
+        isVotingRef.current = false;
+        return;
+      } else {
+        // Within grace period - allow vote but warn user
+        toast.warning("This poll has closed, but your vote will still count.", { duration: 3000 });
+      }
+    }
+
+    // Set UI lock state (ref lock already set at top)
     setIsSavingVote(true);
 
     try {
@@ -514,6 +594,8 @@ export default function VotingPage({ params }: VotingPageProps) {
             // Other error - show retry option
             const retry = confirm(`Failed to save vote: ${result.error || "Unknown error"}.\n\nWould you like to retry?`);
             if (retry) {
+              isVotingRef.current = false; // Unlock before retry
+              setIsSavingVote(false);
               handleVote(value); // Recursive retry
               return;
             }
@@ -548,6 +630,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       const retry = confirm("Network error saving vote. Would you like to retry?");
       if (retry) {
         isVotingRef.current = false; // Unlock before retry
+        setIsSavingVote(false);
         handleVote(value); // Recursive retry
         return;
       }
@@ -561,6 +644,16 @@ export default function VotingPage({ params }: VotingPageProps) {
   // Manual advance to next statement (called by "Next" button on results overlay)
   const handleManualNext = useCallback(() => {
     if (!statementManager) return;
+
+    // Check if poll has closed during voting session
+    if (poll?.endTime && new Date(poll.endTime) < new Date()) {
+      const minutesSinceClosed = (Date.now() - new Date(poll.endTime).getTime()) / (1000 * 60);
+      if (minutesSinceClosed > 10) {
+        toast.error("This poll has closed. Your votes have been saved.");
+        router.push(`/polls/${poll.slug}/closed`);
+        return;
+      }
+    }
 
     // Advance the statement manager index
     statementManager.advanceIndex();
@@ -644,6 +737,9 @@ export default function VotingPage({ params }: VotingPageProps) {
         }
         setShowDemographicsModal(false);
         toast.success("Thank you for sharing!");
+
+        // Now load statements after demographics is handled
+        await loadInitialStatements(result.data.id);
       } else {
         toast.error(result.error || "Failed to save demographics");
       }
@@ -653,8 +749,68 @@ export default function VotingPage({ params }: VotingPageProps) {
     }
   };
 
-  const handleDemographicsSkip = () => {
+  const handleDemographicsSkip = async () => {
     setShowDemographicsModal(false);
+
+    // Create user if needed, then load statements
+    let effectiveUserId = userId;
+    if (!effectiveUserId) {
+      const userResult = await ensureUserExistsAction({
+        clerkUserId: dbUser?.clerkUserId || undefined,
+        sessionId: sessionId || undefined,
+      });
+      if (userResult.success && userResult.data) {
+        effectiveUserId = userResult.data.id;
+        setUserId(effectiveUserId);
+      }
+    }
+
+    if (effectiveUserId && poll) {
+      await loadInitialStatements(effectiveUserId);
+    }
+  };
+
+  // Helper function to load initial statements (called after demographics modal)
+  const loadInitialStatements = async (effectiveUserId: string) => {
+    if (!poll) return;
+
+    try {
+      setIsLoading(true);
+
+      // Load user's votes for this poll
+      const votesResult = await getUserVotesForPollAction(effectiveUserId, poll.id);
+      const userVotesLookup = votesResult.success ? votesResult.data || {} : {};
+
+      // Load voting progress
+      const progressResult = await getVotingProgressAction(poll.id, effectiveUserId);
+      if (progressResult.success && progressResult.data) {
+        const { totalStatements, currentBatch } = progressResult.data;
+
+        // Load first batch
+        const batchResult = await getStatementBatchAction(poll.id, effectiveUserId, currentBatch);
+
+        if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
+          const manager = new StatementManager(
+            batchResult.data,
+            userVotesLookup,
+            poll.id,
+            effectiveUserId,
+            totalStatements
+          );
+
+          setStatementManager(manager);
+          setVotingState({
+            phase: 'viewing',
+            currentStatement: manager.getNextStatement(),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error loading initial statements:", error);
+      toast.error("Failed to load statements");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Loading state

@@ -53,8 +53,9 @@ export class StatementManager {
     const totalVoted = Object.keys(userVotes).length;
     this.currentBatchNumber = Math.floor(totalVoted / 10) + 1;
 
-    // Initialize currentStatementIndex based on position within current batch
-    // This represents which statement we're viewing, not how many we've voted on
+    // Initialize currentStatementIndex based on position within current batch (0-9)
+    // This is the visual position in the batch, calculated from vote count
+    // Works correctly because deleted statements cascade-delete their votes
     this.currentStatementIndex = totalVoted % 10;
   }
 

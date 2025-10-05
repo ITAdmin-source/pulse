@@ -27,34 +27,22 @@ export async function createVoteAction(data: NewVote) {
   }
 }
 
+/**
+ * @deprecated Votes are immutable and cannot be updated. Use createVoteAction instead.
+ * This function is kept for backward compatibility but should not be used.
+ */
 export async function updateVoteAction(id: string, data: Partial<NewVote>) {
-  try {
-    const updatedVote = await updateVote(id, data);
-    if (!updatedVote) {
-      return { success: false, error: "Vote not found" };
-    }
-    revalidatePath("/polls");
-    return { success: true, data: updatedVote };
-  } catch (error) {
-    console.error("Error updating vote:", error);
-    return { success: false, error: "Failed to update vote" };
-  }
+  console.warn("DEPRECATED: updateVoteAction called. Votes are immutable and cannot be updated.");
+  return { success: false, error: "Votes are immutable and cannot be updated" };
 }
 
+/**
+ * @deprecated Use createVoteAction instead. Votes are immutable and cannot be updated.
+ * This function is kept for backward compatibility but should not be used.
+ */
 export async function upsertVoteAction(userId: string, statementId: string, value: number) {
-  try {
-    // Validate vote value
-    if (![-1, 0, 1].includes(value)) {
-      return { success: false, error: "Invalid vote value. Must be -1, 0, or 1" };
-    }
-
-    const vote = await upsertVote(userId, statementId, value);
-    revalidatePath("/polls");
-    return { success: true, data: vote };
-  } catch (error) {
-    console.error("Error upserting vote:", error);
-    return { success: false, error: "Failed to save vote" };
-  }
+  console.warn("DEPRECATED: upsertVoteAction called. Votes are immutable - use createVoteAction instead.");
+  return { success: false, error: "Votes are immutable. Use createVoteAction to create new votes only." };
 }
 
 export async function deleteVoteAction(id: string) {

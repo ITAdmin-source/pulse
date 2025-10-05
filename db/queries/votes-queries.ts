@@ -56,29 +56,32 @@ export async function createVote(data: NewVote): Promise<Vote> {
   return result[0];
 }
 
+/**
+ * @deprecated Votes are immutable and cannot be updated per business rules.
+ * This function is kept for emergency admin operations only.
+ * DO NOT use in application code.
+ */
 export async function updateVote(id: string, data: Partial<NewVote>): Promise<Vote | undefined> {
-  const result = await db
-    .update(votes)
-    .set(data)
-    .where(eq(votes.id, id))
-    .returning();
-
-  return result[0];
+  console.warn("DEPRECATED: updateVote called. Votes are immutable per business rules.");
+  throw new Error("Votes are immutable and cannot be updated. Use createVote for new votes only.");
 }
 
+/**
+ * @deprecated Votes are immutable - use createVote with duplicate check instead.
+ * This function violates the immutability constraint and should not be used.
+ */
 export async function upsertVote(userId: string, statementId: string, value: number): Promise<Vote> {
+  console.warn("DEPRECATED: upsertVote called. Votes are immutable - use createVote instead.");
+
+  // Check if vote exists and reject if it does (enforce immutability)
   const existingVote = await getVoteByUserAndStatement(userId, statementId);
 
   if (existingVote) {
-    const result = await db
-      .update(votes)
-      .set({ value })
-      .where(eq(votes.id, existingVote.id))
-      .returning();
-    return result[0];
-  } else {
-    return await createVote({ userId, statementId, value });
+    throw new Error("Vote already exists and cannot be modified. Votes are immutable.");
   }
+
+  // Only allow creation of new votes
+  return await createVote({ userId, statementId, value });
 }
 
 export async function deleteVote(id: string): Promise<boolean> {
