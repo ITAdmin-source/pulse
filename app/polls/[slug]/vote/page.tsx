@@ -84,12 +84,15 @@ export default function VotingPage({ params }: VotingPageProps) {
   const [showStatementModal, setShowStatementModal] = useState(false);
   const [batchLoadError, setBatchLoadError] = useState<string | null>(null);
 
-  // Timer ref for auto-advance cleanup
-  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Voting lock - prevents concurrent vote processing
+  const isVotingRef = useRef(false);
+
+  // Initialization flag - prevents loadData from re-running during voting
+  const hasInitializedRef = useRef(false);
 
   // Voting state machine - single source of truth for voting flow
   type VotingPhase = 'viewing' | 'results' | 'continuation' | 'finished';
-  const [votingState, setVotingState] = useState<{
+  const [votingState, _setVotingState] = useState<{
     phase: VotingPhase;
     currentStatement: Statement | null;
     votedStatement?: Statement;
@@ -107,41 +110,11 @@ export default function VotingPage({ params }: VotingPageProps) {
     currentStatement: null,
   });
 
-  // Auto-advance timer - transitions from 'results' to next phase
-  useEffect(() => {
-    if (votingState.phase !== 'results' || !statementManager) return;
+  // Wrapped setState for clean state management
+  const setVotingState = _setVotingState;
 
-    const timer = setTimeout(() => {
-      // Advance the statement manager index
-      statementManager.advanceIndex();
-
-      // Get next statement
-      const nextStmt = statementManager.getNextStatement();
-
-      if (nextStmt) {
-        // More statements in current batch - transition to viewing next statement
-        setVotingState({
-          phase: 'viewing',
-          currentStatement: nextStmt,
-        });
-      } else {
-        // Batch complete - transition to continuation page
-        setVotingState({
-          phase: 'continuation',
-          currentStatement: null,
-        });
-      }
-    }, 5000);
-
-    // Store timer ref for manual cleanup
-    autoAdvanceTimerRef.current = timer;
-
-    // Cleanup timer on unmount or when phase changes
-    return () => {
-      clearTimeout(timer);
-      autoAdvanceTimerRef.current = null;
-    };
-  }, [votingState.phase, statementManager]);
+  // Auto-advance disabled - users must click "Next" button on results overlay
+  // This provides better UX control and avoids timing issues
 
   // Preload next batch when user reaches 8th statement of current batch
   useEffect(() => {
@@ -155,9 +128,6 @@ export default function VotingPage({ params }: VotingPageProps) {
 
       const nextBatchNumber = progress.currentBatch + 1;
       getStatementBatchAction(poll.id, userId, nextBatchNumber)
-        .then(() => {
-          console.log('Next batch preloaded successfully');
-        })
         .catch((err) => {
           console.error('Preload failed:', err);
         })
@@ -165,10 +135,13 @@ export default function VotingPage({ params }: VotingPageProps) {
           setIsPreloading(false);
         });
     }
-  }, [votingState.phase, votingState.currentStatement, statementManager, poll, userId, isPreloading]);
+  }, [votingState.phase, votingState.currentStatement, statementManager, poll, userId]);
 
   // Load poll data and statements
   useEffect(() => {
+    // Only run on initial mount, not during voting
+    if (hasInitializedRef.current) return;
+
     const loadData = async () => {
       try {
         const resolvedParams = await params;
@@ -302,6 +275,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         toast.error("Failed to load poll data");
       } finally {
         setIsLoading(false);
+        hasInitializedRef.current = true; // Mark as initialized
       }
     };
 
@@ -423,6 +397,17 @@ export default function VotingPage({ params }: VotingPageProps) {
   const handleVote = async (value: 1 | 0 | -1) => {
     if (!statementManager || !votingState.currentStatement) return;
 
+    // Check if we've already voted on this statement locally (prevents duplicate votes)
+    if (statementManager.hasVotedOn(votingState.currentStatement.id)) return;
+
+    // Check ref-based lock (synchronous, not affected by React batching)
+    if (isVotingRef.current) return;
+
+    // Prevent voting if already saving or not in viewing phase
+    if (isSavingVote || votingState.phase !== 'viewing') return;
+
+    // Lock voting
+    isVotingRef.current = true;
     setIsSavingVote(true);
 
     try {
@@ -450,6 +435,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
       // Check if user has already voted on this statement (votes are final)
       const existingVote = await getVoteByUserAndStatementAction(effectiveUserId, votingState.currentStatement.id);
+
       if (existingVote.success && existingVote.data) {
         toast.error("You've already voted on this statement. Votes are final and cannot be changed.");
         // Skip to next statement since vote already exists
@@ -561,43 +547,52 @@ export default function VotingPage({ params }: VotingPageProps) {
       console.error("Error saving vote:", error);
       const retry = confirm("Network error saving vote. Would you like to retry?");
       if (retry) {
+        isVotingRef.current = false; // Unlock before retry
         handleVote(value); // Recursive retry
         return;
       }
       toast.error("Failed to save vote");
     } finally {
+      isVotingRef.current = false; // Always unlock
       setIsSavingVote(false);
     }
   };
 
-  // Manual advance to next statement - bypasses auto-advance timer
+  // Manual advance to next statement (called by "Next" button on results overlay)
   const handleManualNext = useCallback(() => {
     if (!statementManager) return;
-
-    // Clear the auto-advance timer if it's running
-    if (autoAdvanceTimerRef.current) {
-      clearTimeout(autoAdvanceTimerRef.current);
-      autoAdvanceTimerRef.current = null;
-    }
 
     // Advance the statement manager index
     statementManager.advanceIndex();
 
-    // Get next statement
-    const nextStmt = statementManager.getNextStatement();
+    const progress = statementManager.getProgress();
 
-    if (nextStmt) {
-      // More statements in current batch - transition to viewing next statement
-      setVotingState({
-        phase: 'viewing',
-        currentStatement: nextStmt,
-      });
-    } else {
+    // Check if batch is complete based on position
+    // We show continuation when position reaches the end of the batch (10 statements)
+    const isBatchComplete = progress.positionInBatch >= progress.statementsInCurrentBatch;
+
+    if (isBatchComplete) {
       // Batch complete - transition to continuation page
       setVotingState({
         phase: 'continuation',
         currentStatement: null,
       });
+    } else {
+      // More statements in current batch - get next and continue voting
+      const nextStmt = statementManager.getNextStatement();
+
+      if (nextStmt) {
+        setVotingState({
+          phase: 'viewing',
+          currentStatement: nextStmt,
+        });
+      } else {
+        // No next statement but batch not complete - go to continuation
+        setVotingState({
+          phase: 'continuation',
+          currentStatement: null,
+        });
+      }
     }
   }, [statementManager]);
 

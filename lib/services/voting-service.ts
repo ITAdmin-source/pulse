@@ -1,4 +1,4 @@
-import { eq, and, count, isNull } from "drizzle-orm";
+import { eq, and, count, isNull, notInArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
@@ -354,6 +354,7 @@ export class VotingService {
   /**
    * Get next batch of statements for user (10 at a time)
    * Returns up to 10 approved statements the user hasn't voted on yet
+   * Uses voted statement IDs to exclude, avoiding offset issues
    */
   static async getStatementBatch(
     pollId: string,
@@ -364,9 +365,19 @@ export class VotingService {
       throw new Error("Batch number must be at least 1");
     }
 
-    const offset = (batchNumber - 1) * 10;
+    // Get all statement IDs the user has already voted on for this poll
+    const votedStatementIds = await db
+      .select({ statementId: votes.statementId })
+      .from(votes)
+      .innerJoin(statements, eq(votes.statementId, statements.id))
+      .where(and(
+        eq(votes.userId, userId),
+        eq(statements.pollId, pollId)
+      ));
 
-    // Get approved statements that the user hasn't voted on
+    const votedIds = votedStatementIds.map(v => v.statementId);
+
+    // Get next 10 unvoted statements (excluding voted ones)
     const unvotedStatements = await db
       .select({
         id: statements.id,
@@ -379,17 +390,13 @@ export class VotingService {
         approvedAt: statements.approvedAt,
       })
       .from(statements)
-      .leftJoin(votes, and(
-        eq(votes.statementId, statements.id),
-        eq(votes.userId, userId)
-      ))
       .where(and(
         eq(statements.pollId, pollId),
         eq(statements.approved, true),
-        isNull(votes.id) // No vote exists (left join returned null)
+        votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
       ))
-      .limit(10)
-      .offset(offset);
+      .orderBy(statements.createdAt) // Consistent ordering
+      .limit(10);
 
     return unvotedStatements;
   }
