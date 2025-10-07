@@ -93,3 +93,94 @@ export async function deleteUserRolesByPollId(pollId: string): Promise<boolean> 
 
   return result.length > 0;
 }
+
+/**
+ * Transfer poll ownership from current owner to new owner
+ * Optionally makes previous owner a manager
+ */
+export async function transferPollOwnership(
+  pollId: string,
+  currentOwnerId: string,
+  newOwnerId: string,
+  makePreviousOwnerManager: boolean = false
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Verify current owner exists
+    const currentOwnerRole = await db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, currentOwnerId),
+          eq(userRoles.role, 'poll_owner'),
+          eq(userRoles.pollId, pollId)
+        )
+      )
+      .limit(1);
+
+    if (currentOwnerRole.length === 0) {
+      return { success: false, error: "Current user is not the poll owner" };
+    }
+
+    // Verify new owner is not the same as current owner
+    if (currentOwnerId === newOwnerId) {
+      return { success: false, error: "Cannot transfer ownership to yourself" };
+    }
+
+    // Check if new owner already has a role for this poll
+    const existingNewOwnerRole = await db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, newOwnerId),
+          eq(userRoles.pollId, pollId)
+        )
+      );
+
+    // Execute transfer in a transaction
+    await db.transaction(async (tx) => {
+      // Remove current owner's poll_owner role
+      await tx
+        .delete(userRoles)
+        .where(eq(userRoles.id, currentOwnerRole[0].id));
+
+      // Remove new owner's existing roles for this poll (if any)
+      if (existingNewOwnerRole.length > 0) {
+        await tx
+          .delete(userRoles)
+          .where(
+            and(
+              eq(userRoles.userId, newOwnerId),
+              eq(userRoles.pollId, pollId)
+            )
+          );
+      }
+
+      // Add new owner role
+      await tx
+        .insert(userRoles)
+        .values({
+          userId: newOwnerId,
+          role: 'poll_owner',
+          pollId,
+        });
+
+      // Optionally make previous owner a manager
+      if (makePreviousOwnerManager) {
+        await tx
+          .insert(userRoles)
+          .values({
+            userId: currentOwnerId,
+            role: 'poll_manager',
+            pollId,
+          });
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error transferring poll ownership:", error);
+    return { success: false, error: "Failed to transfer ownership" };
+  }
+}

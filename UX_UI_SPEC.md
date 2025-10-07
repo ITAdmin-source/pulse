@@ -942,8 +942,26 @@
 
 ## Creator/Owner Pages
 
+### Prerequisites: Poll Creation Access
+
+**Who Can Create Polls:**
+Only users with one of these roles can access poll creation:
+- **Poll Creator** role (assigned by System Admin)
+- **Poll Manager** role (assigned to at least one poll)
+- **System Administrator** role
+
+**Entry Points:**
+1. **Main Navigation:** "Create Poll" button (visible only to authorized users)
+2. **User Dashboard:** "Create New Poll" button in "My Polls" section
+3. **Unauthorized Access:** Shows message: "You need Poll Creator permissions. Contact system administrator."
+
+**Result:** When user creates a poll, they automatically become the **Poll Owner** for that specific poll.
+
+---
+
 ### 11. Poll Creation Wizard
 **Route:** `/polls/create`
+**Access:** Poll Creators, Poll Managers, System Admins only
 
 #### Step 1: Basic Information
 ```
@@ -1112,18 +1130,20 @@
 
 ---
 
-### 12. Poll Management Dashboard
+### 12. Poll Management Interface (Poll-Specific)
 **Route:** `/polls/[slug]/manage`
+**Access:** Poll Owner, Poll Managers (for this poll), System Admins
+
+**Key Principle:** All management work is poll-specific. This interface manages ONE poll at a time.
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  [← Back to Polls]      │
-├─────────────────────────┤
-│  Poll Question          │
+│  [← Back] Poll Title    │
 │  Status: [DRAFT/ACTIVE] │
-│                         │
-│  [Edit] [Publish/Unpublish/Close] │
+│  [View as Voter] [Share]│
+├─────────────────────────┤
+│  [Publish/Unpublish/Close] │
 │                         │
 │  ┌─────────────────┐    │
 │  │  Quick Stats    │    │
@@ -1134,13 +1154,19 @@
 │  └─────────────────┘    │
 │                         │
 │  Tabs:                  │
-│  [Statements] [Analytics]│
-│  [Settings] [Roles]     │
+│  [Overview][Statements] │
+│  [Settings][Analytics]  │
+│  [Roles][Preview]       │
 │                         │
 │  [Active Tab Content]   │
 │                         │
 └─────────────────────────┘
 ```
+
+**Who Sees What:**
+- **Poll Owners:** All tabs, all actions (including Delete, Transfer ownership, Unpublish)
+- **Poll Managers:** All tabs, most actions (CANNOT Delete, Transfer, or Unpublish - these show as disabled/locked)
+- **System Admins:** Same as Poll Owners (full access to any poll)
 
 #### Tab: Statements
 ```
@@ -1231,29 +1257,52 @@
 └─────────────────────────┘
 ```
 
-#### Tab: Roles
+#### Tab: Roles (Poll-Specific User Management)
+**Purpose:** Manage who can access and manage THIS specific poll only.
+
 ```
 ┌─────────────────────────┐
-│  Poll Managers          │
+│  Roles for THIS Poll    │
 │                         │
-│  Current Managers (2)   │
 │  ┌─────────────────┐    │
-│  │ User Name       │    │
-│  │ email@test.com  │    │
+│  │ ℹ️ System Admins│    │
+│  │ automatically   │    │
+│  │ have access     │    │
+│  └─────────────────┘    │
+│                         │
+│  Poll Owner             │
+│  ┌─────────────────┐    │
+│  │ Owner Name      │    │
+│  │ owner@email.com │    │
+│  │ (Cannot remove) │    │
+│  └─────────────────┘    │
+│                         │
+│  Poll Managers (2)      │
+│  ┌─────────────────┐    │
+│  │ Manager 1       │    │
+│  │ user@email.com  │    │
+│  │ Added: 2024-10  │    │
 │  │ [Remove]        │    │
 │  └─────────────────┘    │
 │                         │
 │  Add Manager            │
 │  ┌─────────────────┐    │
-│  │ Search user...  │    │
+│  │ Search user...  │▼   │
 │  └─────────────────┘    │
-│  [Add]                  │
+│  [Assign as Manager]    │
 │                         │
-│  Transfer Ownership     │
+│  Transfer Ownership 🔒  │
+│  (Owner only)           │
 │  [Transfer Poll...]     │
 │                         │
 └─────────────────────────┘
 ```
+
+**Notes:**
+- Managers gain access to THIS poll's management interface only
+- Other polls unaffected
+- System Admins shown in info box (not in manager list)
+- Transfer Ownership button locked for managers (owner-only)
 
 #### Components Needed
 - **Management Header**
@@ -1372,8 +1421,78 @@
 
 ## Admin Pages
 
-### 14. Global Moderation Queue
+### Key Principle: Poll-Centric Administration
+
+**Most admin work is poll-specific:**
+- Admins access individual poll management interfaces at `/polls/[slug]/manage`
+- Same interface as Poll Owners (all permissions)
+- Work on one poll at a time
+
+**Cross-poll features (minimal, convenience tools):**
+- Global Moderation Queue - moderate statements across all polls
+- User Role Management - assign Poll Creator role
+- System Dashboard - overview and navigation
+
+---
+
+### 14. System Admin Dashboard
+**Route:** `/admin/dashboard`
+**Access:** System Admins only
+
+#### Layout
+```
+┌─────────────────────────┐
+│  Admin Dashboard        │
+├─────────────────────────┤
+│                         │
+│  System Overview        │
+│  ┌─────────────────┐    │
+│  │ Total Polls: 45 │    │
+│  │ - Draft: 8      │    │
+│  │ - Published: 23 │    │
+│  │ - Closed: 14    │    │
+│  │                 │    │
+│  │ Total Users:1234│    │
+│  │ - Auth: 890     │    │
+│  │ - Anon: 344     │    │
+│  │                 │    │
+│  │ Total Votes:    │    │
+│  │ 45,678          │    │
+│  └─────────────────┘    │
+│                         │
+│  Quick Actions          │
+│  [Global Moderation (47)]│
+│  [User Role Management] │
+│  [View All Polls]       │
+│                         │
+│  All Polls List         │
+│  ┌─────────────────┐    │
+│  │ Poll Question   │    │
+│  │ Owner: Name     │    │
+│  │ Status: Active  │    │
+│  │ Pending: 3      │    │
+│  │ [Manage][View]  │    │
+│  └─────────────────┘    │
+│                         │
+│  Recent Activity        │
+│  - New poll created     │
+│  - 234 votes today      │
+│  - 12 statements pending│
+│                         │
+└─────────────────────────┘
+```
+
+**Purpose:**
+- System-wide overview
+- Navigate to specific poll management
+- Access cross-poll convenience features
+- Most actions link to poll-specific interfaces
+
+---
+
+### 15. Global Moderation Queue (Cross-Poll Convenience)
 **Route:** `/admin/moderation`
+**Access:** System Admins only
 
 #### Layout
 ```
@@ -1403,58 +1522,125 @@
 └─────────────────────────┘
 ```
 
+**Purpose:** Convenience feature to moderate statements from all polls in one view.
+
+**Key Features:**
+- Shows pending statements from ALL polls
+- Poll context (question) shown for each statement
+- Can approve/reject across different polls
+- Link to "View in poll" for detailed context
+- Actions affect the statement's specific poll
+
 #### Components Needed
 - Filter and search bar
-- Pending statement list
-- Statement cards with poll context
+- Pending statement list with poll context
+- Statement cards with poll link
 - Bulk action controls
 - Pagination/infinite scroll
 
+**Note:** Admins can also moderate by going to each poll's management interface individually (same as owners/managers).
+
 ---
 
-### 15. Admin Dashboard
-**Route:** `/admin/dashboard`
+### 16. User Role Management (System-Wide)
+**Route:** `/admin/users`
+**Access:** System Admins only
+
+#### Purpose
+Assign Poll Creator role to enable users to create new polls.
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  Admin Dashboard        │
+│  User Role Management   │
 ├─────────────────────────┤
+│  Search: [_________] 🔍 │
+│  Filter: [All Users ▼]  │
 │                         │
-│  System Stats           │
+│  User Directory         │
+│                         │
 │  ┌─────────────────┐    │
-│  │ Total Polls: 45 │    │
-│  │ Active: 23      │    │
-│  │ Users: 1,234    │    │
-│  │ Votes: 45,678   │    │
+│  │ John Doe        │    │
+│  │ john@email.com  │    │
+│  │ Roles:          │    │
+│  │ ☑ Poll Creator  │    │
+│  │ ☐ System Admin  │    │
+│  │ Polls Owned: 3  │    │
+│  │ [View Details]  │    │
 │  └─────────────────┘    │
 │                         │
-│  Quick Actions          │
-│  [Moderation Queue (47)]│
-│  [View All Polls]       │
-│  [User Management]      │
-│                         │
-│  Recent Activity        │
-│  - New poll created     │
-│  - 234 votes today      │
-│  - 12 statements pending│
+│  ┌─────────────────┐    │
+│  │ Jane Smith      │    │
+│  │ jane@email.com  │    │
+│  │ Roles:          │    │
+│  │ ☐ Poll Creator  │    │
+│  │ ☐ System Admin  │    │
+│  │ Manager of: 2   │    │
+│  │ [View Details]  │    │
+│  └─────────────────┘    │
 │                         │
 └─────────────────────────┘
 ```
 
+#### User Detail View
+```
+┌─────────────────────────┐
+│  User Details           │
+│  [← Back to List]       │
+├─────────────────────────┤
+│  John Doe               │
+│  john@email.com         │
+│  Clerk ID: clerk_123    │
+│  Joined: 2024-01-15     │
+│                         │
+│  System Roles           │
+│  ☑ Poll Creator         │
+│  ☐ System Administrator │
+│  [Save Changes]         │
+│                         │
+│  Poll-Specific Roles    │
+│  Owner of (3):          │
+│  - Poll Title 1 [Manage]│
+│  - Poll Title 2 [Manage]│
+│  - Poll Title 3 [Manage]│
+│                         │
+│  Manager for (2):       │
+│  - Poll Title 4 [Manage]│
+│  - Poll Title 5 [Manage]│
+│                         │
+│  Activity Summary       │
+│  - Polls created: 3     │
+│  - Polls managed: 2     │
+│  - Votes cast: 147      │
+│  - Statements: 12       │
+│                         │
+└─────────────────────────┘
+```
+
+**Actions Available:**
+- **Assign Poll Creator** - Toggle checkbox, user can now create polls
+- **Assign System Admin** - Toggle with confirmation, grants full system access
+- **Assign to Poll as Manager** - Search and select poll, assign user as manager
+- **View Poll** - Click poll links to go to that poll's management interface
+
 ---
 
-### 16. Admin Poll View
-**Route:** `/admin/polls/[slug]`
+### 17. Admin View All Statements (Per-Poll Feature)
+**Available in:** `/polls/[slug]/manage` (Analytics tab or separate view)
+**Access:** Poll Owners, Poll Managers, System Admins
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  Admin View - Poll      │
-│  Question Here          │
+│  All Statements View    │
+│  (Read-Only Mode)       │
 ├─────────────────────────┤
+│  Poll Question Here     │
 │                         │
-│  All Statements         │
+│  ℹ️ Viewing all         │
+│  statements without     │
+│  voting. To vote, use   │
+│  "Vote as Participant"  │
 │                         │
 │  ┌─────────────────┐    │
 │  │ Statement 1     │    │
@@ -1462,23 +1648,27 @@
 │  │ Agree: 65% ████ │    │
 │  │ Disagree: 25% ██│    │
 │  │ Unsure: 10% █   │    │
-│  │                 │    │
-│  │ Total votes: 234│    │
+│  │ Total: 234 votes│    │
 │  └─────────────────┘    │
 │                         │
-│  (All statements shown  │
-│   with distributions)   │
+│  ┌─────────────────┐    │
+│  │ Statement 2     │    │
+│  │ (vote dist...)  │    │
+│  └─────────────────┘    │
 │                         │
-│  [Edit Poll]            │
-│  [Delete Poll]          │
+│  [Back to Management]   │
+│  [Vote as Participant]  │
 │                         │
 └─────────────────────────┘
 ```
 
-#### Note
-- Owners/managers can view ALL statements with distributions
-- No voting interface in admin view
-- Can vote separately as regular user
+**Purpose:**
+- Owners/Managers/Admins can view ALL statements with distributions
+- WITHOUT casting votes (read-only view)
+- Understand poll dynamics without influencing results
+- Separate from normal voting interface
+
+**Note:** Can vote separately using "Vote as Participant" which opens standard card-based voting interface.
 
 ---
 
@@ -1501,7 +1691,10 @@
 
 1. **Default Variant** (Public pages: Home, Poll listing)
    - Logo (left)
-   - Desktop navigation: Polls, Create Poll (auth), Admin (auth)
+   - Desktop navigation:
+     - Polls (always visible)
+     - Create Poll (visible to Poll Creators, Poll Managers, System Admins only)
+     - Admin Dashboard (visible to System Admins only)
    - Auth buttons / User menu (right)
    - Mobile hamburger menu
    - Sticky positioning

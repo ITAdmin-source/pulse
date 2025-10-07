@@ -10,9 +10,11 @@
 1. [User Personas & Roles](#user-personas--roles)
 2. [Core User Journeys](#core-user-journeys)
 3. [Poll Creator Workflows](#poll-creator-workflows)
-4. [Admin & Manager Workflows](#admin--manager-workflows)
-5. [Key Features & Business Logic](#key-features--business-logic)
-6. [Technical Constraints & Rules](#technical-constraints--rules)
+4. [Poll Management Workflows](#poll-management-workflows)
+5. [System Administrator Workflows](#system-administrator-workflows)
+6. [Interface Boundaries Summary](#interface-boundaries-summary)
+7. [Key Features & Business Logic](#key-features--business-logic)
+8. [Technical Constraints & Rules](#technical-constraints--rules)
 
 ---
 
@@ -37,37 +39,55 @@
 - **Demographics:** Optional age group, gender, ethnicity, political party
 - **Access:** Full participation rights, persistent identity
 - **Benefits:** Access to personal insights, demographics tracking, profile management
+- **Poll Creation:** Cannot create polls unless assigned Poll Creator role
 
-### 4. Poll Creator/Owner
-- **Role:** System-assigned when user creates a poll
-- **Permissions:**
-  - Full control over their polls
-  - Edit poll settings
+### 4. Poll Creator (Role-Based)
+- **Role:** Database-assigned by System Admin
+- **Creation Rights:** Can create new polls
+- **Becomes Owner:** Automatically becomes owner of polls they create
+- **Scope:** Can create multiple polls, owns each one created
+- **Permissions:** When creating a poll, gains all Owner permissions for that specific poll
+- **Voting:** Can vote on any poll (including their own) using standard card-based interface
+
+### 5. Poll Owner (Per-Poll Role)
+- **Role:** Automatically assigned when user creates a poll, or transferred from previous owner
+- **Permissions for owned poll(s):**
+  - Full control over poll settings
   - Approve/reject statements
-  - Publish/close polls
-  - View analytics
-  - Assign poll managers
+  - Publish/unpublish/close poll
+  - View analytics and statistics
+  - Manage poll-specific user roles (assign managers)
   - Transfer ownership
+  - Delete poll
 - **Scope:** Per-poll (can own multiple polls)
-- **Voting:** Can vote on their own polls as a regular participant using the card-based interface
-- **Admin View:** Can access admin panel to view all statements and distributions without voting
+- **Voting:** Votes using standard card-based interface (separate from management)
+- **Management Interface:** Accesses poll-specific admin panel at `/polls/[slug]/manage`
 
-### 5. Poll Manager
-- **Role:** Assigned by poll owner
-- **Permissions:**
+### 6. Poll Manager (Per-Poll Role)
+- **Role:** Assigned by Poll Owner or System Admin to specific poll(s)
+- **Creation Rights:** Can create new polls (becomes owner of created polls)
+- **Permissions for managed poll(s):**
   - Approve/reject statements
-  - View poll analytics
-  - Edit poll settings (but cannot delete poll or transfer ownership)
+  - Edit poll settings (except deletion and ownership transfer)
+  - View analytics and statistics
+  - Manage poll-specific user roles (assign other managers)
 - **Scope:** Per-poll (can manage multiple polls)
-- **Voting:** Can vote on managed polls as a regular participant using the card-based interface
-- **Admin View:** Can access admin panel to view all statements and distributions without voting
+- **Voting:** Votes using standard card-based interface (separate from management)
+- **Management Interface:** Accesses poll-specific admin panel at `/polls/[slug]/manage`
 
-### 6. System Administrator
-- **Role:** Database-assigned global role
-- **Permissions:** All permissions across all polls
+### 7. System Administrator
+- **Role:** Database-assigned global role (assigned by other admins or directly in database)
+- **Creation Rights:** Can create new polls (becomes owner of created polls)
+- **Permissions:**
+  - All Poll Owner permissions for ALL polls
+  - Assign Poll Creator role to users
+  - Assign Poll Manager role to any poll
+  - Transfer ownership of any poll
+  - Delete any poll
+  - Access system-wide admin features (minimal cross-poll tools)
 - **Scope:** System-wide
-- **Voting:** Can vote on any poll as a regular participant using the card-based interface
-- **Admin View:** Can access admin panel for any poll to view all statements and distributions without voting
+- **Voting:** Votes using standard card-based interface (separate from management)
+- **Management Interface:** Can access poll-specific admin panel for any poll at `/polls/[slug]/manage`, plus system admin dashboard at `/admin/dashboard`
 
 ---
 
@@ -682,10 +702,33 @@
 
 ## Poll Creator Workflows
 
+### Prerequisites: Who Can Create Polls
+
+#### Required Role
+To access "Create Poll" interface, user must have ONE of:
+- **Poll Creator** role (assigned by System Admin)
+- **Poll Manager** role (assigned to at least one existing poll)
+- **System Administrator** role
+
+#### Entry Points
+1. **Main Navigation:**
+   - "Create Poll" button visible only to authorized users
+   - Takes user to poll creation form
+
+2. **User Dashboard:**
+   - "My Polls" section shows owned/managed polls
+   - "Create New Poll" button prominent
+
+3. **Unauthorized Users:**
+   - "Create Poll" option not visible
+   - Direct URL access shows: "You need Poll Creator permissions. Contact system administrator."
+
+---
+
 ### Workflow 1: Poll Creation
 
 #### Entry Point
-- Authenticated user accesses "Create Poll" interface
+- User with Poll Creator, Poll Manager, or System Admin role accesses "Create Poll" interface
 - Must be signed in (anonymous users cannot create polls)
 
 #### Step 1: Basic Information
@@ -743,7 +786,7 @@
 #### Result
 - Poll created in **draft** status
 - Not visible to public
-- Owner assigned automatically
+- Creator becomes **Poll Owner** for this poll
 - Unique slug generated from question
 
 ---
@@ -929,97 +972,743 @@
 
 ---
 
-## Admin & Manager Workflows
+## Poll Management Workflows
 
-### Workflow 1: System Admin Access
+### Key Principle: Two Distinct Interfaces
 
-#### Scope
-- System admin has all permissions across all polls
-- Role assigned in database (not via UI)
+**Everyone votes the same way** - whether anonymous, authenticated, manager, owner, or system admin.
 
-#### Capabilities
-1. **Poll Management**
-   - View all polls (draft, published, closed)
-   - Edit any poll settings
-   - Delete any poll
-   - Manage roles on any poll
+1. **Public Voting Interface** (`/polls/[slug]/vote`)
+   - Same card-based experience for all users
+   - No special privileges during voting
+   - Cannot see distributions before voting
+   - Must follow same threshold rules
 
-2. **Moderation**
-   - Access global moderation queue
-   - Approve/reject statements across all polls
-   - Bulk moderation actions
-
-3. **User Management**
-   - View user list
-   - Manage user roles
-   - View user participation data
-   - (Implementation depends on admin UI)
+2. **Poll Management Interface** (`/polls/[slug]/manage`)
+   - Only accessible to Poll Owners, Poll Managers (for their polls), and System Admins
+   - Poll-specific admin work (statements, settings, analytics, roles)
+   - Separate from voting experience
 
 ---
 
-### Workflow 2: Poll Manager Operations
+### Workflow 1: Accessing Poll Management Interface
 
-#### Assigned Access
-- Manager assigned to specific poll(s) by owner
-- No system-wide access
+#### Who Can Access
+- **Poll Owners** - For polls they own
+- **Poll Managers** - For polls they manage
+- **System Administrators** - For any poll
 
-#### Moderation Duties
-1. **Statement Queue**
-   - Access pending statements for managed polls
-   - Review submission quality, relevance, appropriateness
-   - Approve acceptable statements
-   - Reject spam, off-topic, or inappropriate statements
+#### Entry Points
 
-2. **Moderation Interface**
-   - List of pending statements
-   - Statement text display
-   - Submitter information (if available)
-   - Approve/Reject buttons
-   - Bulk selection option
+1. **From User Dashboard:**
+   - "My Polls" section lists owned/managed polls
+   - Each poll shows status, pending items, quick stats
+   - Click "Manage Poll" → Navigate to `/polls/[slug]/manage`
 
-#### Analytics Access
-- View poll statistics (same as owner)
-- Monitor participation metrics
-- Access vote distributions
+2. **From Poll Public Page:**
+   - Authorized users see "Manage Poll" button
+   - Others don't see this option
+   - Click → Navigate to management interface
 
-#### Settings Management
-- Edit poll settings (question, description, controls)
-- Cannot delete poll
-- Cannot transfer ownership
-- Cannot remove self or owner
+3. **Direct URL Access:**
+   - `/polls/[slug]/manage` accessible only to authorized users
+   - Unauthorized access shows: "You don't have permission to manage this poll"
+
+#### Management Interface Layout
+
+**Navigation Tabs:**
+1. **Overview** - Poll summary, quick stats, pending items
+2. **Statements** - Moderation queue, approved statements, add new
+3. **Settings** - Poll configuration, button labels, scheduling
+4. **Analytics** - Participation metrics, vote distributions, statement performance
+5. **Roles** - User role management for this specific poll
+6. **Preview** - View poll as participant would see it
+
+**Top Bar:**
+- Poll title with status badge (Draft/Published/Closed)
+- Quick actions: Publish/Unpublish, View as Voter, Share Poll
+- Back to dashboard
 
 ---
 
-### Workflow 3: Global Moderation Queue
+### Workflow 2: Poll-Specific Statement Management
+
+#### Accessing Statement Management
+- Navigate to **Statements tab** in poll management interface
+- Shows ONLY statements for this specific poll
+
+#### Interface Sections
+
+1. **Pending Statements** (default view)
+   - User-submitted statements awaiting moderation
+   - Each entry shows:
+     - Statement text (full or truncated with expand)
+     - Submitter info (anonymous/authenticated, name if available)
+     - Submission timestamp
+     - Quick actions: Approve | Reject | Edit
+
+2. **Approved Statements**
+   - All currently active/votable statements
+   - Shows vote counts and distribution per statement
+   - Can edit or delete (with cascade warning)
+   - Can add new statements directly
+
+3. **All Statements**
+   - Combined view with status filters
+   - Search functionality
+   - Sort options
+
+#### Moderation Actions
+
+1. **Individual Actions:**
+   - **Approve** - Statement becomes visible to voters immediately
+   - **Reject** - Statement permanently deleted from database
+   - **Edit then Approve** - Modify text for clarity/grammar, then approve
+
+2. **Bulk Actions:**
+   - Select multiple pending statements
+   - **Approve All Selected** - Batch approval
+   - **Reject All Selected** - Batch deletion
+   - Useful for high-volume moderation
+
+3. **Statement Editing:**
+   - Click edit icon on any statement
+   - Modify statement text
+   - Changes reflected immediately
+   - Existing votes preserved
+
+4. **Statement Deletion:**
+   - Delete button with confirmation
+   - Warning: "Deleting this statement will also delete X votes"
+   - Cascades to all votes on statement
+   - Use with extreme caution
+
+#### Filtering & Search
+- Filter by status: All / Pending / Approved
+- Filter by submitter: User-submitted / Owner-created
+- Search statement text
+- Sort by: Newest / Oldest / Most voted
+
+---
+
+### Workflow 3: Poll-Specific Settings Management
+
+#### Accessing Settings
+- Navigate to **Settings tab** in poll management interface
+
+#### Editable Settings
+
+**Available to Both Owners and Managers:**
+
+1. **Basic Information**
+   - Poll question
+   - Description
+   - Button labels (Agree/Disagree/Pass)
+
+2. **Control Settings**
+   - Toggle: Allow user statement submissions
+   - Toggle: Auto-approve user statements
+   - Voting goal (target number of votes)
+
+3. **Scheduling**
+   - Start time (if poll not yet published)
+   - End time (extend closing date)
+
+**Owner-Only Actions** (Managers see these grayed out with lock icon):
+- Delete poll
+- Transfer ownership
+- Unpublish poll (return to draft)
+
+#### Settings Interface
+- Form with auto-save functionality
+- Owner-only items show lock icon for Managers
+- Tooltip on locked items: "Only poll owner can perform this action"
+- Changes show confirmation toast
+- "Preview Poll" button to see changes as voter would
+
+---
+
+### Workflow 4: Poll-Specific Analytics & Statistics
+
+#### Accessing Analytics
+- Navigate to **Analytics tab** in poll management interface
+- All metrics are specific to this poll only
+
+#### Available Metrics
+
+1. **Participation Overview**
+   - Total unique voters (for THIS poll)
+   - Total votes cast (on THIS poll's statements)
+   - Average votes per user
+   - Completion rate (% who reached threshold)
+   - Participation over time chart
+
+2. **Statement Performance**
+   - Vote distribution for each statement
+     - Agree/Disagree/Neutral percentages
+     - Total votes per statement
+   - Most agreed statements (top 5)
+   - Most disagreed statements (top 5)
+   - Most divisive statements (closest to 50/50 split)
+   - Low-engagement statements (fewest votes)
+
+3. **Engagement Metrics**
+   - User-submitted vs. creator-generated statements
+   - Statement approval/rejection rates
+   - Average time to complete poll
+   - Drop-off points (where users stop voting)
+
+4. **Demographics Breakdown** (if demographic data available)
+   - Vote patterns by age group
+   - Vote patterns by gender
+   - Vote patterns by ethnicity
+   - Vote patterns by political party
+   - Demographic composition of participants
+
+#### Admin View Feature
+
+**Special Privilege for Owners/Managers:**
+- "View All Statements" mode
+- See all statements with vote distributions WITHOUT voting
+- Useful for understanding poll dynamics without influencing results
+- Separate from normal voting interface
+- Read-only view - cannot cast votes from this interface
+
+#### Export Options
+- Export THIS poll's data (CSV format)
+- Export statement-level results
+- Export participant demographics (anonymized)
+- Generate poll report (PDF summary)
+
+---
+
+### Workflow 5: Poll-Specific User Role Management
 
 #### Purpose
-- Centralized view of all pending statements across all polls
-- For system admins or global moderators
+Manage who can access and manage THIS specific poll.
 
-#### Interface
-1. **Queue View**
-   - List of all pending statements
-   - Poll context for each statement
-   - Submission timestamp
-   - Submitter (if available)
+#### Accessing Role Management
+- Navigate to **Roles tab** in poll management interface
 
-2. **Filtering**
-   - Filter by poll
-   - Sort by age (oldest first priority)
-   - Search statement text
+#### Interface Shows
 
-3. **Actions**
-   - Approve individual statements
-   - Reject individual statements
-   - Bulk approve
-   - Bulk reject
+1. **Current Roles for This Poll:**
+   - **Poll Owner** (highlighted, cannot be removed)
+   - **Poll Managers** (list with remove option)
+   - **Info box:** "System Admins automatically have access to all polls"
+
+2. **Add Manager Section:**
+   - Search bar: "Search for user by email or name"
+   - Dropdown showing authenticated users
+   - "Assign as Manager" button
+   - Manager gains management access to THIS poll only
+
+3. **Manager List:**
+   - Each manager entry shows:
+     - User name and email
+     - Date assigned
+     - Assigned by (owner or admin name)
+     - Actions: Remove
+
+#### Manager Management Actions
+
+**Adding Manager:**
+1. Owner/Admin clicks "Add Manager"
+2. Search for user by email or name
+3. Select from dropdown of authenticated users
+4. Confirm assignment
+5. User receives notification (if implemented)
+6. Manager gains access to THIS poll's management interface
+
+**Removing Manager:**
+1. Click "Remove" next to manager name
+2. Confirmation modal: "Remove [user] as manager of [poll name]?"
+3. Confirm → Manager loses access to this poll only
+4. Other polls unaffected
+
+**Ownership Transfer** (Owner-only action):
+1. Owner clicks "Transfer Ownership" button
+2. Search for new owner (must be authenticated user)
+3. Confirmation modal with warning:
+   - "You will lose owner privileges"
+   - "New owner will have full control"
+   - Checkbox: "Make me a manager instead"
+4. Confirm transfer
+5. New owner assigned, previous owner's role changes
+6. Cannot be undone (new owner must transfer back)
+
+#### Constraints
+- Cannot remove Poll Owner (only transfer ownership)
+- Owner cannot remove themselves (must transfer first)
+- System Admins have implicit access (not shown in manager list)
+- At least one person must have owner or manager role
+
+---
+
+### Workflow 6: Poll Publishing & Lifecycle Management
+
+#### Accessing Lifecycle Controls
+- "Publish" / "Unpublish" / "Close" buttons in management interface top bar
+- Status badge shows current state
+
+#### Draft State Management
+- Poll created in Draft by default
+- Not visible to public
+- Full editing capability
+- Can add/edit/delete statements freely
+- "Publish Poll" button prominent in top bar
+
+#### Publishing Process
+
+1. **Pre-Publish Validation:**
+   - System checks minimum 6 statements requirement
+   - System checks poll question set
+   - Warning if no scheduling configured
+
+2. **Publish Action:**
+   - Owner clicks "Publish Poll"
+   - Pre-publish checklist modal appears:
+     - ✓ Minimum 6 statements
+     - ✓ Poll question set
+     - ⚠ Schedule configured (optional warning)
+     - Warning: "Poll will become public and visible in listings"
+   - Confirm → Poll status changes to Published
+
+3. **After Publishing:**
+   - Poll appears in public listings
+   - Voting enabled at start_time (or immediately if not set)
+   - URL shareable
+   - Management interface remains accessible
+   - Can still moderate statements and add new ones
+
+#### Unpublishing (Owner-Only)
+
+1. **Unpublish Action:**
+   - Owner clicks "Unpublish Poll" button
+   - Only visible to owners (managers don't see this)
+
+2. **Warning Modal:**
+   - "Are you sure you want to unpublish this poll?"
+   - Shows impact:
+     - "Poll will be hidden from public listings"
+     - "No new votes will be accepted"
+     - "Current stats: X voters, Y votes recorded"
+     - "Existing votes and data will be preserved"
+     - "You can edit and republish later"
+
+3. **After Unpublishing:**
+   - Poll status changes to DRAFT
+   - Removed from public listings
+   - Voting interface inaccessible
+   - All existing votes and analytics preserved
+   - Owner can edit settings and statements
+   - Can republish at any time
+
+#### Closing Process
+
+1. **Automatic Closing:**
+   - Poll reaches end_time (if configured)
+   - Voting automatically disabled
+   - Poll marked as Closed
+   - No user action required
+
+2. **Manual Closing** (Owner-only):
+   - Owner clicks "Close Poll" before end_time
+   - Confirmation modal: "Close poll early?"
+   - Confirm → Poll immediately closes
+
+3. **Closed State:**
+   - No new votes accepted
+   - No new statements accepted
+   - Results remain visible to all
+   - Voters can still see their insights
+   - Poll remains in public listings (read-only)
+   - Management interface accessible for analytics review
+
+---
+
+### Workflow 7: Voting as Owner/Manager (Dual-Mode Access)
+
+#### Key Principle
+Owners and Managers can vote on their polls, but voting happens in a **completely separate interface** from management.
+
+#### Accessing Voting Mode
+
+1. **From Poll Management Interface:**
+   - Click "View as Voter" button in top bar
+   - Navigate to `/polls/[slug]/vote`
+
+2. **From Poll Public Page:**
+   - Navigate to poll like any user
+   - Click "Start Voting" or "Continue Voting"
+
+3. **From Public Poll Listing:**
+   - Browse polls and click to vote
+   - Same flow as regular users
+
+#### Voting Experience
+
+- **Identical to regular users:**
+  - Same card-based voting interface
+  - No special manager/owner privileges visible
+  - Cannot see vote distributions before voting on each statement
+  - Cannot skip ahead or preview future statements
+  - Must follow same threshold rules
+  - Forward-only progression (no back button)
+
+- **Why Separate:**
+  - Prevents bias - vote with genuine first reactions
+  - Maintains integrity of personal insights
+  - Clear separation between moderation and participation roles
+  - Ensures all votes treated equally
+
+#### Post-Voting
+
+- Receive personal insights after reaching threshold (same as everyone)
+- Can view poll results summary
+- Voting history stored separately from management activities
+- To manage poll again, navigate back to management interface
+
+---
+
+## System Administrator Workflows
+
+### Overview
+System Administrators have two unique capabilities beyond poll management:
+1. **Assign Poll Creator role** to users (enable poll creation)
+2. **Access cross-poll convenience features** (optional tools for efficiency)
+
+**Most admin work is poll-specific** - same as owners/managers, just with access to all polls.
+
+---
+
+### Workflow 1: System Admin Dashboard
+
+#### Purpose
+High-level system monitoring and cross-poll navigation.
+
+#### Accessing Dashboard
+- URL: `/admin/dashboard`
+- Link in main navigation (visible only to admins)
+
+#### Dashboard Widgets
+
+1. **System Overview:**
+   - Total polls: Draft / Published / Closed counts
+   - Total users: Anonymous / Authenticated counts
+   - Total votes cast (system-wide)
+   - Active polls (currently accepting votes)
+
+2. **All Polls List:**
+   - Shows every poll in system
+   - Each entry displays:
+     - Poll question
+     - Status badge
+     - Owner name
+     - Participation stats
+     - Pending statements count
+     - Quick actions: Manage | View | Delete
+   - Filter by: Status, Owner, Date created
+   - Search by poll question
+
+3. **Recent Activity Feed:**
+   - Recently created polls
+   - Recent user signups
+   - Recent votes cast (counts only)
+   - System events
+
+4. **Pending Items:**
+   - Total pending statements across all polls
+   - Link to Global Moderation Queue
+   - Polls needing attention (low engagement, errors)
+
+5. **System Health:**
+   - Database connection status
+   - API service status (AI, Clerk)
+   - Error logs (if any)
+   - Performance metrics
+
+#### Navigation from Dashboard
+
+- **Click any poll** → Go to that poll's management interface (`/polls/[slug]/manage`)
+- **Click pending statements count** → Go to Global Moderation Queue
+- **Click user counts** → Go to User Role Management
+
+---
+
+### Workflow 2: Managing Any Poll
+
+#### Admin Capability
+System Admins can access the poll-specific management interface for ANY poll.
+
+#### Access Methods
+
+1. **From Admin Dashboard:**
+   - "All Polls" list shows every poll
+   - Click "Manage" on any poll
+   - Navigate to `/polls/[slug]/manage`
+
+2. **From Poll Public Page:**
+   - "Manage Poll" button visible to admin
+   - Enter management interface
+
+3. **Direct URL:**
+   - Navigate to `/polls/[slug]/manage` for any poll
+   - Admin has automatic access
+
+#### Management Interface
+- **Identical to owner view:**
+  - All tabs available (Overview, Statements, Settings, Analytics, Roles)
+  - All actions available (including delete and transfer ownership)
+  - No visual distinction from owner interface
+
+- **Poll-specific work:**
+  - Moderate THIS poll's statements
+  - View THIS poll's analytics
+  - Manage THIS poll's roles
+  - Edit THIS poll's settings
+  - All actions scoped to the current poll
+
+**Key Point:** Admin work is still poll-specific, just with access to all polls.
+
+---
+
+### Workflow 3: Global Moderation Queue (Cross-Poll Feature)
+
+#### Purpose
+Convenience feature for admins to moderate statements across all polls in one view.
+
+#### Accessing Global Queue
+- From Admin Dashboard: Click "Global Moderation Queue"
+- URL: `/admin/moderation`
+- Shows total pending count across all polls
+
+#### Queue Interface
+
+1. **Statement List:**
+   - All pending statements from ALL polls
+   - Each entry shows:
+     - Statement text
+     - **Poll context** (poll question - clickable link)
+     - Poll owner name
+     - Submitter information
+     - Submission timestamp
+     - Quick actions: Approve | Reject | Edit
+
+2. **Filtering Options:**
+   - Filter by specific poll (dropdown)
+   - Filter by submitter type (anonymous/authenticated)
+   - Filter by date range
+   - Search statement text across all polls
+
+3. **Sorting Options:**
+   - Oldest first (priority queue - default)
+   - Newest first
+   - By poll
+   - By submitter
+
+4. **Actions:**
+   - **Approve** - Statement approved in its poll
+   - **Reject** - Statement deleted from its poll
+   - **Edit then Approve** - Modify text, then approve
+   - **Bulk select** - Approve/reject multiple across different polls
+   - **View in poll** - Link to that poll's management interface
 
 #### Workflow
-1. Admin opens moderation queue
-2. Reviews statements in context of their polls
+
+1. Admin opens global moderation queue
+2. Reviews statements with full poll context
 3. Approves quality contributions
-4. Rejects inappropriate/off-topic submissions
-5. Queue updates in real-time
+4. Rejects spam, inappropriate, or off-topic submissions
+5. For complex cases, clicks "View in poll" to see full context
+6. Queue updates on refresh or manual reload
+
+**Note:** This is a convenience feature. Admins can also moderate by visiting each poll's management interface individually (same as owners/managers).
+
+---
+
+### Workflow 4: User Role Management (System-Wide)
+
+#### Purpose
+Assign Poll Creator role to enable users to create new polls.
+
+#### Accessing User Management
+- From Admin Dashboard: "User Role Management" section
+- URL: `/admin/users`
+
+#### User List Interface
+
+1. **User Directory:**
+   - Searchable list of all authenticated users
+   - Each entry shows:
+     - User name
+     - Email
+     - Clerk ID
+     - Registration date
+     - Current roles: Poll Creator | System Admin
+     - Polls owned (count)
+     - Polls managed (count)
+
+2. **Search & Filter:**
+   - Search by name or email
+   - Filter by role: All / Poll Creators / Managers / Admins / Regular Users
+   - Sort by: Registration date, Activity, Name
+
+#### User Detail View
+
+Click any user to see detailed view:
+
+1. **Profile Information:**
+   - Full user details
+   - Demographics (if provided)
+   - Registration date
+   - Last active timestamp
+
+2. **Activity Summary:**
+   - Polls created (count)
+   - Polls managed (count)
+   - Votes cast (count only, not details)
+   - Statements submitted (count)
+
+3. **Current Roles:**
+   - **System Roles:**
+     - System Administrator (yes/no)
+     - Poll Creator (yes/no)
+   - **Poll-Specific Roles:**
+     - Poll Owner of: [list of polls with links]
+     - Poll Manager for: [list of polls with links]
+
+4. **Role Assignment Actions:**
+
+   **Assign Poll Creator:**
+   - Toggle "Poll Creator" role checkbox
+   - Confirm: "[User] can now create polls"
+   - User gains "Create Poll" access
+   - Does not automatically make them owner of existing polls
+
+   **Assign System Admin:**
+   - Toggle "System Admin" role checkbox
+   - Confirmation required: "Grant full system access to [user]?"
+   - User gains all admin privileges
+   - Use sparingly
+
+   **Assign Poll Manager** (for specific poll):
+   - Click "Add to Poll as Manager"
+   - Search and select poll
+   - Confirm assignment
+   - User gains management access to that specific poll
+
+   **Revoke Roles:**
+   - Untoggle Poll Creator - user can no longer create new polls
+   - Untoggle System Admin - user loses admin access
+   - Remove from specific poll - managed via poll's Roles tab
+
+#### Bulk Operations (Future)
+- Select multiple users
+- Bulk assign Poll Creator role
+- Export user list
+
+---
+
+### Workflow 5: Managing Poll Ownership & Transfers
+
+#### Admin Capability
+System Admins can transfer ownership of any poll between users.
+
+#### Access
+
+1. **From Poll's Roles Tab:**
+   - Navigate to any poll's management interface
+   - Go to Roles tab
+   - Click "Transfer Ownership" (admin always has access)
+
+2. **From User Detail View:**
+   - View user's owned polls
+   - Click "Transfer to another user" next to any poll
+
+#### Transfer Process
+
+1. **Initiate Transfer:**
+   - Select "Transfer Ownership"
+   - Search for new owner (authenticated users only)
+   - Select user from dropdown
+
+2. **Confirmation Modal:**
+   - "Transfer ownership of [poll name] to [new user]?"
+   - Shows current owner and new owner
+   - Option: "Make current owner a manager instead"
+   - Warning: Cannot be undone without another transfer
+
+3. **After Transfer:**
+   - New user becomes Poll Owner
+   - Previous owner loses ownership
+   - Previous owner becomes manager (if checkbox selected)
+   - New owner receives notification (if implemented)
+   - Immediate effect
+
+#### Use Cases
+- Original owner leaves organization
+- Reassign polls for better management
+- Correct accidental assignments
+- Consolidate polls under single owner
+
+---
+
+## Interface Boundaries Summary
+
+### Public Voting Interface
+
+- **Who:** Everyone (anonymous, authenticated, managers, owners, admins)
+- **Purpose:** Vote on poll statements
+- **Access:** `/polls/[slug]/vote`
+- **Features:**
+  - Card-based voting experience
+  - Stories-style progress bar
+  - Equal experience for all users
+  - No special privileges during voting
+  - Cannot see distributions before voting
+  - Must complete threshold to finish
+
+### Poll Management Interface
+
+- **Who:**
+  - Poll Owners (for their polls)
+  - Poll Managers (for their assigned polls)
+  - System Admins (for all polls)
+- **Purpose:** Manage specific poll settings, statements, roles, analytics
+- **Access:** `/polls/[slug]/manage`
+- **Tabs:** Overview | Statements | Settings | Analytics | Roles | Preview
+- **Scope:** Single poll at a time (poll-specific work)
+- **Key Point:** All management work is poll-centric
+
+### System Admin Dashboard
+
+- **Who:** System Admins only
+- **Purpose:**
+  - Assign Poll Creator role to users
+  - Monitor system health
+  - Access Global Moderation Queue (convenience feature)
+  - Navigate to any poll's management interface
+  - Manage system-wide user roles
+- **Access:** `/admin/dashboard`
+- **Scope:** System-wide overview, but most actions link to poll-specific interfaces
+
+### Key Separation
+
+1. **Creating/Managing Polls** ≠ **Voting on Polls**
+   - Two completely separate interfaces
+   - Voting experience identical for everyone
+   - Management requires role-based access
+
+2. **Poll-Specific Work** (primary) ≠ **Cross-Poll Work** (minimal)
+   - Most admin work happens in poll management interface
+   - Cross-poll features are convenience tools for admins
+   - User role management is the main system-wide feature
+
+3. **Role-Based Access:**
+   - Poll Creator role enables poll creation
+   - Poll Owner/Manager roles are per-poll
+   - System Admin has access to all polls but still works poll-by-poll
 
 ---
 

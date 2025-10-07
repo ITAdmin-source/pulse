@@ -2,22 +2,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Users, FileText, CheckCircle, TrendingUp } from "lucide-react";
+import { AdminService } from "@/lib/services/admin-service";
 
-export default function AdminDashboardPage() {
-  // TODO: Fetch actual data
-  const stats = {
-    totalPolls: 45,
-    activePolls: 23,
-    totalUsers: 1234,
-    totalVotes: 45678,
-    pendingModeration: 47,
-  };
-
-  const recentActivity = [
-    { type: "poll", message: "New poll created: 'Community Budget 2025'", time: "5 minutes ago" },
-    { type: "votes", message: "234 votes cast today", time: "1 hour ago" },
-    { type: "moderation", message: "12 statements pending moderation", time: "2 hours ago" },
-  ];
+export default async function AdminDashboardPage() {
+  // Fetch real data from AdminService
+  const stats = await AdminService.getSystemStats();
+  const recentActivity = await AdminService.getRecentActivity(10);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -109,7 +99,10 @@ export default function AdminDashboardPage() {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/polls">View All Polls</Link>
+                <Link href="/admin/polls">Manage All Polls</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/polls">View Public Polls</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/polls/create">Create New Poll</Link>

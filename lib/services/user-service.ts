@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db/db";
 import { users, userRoles, userDemographics } from "@/db/schema";
 import type { User } from "@/db/schema";
@@ -220,6 +220,88 @@ export class UserService {
     }
 
     return newUser;
+  }
+
+  /**
+   * Search users by email or Clerk ID (for autocomplete)
+   * Returns authenticated users with their current roles
+   */
+  static async searchUsers(query: string, limit: number = 10): Promise<Array<{
+    id: string;
+    clerkUserId?: string;
+    email?: string;
+    displayName?: string;
+    currentRoles: Array<{ role: string; pollId?: string }>;
+  }>> {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    const searchQuery = query.trim().toLowerCase();
+
+    // Get all authenticated users
+    const allUsers = await db
+      .select({
+        id: users.id,
+        clerkUserId: users.clerkUserId,
+        sessionId: users.sessionId,
+        metadata: users.metadata,
+      })
+      .from(users)
+      .where(sql`${users.clerkUserId} IS NOT NULL`)
+      .limit(100); // Get more for filtering
+
+    // Get all user roles
+    const allRoles = await db
+      .select()
+      .from(userRoles);
+
+    // Create role map
+    const roleMap = new Map<string, Array<{ role: string; pollId?: string }>>();
+    allRoles.forEach(role => {
+      const existing = roleMap.get(role.userId) || [];
+      existing.push({ role: role.role, pollId: role.pollId || undefined });
+      roleMap.set(role.userId, existing);
+    });
+
+    // Filter and map users based on cached profile data
+    const matchedUsers = allUsers
+      .map(user => {
+        const metadata = user.metadata as { profileData?: {
+          primaryEmailAddress?: { emailAddress: string };
+          fullName?: string;
+          firstName?: string;
+          lastName?: string;
+        }} | null;
+
+        const email = metadata?.profileData?.primaryEmailAddress?.emailAddress || "";
+        const fullName = metadata?.profileData?.fullName || "";
+        const firstName = metadata?.profileData?.firstName || "";
+        const lastName = metadata?.profileData?.lastName || "";
+        const clerkId = user.clerkUserId || "";
+
+        // Check if query matches email, name, or Clerk ID
+        const matches =
+          email.toLowerCase().includes(searchQuery) ||
+          fullName.toLowerCase().includes(searchQuery) ||
+          firstName.toLowerCase().includes(searchQuery) ||
+          lastName.toLowerCase().includes(searchQuery) ||
+          clerkId.toLowerCase().includes(searchQuery);
+
+        if (!matches) return null;
+
+        return {
+          id: user.id,
+          clerkUserId: user.clerkUserId || undefined,
+          email: email || undefined,
+          displayName: fullName || (firstName && lastName ? `${firstName} ${lastName}` : firstName) || email || "Unknown User",
+          currentRoles: roleMap.get(user.id) || [],
+        };
+      })
+      .filter((user): user is NonNullable<typeof user> => user !== null)
+      .slice(0, limit);
+
+    return matchedUsers;
   }
 
   /**

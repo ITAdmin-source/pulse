@@ -42,8 +42,8 @@ import {
   createUserRoleAction,
   deleteUserRoleAction,
 } from "@/actions/user-roles-actions";
-import { getUserByClerkIdAction } from "@/actions/users-actions";
-import { EditStatementModal, AddStatementModal } from "@/components/modals";
+import { EditStatementModal, AddStatementModal, TransferOwnershipModal } from "@/components/modals";
+import { UserSearchAutocomplete } from "@/components/admin/user-search-autocomplete";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -88,11 +88,12 @@ export default function ManagePage({ params }: ManagePageProps) {
   const [editingStatement, setEditingStatement] = useState<Statement | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Role management state
   const [pollManagers, setPollManagers] = useState<Array<{ id: string; userId: string; role: string; userEmail?: string }>>([]);
-  const [newManagerEmail, setNewManagerEmail] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email?: string; displayName?: string } | null>(null);
   const [isAddingManager, setIsAddingManager] = useState(false);
 
   // Settings form state
@@ -418,30 +419,35 @@ export default function ManagePage({ params }: ManagePageProps) {
   };
 
   // Role management handlers
-  const handleAddManager = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!poll?.id || !newManagerEmail.trim()) return;
+  const handleAddManager = async () => {
+    if (!poll?.id || !selectedUser) return;
+
+    // Check if user already has a role for this poll
+    const existingRole = pollManagers.find(m => m.userId === selectedUser.id);
+    if (existingRole) {
+      toast.error("This user already has a role for this poll");
+      return;
+    }
+
+    // Prevent adding poll owner as manager
+    const isOwner = pollManagers.find(m => m.userId === selectedUser.id && m.role === "poll_owner");
+    if (isOwner) {
+      toast.error("Poll owner cannot be added as manager");
+      return;
+    }
 
     setIsAddingManager(true);
     try {
-      // Try to find user by Clerk ID (email is used as identifier)
-      const userResult = await getUserByClerkIdAction(newManagerEmail.trim());
-
-      if (!userResult.success || !userResult.data) {
-        toast.error("User not found. Make sure they have signed up.");
-        return;
-      }
-
       // Create poll manager role
       const roleResult = await createUserRoleAction({
-        userId: userResult.data.id,
+        userId: selectedUser.id,
         role: "poll_manager",
         pollId: poll.id,
       });
 
       if (roleResult.success) {
         toast.success("Manager added successfully");
-        setNewManagerEmail("");
+        setSelectedUser(null);
         // Reload managers
         const rolesResult = await getUserRolesByPollIdAction(poll.id);
         if (rolesResult.success && rolesResult.data) {
@@ -894,30 +900,33 @@ export default function ManagePage({ params }: ManagePageProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Add Manager Form */}
-                <form onSubmit={handleAddManager} className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      type="text"
-                      placeholder="Enter user's Clerk ID or email"
-                      value={newManagerEmail}
-                      onChange={(e) => setNewManagerEmail(e.target.value)}
+                <div className="space-y-3">
+                  <UserSearchAutocomplete
+                    onUserSelect={(user) => setSelectedUser(user)}
+                    excludeUserIds={pollManagers.map(m => m.userId)}
+                    placeholder="Search by email or name..."
+                    disabled={isAddingManager}
+                  />
+                  {selectedUser && (
+                    <Button
+                      onClick={handleAddManager}
                       disabled={isAddingManager}
-                    />
-                  </div>
-                  <Button type="submit" disabled={isAddingManager || !newManagerEmail.trim()}>
-                    {isAddingManager ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Manager
-                      </>
-                    )}
-                  </Button>
-                </form>
+                      className="w-full"
+                    >
+                      {isAddingManager ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add as Manager
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
 
                 {/* Current Managers List */}
                 <div className="space-y-2">
@@ -955,7 +964,16 @@ export default function ManagePage({ params }: ManagePageProps) {
 
                 {/* Owner Info */}
                 <div className="border-t pt-4 mt-4">
-                  <h3 className="font-semibold text-sm text-gray-700 mb-2">Poll Owner</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-sm text-gray-700">Poll Owner</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowTransferModal(true)}
+                    >
+                      Transfer Ownership
+                    </Button>
+                  </div>
                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center gap-3">
                       <Badge className="bg-blue-600">Owner</Badge>
@@ -1070,6 +1088,21 @@ export default function ManagePage({ params }: ManagePageProps) {
           pollId={poll.id}
           userId={dbUser.id}
           onSuccess={loadStatements}
+        />
+      )}
+
+      {/* Transfer Ownership Modal */}
+      {poll && dbUser && (
+        <TransferOwnershipModal
+          open={showTransferModal}
+          onOpenChange={setShowTransferModal}
+          pollId={poll.id}
+          pollQuestion={poll.question}
+          currentOwnerId={dbUser.id}
+          onSuccess={() => {
+            // Reload page or redirect to polls list
+            router.push("/polls");
+          }}
         />
       )}
     </div>

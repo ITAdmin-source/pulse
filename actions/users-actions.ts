@@ -148,3 +148,16 @@ export async function ensureUserExistsAction(params: {
     return { success: false, error: "Failed to create user" };
   }
 }
+
+/**
+ * Search users by email or name (for autocomplete)
+ */
+export async function searchUsersAction(query: string, limit?: number) {
+  try {
+    const users = await UserService.searchUsers(query, limit);
+    return { success: true, data: users };
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return { success: false, error: "Failed to search users" };
+  }
+}

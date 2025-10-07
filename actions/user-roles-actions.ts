@@ -12,6 +12,7 @@ import {
   getUserRoleByUserAndPoll,
   getAllUserRoles,
   updateUserRole,
+  transferPollOwnership,
 } from "@/db/queries/user-roles-queries";
 import { type NewUserRole } from "@/db/schema/user-roles";
 
@@ -137,5 +138,33 @@ export async function getUserRoleByUserAndPollAction(userId: string, pollId: str
   } catch (error) {
     console.error("Error fetching user role by user and poll:", error);
     return { success: false, error: "Failed to fetch user role" };
+  }
+}
+
+export async function transferPollOwnershipAction(
+  pollId: string,
+  currentOwnerId: string,
+  newOwnerId: string,
+  makePreviousOwnerManager: boolean = false
+) {
+  try {
+    const result = await transferPollOwnership(
+      pollId,
+      currentOwnerId,
+      newOwnerId,
+      makePreviousOwnerManager
+    );
+
+    if (!result.success) {
+      return { success: false, error: result.error || "Failed to transfer ownership" };
+    }
+
+    revalidatePath("/roles");
+    revalidatePath("/admin");
+    revalidatePath(`/polls/${pollId}/manage`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error transferring poll ownership:", error);
+    return { success: false, error: "Failed to transfer ownership" };
   }
 }
