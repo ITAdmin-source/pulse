@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { X } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { hasAnyManagementRole } from "@/lib/utils/permissions";
 
 interface MobileNavProps {
   open: boolean;
@@ -14,6 +16,8 @@ interface MobileNavProps {
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { userRoles } = useCurrentUser();
+  const userHasManagementRole = userRoles.length > 0 && hasAnyManagementRole(userRoles);
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -64,6 +68,16 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             </Link>
 
             <SignedIn>
+              {/* Dashboard - only for users with management roles */}
+              {userHasManagementRole && (
+                <Link
+                  href="/dashboard"
+                  onClick={onClose}
+                  className="text-gray-700 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-100"
+                >
+                  Dashboard
+                </Link>
+              )}
               <Link
                 href="/polls/create"
                 onClick={onClose}

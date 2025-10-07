@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,9 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
-import { listUsersAction } from "@/actions/user-management-actions";
-import { UserDetailsModal } from "@/components/admin/user-details-modal";
+import { ArrowLeft, Loader2, UserCheck, UserX, Search, RefreshCw } from "lucide-react";
+import { isSystemAdmin } from "@/lib/utils/permissions";
+import {
+  listUsersAction,
+  assignSystemAdminAction,
+  revokeSystemAdminAction,
+  assignPollCreatorAction,
+  revokePollCreatorAction,
+} from "@/actions/user-management-actions";
+import { syncAllUserProfilesAction, syncUserProfileAction } from "@/actions/admin-actions";
 import { toast } from "sonner";
 
 interface UserWithStats {
@@ -30,53 +40,45 @@ interface UserWithStats {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter();
+  const { user: dbUser, userRoles, isLoading: isUserLoading } = useCurrentUser();
   const [users, setUsers] = useState<UserWithStats[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'authenticated' | 'anonymous'>("all");
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'owner' | 'manager' | 'none'>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'authenticated' | 'anonymous'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'owner' | 'manager' | 'none'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [selectedUser, setSelectedUser] = useState<UserWithStats | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [processingUserId, setProcessingUserId] = useState<string | null>(null);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
 
-  const ITEMS_PER_PAGE = 20;
-
+  // Check authorization
   useEffect(() => {
-    loadUsers();
-  }, [currentPage, userTypeFilter, roleFilter]);
+    if (isUserLoading) return;
 
-  useEffect(() => {
-    // Reset to page 1 when search changes
-    const timeoutId = setTimeout(() => {
-      if (currentPage === 1) {
-        loadUsers();
-      } else {
-        setCurrentPage(1);
-      }
-    }, 300); // Debounce search
+    if (!dbUser || !isSystemAdmin(userRoles)) {
+      toast.error("You must be a system administrator to access this page");
+      router.push("/unauthorized");
+    }
+  }, [isUserLoading, dbUser, userRoles, router]);
 
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
-
+  // Load users
   const loadUsers = async () => {
     setIsLoading(true);
     try {
       const result = await listUsersAction({
         page: currentPage,
-        limit: ITEMS_PER_PAGE,
+        limit: 20,
         search: searchQuery,
         userType: userTypeFilter,
-        roleFilter: roleFilter,
+        roleFilter,
       });
 
       if (result.success && result.data) {
         setUsers(result.data.users);
         setTotalPages(result.data.totalPages);
-        setTotalCount(result.data.totalCount);
       } else {
-        toast.error(result.error || "Failed to load users");
+        toast.error("Failed to load users");
       }
     } catch (error) {
       console.error("Error loading users:", error);
@@ -86,199 +88,417 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleUserClick = (user: UserWithStats) => {
-    setSelectedUser(user);
-    setShowDetailsModal(true);
+  useEffect(() => {
+    if (dbUser && isSystemAdmin(userRoles)) {
+      loadUsers();
+    }
+  }, [currentPage, searchQuery, userTypeFilter, roleFilter, dbUser, userRoles]);
+
+  const handleAssignSystemAdmin = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      const result = await assignSystemAdminAction(userId);
+      if (result.success) {
+        toast.success("System admin role assigned");
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to assign role");
+      }
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      toast.error("Failed to assign role");
+    } finally {
+      setProcessingUserId(null);
+    }
   };
 
-  const getUserTypeLabel = (type: 'authenticated' | 'anonymous') => {
-    return type === 'authenticated' ? 'Authenticated' : 'Anonymous';
+  const handleRevokeSystemAdmin = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      const result = await revokeSystemAdminAction(userId);
+      if (result.success) {
+        toast.success("System admin role revoked");
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to revoke role");
+      }
+    } catch (error) {
+      console.error("Error revoking role:", error);
+      toast.error("Failed to revoke role");
+    } finally {
+      setProcessingUserId(null);
+    }
   };
 
-  const getUserTypeBadgeVariant = (type: 'authenticated' | 'anonymous') => {
-    return type === 'authenticated' ? 'default' : 'secondary';
+  const handleAssignPollCreator = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      const result = await assignPollCreatorAction(userId);
+      if (result.success) {
+        toast.success("Poll creator role assigned");
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to assign role");
+      }
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      toast.error("Failed to assign role");
+    } finally {
+      setProcessingUserId(null);
+    }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const handleRevokePollCreator = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      const result = await revokePollCreatorAction(userId);
+      if (result.success) {
+        toast.success("Poll creator role revoked");
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to revoke role");
+      }
+    } catch (error) {
+      console.error("Error revoking role:", error);
+      toast.error("Failed to revoke role");
+    } finally {
+      setProcessingUserId(null);
+    }
   };
+
+  const handleSyncAllProfiles = async () => {
+    setIsSyncingAll(true);
+    try {
+      const result = await syncAllUserProfilesAction();
+      if (result.success) {
+        toast.success(result.message);
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to sync profiles");
+      }
+    } catch (error) {
+      console.error("Error syncing profiles:", error);
+      toast.error("Failed to sync profiles");
+    } finally {
+      setIsSyncingAll(false);
+    }
+  };
+
+  const handleSyncUserProfile = async (userId: string) => {
+    setProcessingUserId(userId);
+    try {
+      const result = await syncUserProfileAction(userId);
+      if (result.success) {
+        toast.success(`Synced: ${result.email || 'Profile updated'}`);
+        await loadUsers();
+      } else {
+        toast.error(result.error || "Failed to sync profile");
+      }
+    } catch (error) {
+      console.error("Error syncing profile:", error);
+      toast.error("Failed to sync profile");
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  const getUserRoleBadges = (user: UserWithStats) => {
+    const hasSystemAdmin = user.roles.some(r => r.role === 'system_admin');
+    const hasPollCreator = user.roles.some(r => r.role === 'poll_creator');
+    const pollOwnerCount = user.roles.filter(r => r.role === 'poll_owner').length;
+    const pollManagerCount = user.roles.filter(r => r.role === 'poll_manager').length;
+
+    return (
+      <div className="flex gap-2 flex-wrap">
+        {hasSystemAdmin && <Badge className="bg-red-600">System Admin</Badge>}
+        {hasPollCreator && <Badge className="bg-blue-600">Poll Creator</Badge>}
+        {pollOwnerCount > 0 && (
+          <Badge variant="secondary">Owner ({pollOwnerCount})</Badge>
+        )}
+        {pollManagerCount > 0 && (
+          <Badge variant="secondary">Manager ({pollManagerCount})</Badge>
+        )}
+        {user.roles.length === 0 && (
+          <Badge variant="outline" className="text-gray-500">No roles</Badge>
+        )}
+      </div>
+    );
+  };
+
+  // Show loading state while checking auth
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
-        <p className="text-gray-600">Manage all users and their roles</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <div className="flex flex-col md:flex-row gap-4 mt-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search by email, ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* User Type Filter */}
-            <Select value={userTypeFilter} onValueChange={(value: string) => setUserTypeFilter(value as 'all' | 'authenticated' | 'anonymous')}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="User Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                <SelectItem value="authenticated">Authenticated</SelectItem>
-                <SelectItem value="anonymous">Anonymous</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Role Filter */}
-            <Select value={roleFilter} onValueChange={(value: string) => setRoleFilter(value as 'all' | 'admin' | 'owner' | 'manager' | 'none')}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Role Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="admin">System Admin</SelectItem>
-                <SelectItem value="owner">Poll Owner</SelectItem>
-                <SelectItem value="manager">Poll Manager</SelectItem>
-                <SelectItem value="none">No Roles</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </Button>
+            <h1 className="text-xl font-bold">User Management</h1>
+            <div className="w-32"></div>
           </div>
-        </CardHeader>
+        </div>
+      </header>
 
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Sync Profiles Button */}
+        <div className="mb-4 flex justify-end">
+          <Button
+            variant="outline"
+            onClick={handleSyncAllProfiles}
+            disabled={isSyncingAll}
+          >
+            {isSyncingAll ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync All Email Addresses from Clerk
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="grid gap-4 md:grid-cols-4">
+              {/* Search */}
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by email or Clerk ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* User Type Filter */}
+              <Select
+                value={userTypeFilter}
+                onValueChange={(value) => setUserTypeFilter(value as typeof userTypeFilter)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="User Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="authenticated">Authenticated</SelectItem>
+                  <SelectItem value="anonymous">Anonymous</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Role Filter */}
+              <Select
+                value={roleFilter}
+                onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Role Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="admin">System Admins</SelectItem>
+                  <SelectItem value="owner">Poll Owners</SelectItem>
+                  <SelectItem value="manager">Poll Managers</SelectItem>
+                  <SelectItem value="none">No Roles</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-12">
-              <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No users found</p>
-            </div>
-          ) : (
-            <>
-              {/* Users Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b">
-                    <tr className="text-left text-sm text-gray-600">
-                      <th className="pb-3 font-medium">User</th>
-                      <th className="pb-3 font-medium">Type</th>
-                      <th className="pb-3 font-medium">Polls</th>
-                      <th className="pb-3 font-medium">Votes</th>
-                      <th className="pb-3 font-medium">Roles</th>
-                      <th className="pb-3 font-medium">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr
-                        key={user.id}
-                        onClick={() => handleUserClick(user)}
-                        className="border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gray-900">
-                              {user.email || 'No email'}
-                            </span>
-                            <span className="text-xs text-gray-500 font-mono">
-                              {user.clerkUserId?.substring(0, 20) || user.sessionId?.substring(0, 20) || user.id.substring(0, 20)}...
-                            </span>
+          </CardContent>
+        </Card>
+
+        {/* Users List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Users ({users.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-gray-600">Loading users...</p>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No users found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {users.map((user) => {
+                  const hasSystemAdmin = user.roles.some(r => r.role === 'system_admin');
+                  const hasPollCreator = user.roles.some(r => r.role === 'poll_creator');
+                  const isProcessing = processingUserId === user.id;
+
+                  return (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {user.email || `User ${user.id.substring(0, 8)}`}
+                            </p>
+                            {user.type === 'authenticated' && !user.email && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 flex-shrink-0"
+                                onClick={() => handleSyncUserProfile(user.id)}
+                                disabled={isProcessing}
+                                title="Sync email from Clerk"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
-                        </td>
-                        <td className="py-4">
-                          <Badge variant={getUserTypeBadgeVariant(user.type)}>
-                            {getUserTypeLabel(user.type)}
+                          <Badge variant={user.type === 'authenticated' ? 'default' : 'outline'}>
+                            {user.type}
                           </Badge>
-                        </td>
-                        <td className="py-4 text-gray-700">{user.pollsParticipated}</td>
-                        <td className="py-4 text-gray-700">{user.totalVotes}</td>
-                        <td className="py-4">
-                          {user.roles.length > 0 ? (
-                            <div className="flex gap-1 flex-wrap">
-                              {user.roles.slice(0, 2).map((role, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {role.role}
-                                </Badge>
-                              ))}
-                              {user.roles.length > 2 && (
-                                <span className="text-xs text-gray-500">+{user.roles.length - 2}</span>
+                        </div>
+
+                        {/* Roles */}
+                        <div className="mb-2">
+                          {getUserRoleBadges(user)}
+                        </div>
+
+                        {/* Stats */}
+                        <p className="text-sm text-gray-600">
+                          {user.pollsParticipated} polls • {user.totalVotes} votes
+                        </p>
+                      </div>
+
+                      {/* Role Management Buttons */}
+                      {user.type === 'authenticated' && (
+                        <div className="flex gap-2 ml-4">
+                          {/* System Admin Toggle */}
+                          {hasSystemAdmin ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRevokeSystemAdmin(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserX className="h-4 w-4 mr-2" />
+                                  Revoke Admin
+                                </>
                               )}
-                            </div>
+                            </Button>
                           ) : (
-                            <span className="text-gray-400 text-sm">None</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAssignSystemAdmin(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  Make Admin
+                                </>
+                              )}
+                            </Button>
                           )}
-                        </td>
-                        <td className="py-4 text-gray-600 text-sm">
-                          {formatDate(user.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  Showing {users.length} of {totalCount} users
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || isLoading}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-2 px-3">
-                    <span className="text-sm text-gray-600">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || isLoading}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                          {/* Poll Creator Toggle */}
+                          {hasPollCreator ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRevokePollCreator(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserX className="h-4 w-4 mr-2" />
+                                  Revoke Creator
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAssignPollCreator(user.id)}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  Make Creator
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            )}
 
-      {/* User Details Modal */}
-      {showDetailsModal && selectedUser && (
-        <UserDetailsModal
-          user={selectedUser}
-          onClose={() => {
-            setShowDetailsModal(false);
-            setSelectedUser(null);
-          }}
-          onUpdate={loadUsers}
-        />
-      )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isLoading}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || isLoading}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

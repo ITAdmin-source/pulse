@@ -13,6 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, CheckCircle, XCircle, Trash2, Plus, Loader2 } from "lucide-react";
+import { Edit, CheckCircle, XCircle, Trash2, Plus, Loader2, Search } from "lucide-react";
 import {
   unpublishPollAction,
   closePollAction,
@@ -46,6 +54,7 @@ import { EditStatementModal, AddStatementModal, TransferOwnershipModal } from "@
 import { UserSearchAutocomplete } from "@/components/admin/user-search-autocomplete";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { canManagePoll } from "@/lib/utils/permissions";
 
 interface ManagePageProps {
   params: Promise<{
@@ -61,6 +70,16 @@ interface Poll {
   status: string;
   totalVoters?: number;
   statementCount?: number;
+  allowUserStatements?: boolean;
+  autoApproveStatements?: boolean;
+  supportButtonLabel?: string | null;
+  opposeButtonLabel?: string | null;
+  unsureButtonLabel?: string | null;
+  votingGoal?: number | null;
+  startTime?: Date | null;
+  endTime?: Date | null;
+  createdAt?: Date;
+  createdBy?: string | null;
 }
 
 interface Statement {
@@ -77,7 +96,7 @@ interface Statement {
 export default function ManagePage({ params }: ManagePageProps) {
   const router = useRouter();
   const { user: clerkUser } = useUser(); // For display purposes only
-  const { user: dbUser } = useCurrentUser(); // For database operations
+  const { user: dbUser, userRoles, isLoading: userLoading } = useCurrentUser(); // For database operations
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -90,6 +109,11 @@ export default function ManagePage({ params }: ManagePageProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Statement filtering state
+  const [statementFilter, setStatementFilter] = useState<"all" | "pending" | "approved">("all");
+  const [statementSearch, setStatementSearch] = useState("");
+  const [statementSort, setStatementSort] = useState<"newest" | "oldest">("newest");
 
   // Role management state
   const [pollManagers, setPollManagers] = useState<Array<{ id: string; userId: string; role: string; userEmail?: string }>>([]);
@@ -106,6 +130,8 @@ export default function ManagePage({ params }: ManagePageProps) {
     opposeButtonLabel: "",
     unsureButtonLabel: "",
     votingGoal: "",
+    startTime: undefined as Date | undefined,
+    endTime: undefined as Date | undefined,
   });
 
   // Helper function to reload statements
@@ -139,6 +165,23 @@ export default function ManagePage({ params }: ManagePageProps) {
         const fetchedPoll = pollResult.data;
         setPoll(fetchedPoll);
 
+        // Check authorization - user must be logged in and have permission
+        if (!userLoading) {
+          // Not authenticated at all
+          if (!clerkUser) {
+            toast.error("Please sign in to manage polls");
+            router.push(`/login?redirect=/polls/${resolvedParams.slug}/manage`);
+            return;
+          }
+
+          // Authenticated but no permission (either no roles, or roles don't include this poll)
+          if (!canManagePoll(userRoles, fetchedPoll.id)) {
+            toast.error("You don't have permission to manage this poll");
+            router.push(`/polls/${resolvedParams.slug}`);
+            return;
+          }
+        }
+
         // Initialize settings form with poll data
         setSettingsForm({
           question: fetchedPoll.question || "",
@@ -149,6 +192,8 @@ export default function ManagePage({ params }: ManagePageProps) {
           opposeButtonLabel: fetchedPoll.opposeButtonLabel || "",
           unsureButtonLabel: fetchedPoll.unsureButtonLabel || "",
           votingGoal: fetchedPoll.votingGoal?.toString() || "",
+          startTime: fetchedPoll.startTime ? new Date(fetchedPoll.startTime) : undefined,
+          endTime: fetchedPoll.endTime ? new Date(fetchedPoll.endTime) : undefined,
         });
 
         // Fetch statements for this poll
@@ -171,11 +216,35 @@ export default function ManagePage({ params }: ManagePageProps) {
     };
 
     loadData();
-  }, [params, router]);
+  }, [params, router, clerkUser, userRoles, userLoading]);
 
-  // Separate pending and approved statements
-  const pendingStatements = allStatements.filter(s => s.approved === null);
-  const approvedStatements = allStatements.filter(s => s.approved === true);
+  // Filter and sort statements
+  const filteredStatements = allStatements
+    .filter(statement => {
+      // Filter by status
+      if (statementFilter === "pending" && statement.approved !== null) return false;
+      if (statementFilter === "approved" && statement.approved !== true) return false;
+
+      // Filter by search query
+      if (statementSearch.trim()) {
+        const searchLower = statementSearch.toLowerCase();
+        return statement.text.toLowerCase().includes(searchLower);
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by date
+      if (statementSort === "newest") {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+    });
+
+  // Separate pending and approved from filtered list
+  const pendingStatements = filteredStatements.filter(s => s.approved === null);
+  const approvedStatements = filteredStatements.filter(s => s.approved === true);
 
   const toggleStatement = (id: string) => {
     setSelectedStatements(prev =>
@@ -387,6 +456,12 @@ export default function ManagePage({ params }: ManagePageProps) {
     e.preventDefault();
     if (!poll?.id) return;
 
+    // Validate dates
+    if (settingsForm.startTime && settingsForm.endTime && settingsForm.endTime <= settingsForm.startTime) {
+      toast.error("End time must be after start time");
+      return;
+    }
+
     setIsSavingSettings(true);
     try {
       const updateData = {
@@ -398,6 +473,8 @@ export default function ManagePage({ params }: ManagePageProps) {
         opposeButtonLabel: settingsForm.opposeButtonLabel || null,
         unsureButtonLabel: settingsForm.unsureButtonLabel || null,
         votingGoal: settingsForm.votingGoal ? parseInt(settingsForm.votingGoal) : null,
+        startTime: settingsForm.startTime || null,
+        endTime: settingsForm.endTime || null,
       };
 
       const result = await updatePollAction(poll.id, updateData);
@@ -604,6 +681,59 @@ export default function ManagePage({ params }: ManagePageProps) {
 
           {/* Statements Tab */}
           <TabsContent value="statements" className="space-y-4">
+            {/* Filters */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Filter & Search</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={statementFilter} onValueChange={(value: "all" | "pending" | "approved") => setStatementFilter(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Statements" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statements</SelectItem>
+                        <SelectItem value="pending">Pending Only</SelectItem>
+                        <SelectItem value="approved">Approved Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Search */}
+                  <div className="space-y-2">
+                    <Label>Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search statement text..."
+                        value={statementSearch}
+                        onChange={(e) => setStatementSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sort */}
+                  <div className="space-y-2">
+                    <Label>Sort</Label>
+                    <Select value={statementSort} onValueChange={(value: "newest" | "oldest") => setStatementSort(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Pending Statements */}
             {pendingStatements.length > 0 && (
               <Card>
@@ -667,6 +797,18 @@ export default function ManagePage({ params }: ManagePageProps) {
               </Card>
             )}
 
+            {/* Empty State */}
+            {filteredStatements.length === 0 && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-gray-500 mb-2">No statements found</p>
+                  <p className="text-sm text-gray-400">
+                    {statementSearch ? "Try adjusting your search or filters" : "No statements have been added yet"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Approved Statements */}
             <Card>
               <CardHeader>
@@ -679,6 +821,11 @@ export default function ManagePage({ params }: ManagePageProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {approvedStatements.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">
+                    No approved statements
+                  </p>
+                )}
                 {approvedStatements.map((statement) => (
                   <div
                     key={statement.id}
@@ -725,32 +872,173 @@ export default function ManagePage({ params }: ManagePageProps) {
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics">
+          <TabsContent value="analytics" className="space-y-4">
+            {/* Overview Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle>Participation Metrics</CardTitle>
+                <CardTitle>Participation Overview</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
                     <p className="text-sm text-gray-600">Total Voters</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.voters}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.voters}</p>
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-sm text-gray-600">Total Votes</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.votes}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.votes}</p>
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-sm text-gray-600">Avg Votes/User</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.voters > 0 ? (stats.votes / stats.voters).toFixed(1) : "0"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Total Statements</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.statements}</p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">Approved Statements</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.statements}</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Engagement Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Engagement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">Total Statements</p>
+                    <p className="text-2xl font-bold text-gray-900">{allStatements.length}</p>
+                    <div className="flex gap-2 text-xs">
+                      <span className="text-green-600">
+                        {stats.statements} approved
+                      </span>
+                      {stats.pending > 0 && (
+                        <span className="text-amber-600">
+                          {stats.pending} pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">User-Submitted</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {allStatements.filter(s => s.submittedBy !== null).length}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {allStatements.length > 0
+                        ? Math.round((allStatements.filter(s => s.submittedBy !== null).length / allStatements.length) * 100)
+                        : 0}% of total
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">Owner-Created</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {allStatements.filter(s => s.submittedBy === null).length}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {allStatements.length > 0
+                        ? Math.round((allStatements.filter(s => s.submittedBy === null).length / allStatements.length) * 100)
+                        : 0}% of total
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Statement Moderation Stats */}
+            {poll?.allowUserStatements && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Moderation Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">Pending Review</p>
+                      <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">Approved</p>
+                      <p className="text-2xl font-bold text-green-600">{stats.statements}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">Approval Rate</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {allStatements.length > 0
+                          ? Math.round((stats.statements / allStatements.length) * 100)
+                          : 0}%
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Poll Status Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Poll Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Status</span>
+                    <Badge variant={poll?.status === 'published' ? 'default' : 'secondary'}>
+                      {poll?.status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Created</span>
+                    <span className="text-sm font-medium">
+                      {poll?.createdAt ? new Date(poll.createdAt).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  {poll?.startTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Start Time</span>
+                      <span className="text-sm font-medium">
+                        {new Date(poll.startTime).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {poll?.endTime && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">End Time</span>
+                      <span className="text-sm font-medium">
+                        {new Date(poll.endTime).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {poll?.votingGoal && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Voting Goal</span>
+                      <span className="text-sm font-medium">
+                        {stats.voters} / {poll.votingGoal}
+                        {stats.voters >= poll.votingGoal && (
+                          <span className="ml-2 text-green-600">✓ Reached!</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Helpful Tips */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Analytics Tips</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-gray-600">
+                <p>• Detailed vote distributions and statement performance will be available after votes are cast</p>
+                <p>• Export options for CSV and PDF reports coming soon</p>
+                <p>• Demographics breakdown will show how different groups voted</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -787,6 +1075,42 @@ export default function ManagePage({ params }: ManagePageProps) {
                         placeholder="Provide context for your poll..."
                         rows={3}
                       />
+                    </div>
+                  </div>
+
+                  {/* Scheduling */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-lg font-semibold text-gray-900">Schedule</h3>
+                    <p className="text-sm text-gray-500">
+                      Set when your poll opens and closes. Leave blank for immediate start and no end time.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="startTime">Start Time</Label>
+                        <DateTimePicker
+                          date={settingsForm.startTime}
+                          setDate={(date) => setSettingsForm({ ...settingsForm, startTime: date })}
+                          placeholder="Poll starts immediately"
+                          minDate={new Date()}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Poll will be visible at this time
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="endTime">End Time</Label>
+                        <DateTimePicker
+                          date={settingsForm.endTime}
+                          setDate={(date) => setSettingsForm({ ...settingsForm, endTime: date })}
+                          placeholder="No end time"
+                          minDate={settingsForm.startTime || new Date()}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Poll will close at this time
+                        </p>
+                      </div>
                     </div>
                   </div>
 

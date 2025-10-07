@@ -3,11 +3,12 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
-import type { User } from "@/db/schema";
+import type { User, UserRole } from "@/db/schema";
 
 interface UserContextType {
   user: User | null;
   sessionId: string | null; // For anonymous users
+  userRoles: UserRole[]; // User roles for permission checking
   isLoading: boolean;
   isAuthenticated: boolean;
   isAnonymous: boolean;
@@ -20,6 +21,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const upgradeAttemptedRef = useRef(false);
 
@@ -63,10 +65,29 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       setUser(dbUser);
       setSessionId(responseSessionId || null);
+
+      // Fetch user roles if user exists
+      if (dbUser?.id) {
+        try {
+          const rolesResponse = await fetch('/api/user/roles');
+          if (rolesResponse.ok) {
+            const { roles } = await rolesResponse.json();
+            setUserRoles(roles || []);
+          } else {
+            setUserRoles([]);
+          }
+        } catch (error) {
+          console.error("Error fetching user roles:", error);
+          setUserRoles([]);
+        }
+      } else {
+        setUserRoles([]);
+      }
     } catch (error) {
       console.error("Error fetching user data:", error);
       setUser(null);
       setSessionId(null);
+      setUserRoles([]);
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +110,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const contextValue: UserContextType = {
     user,
     sessionId,
+    userRoles,
     isLoading: isLoading || !clerkLoaded,
     isAuthenticated: !!clerkUser?.id && !!user?.clerkUserId,
     isAnonymous: !clerkUser?.id && !user?.clerkUserId,

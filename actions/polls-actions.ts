@@ -15,18 +15,40 @@ import {
   updatePoll,
   publishPoll,
   unpublishPoll,
+  getPollsByUserRoles,
 } from "@/db/queries/polls-queries";
 import { type NewPoll } from "@/db/schema/polls";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createPollAction(data: NewPoll) {
   try {
+    // Verify creator exists and has permission to create polls
+    if (!data.createdBy) {
+      return { success: false, error: "User ID required to create poll" };
+    }
+
+    // Check if user has permission to create polls
+    const canCreate = await UserService.canUserCreatePolls(data.createdBy);
+    if (!canCreate) {
+      return {
+        success: false,
+        error: "You need Poll Creator permissions to create polls. Contact a system administrator."
+      };
+    }
+
+    // Create the poll
     const poll = await createPoll(data);
+
+    // Auto-assign poll_owner role to creator
+    await UserService.assignPollOwnerRole(data.createdBy, poll.id);
+
     revalidatePath("/polls");
     revalidatePath("/admin/polls");
     return { success: true, data: poll };
   } catch (error) {
     console.error("Error creating poll:", error);
-    return { success: false, error: "Failed to create poll" };
+    const errorMessage = error instanceof Error ? error.message : "Failed to create poll";
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -180,5 +202,15 @@ export async function getActivePollsAction() {
   } catch (error) {
     console.error("Error fetching active polls:", error);
     return { success: false, error: "Failed to fetch active polls" };
+  }
+}
+
+export async function getManagedPollsAction(userId: string) {
+  try {
+    const polls = await getPollsByUserRoles(userId);
+    return { success: true, data: polls };
+  } catch (error) {
+    console.error("Error fetching managed polls:", error);
+    return { success: false, error: "Failed to fetch managed polls" };
   }
 }

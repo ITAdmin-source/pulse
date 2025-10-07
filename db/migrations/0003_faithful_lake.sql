@@ -1,0 +1,1 @@
+ALTER TYPE "public"."role" ADD VALUE 'poll_creator' BEFORE 'poll_owner';

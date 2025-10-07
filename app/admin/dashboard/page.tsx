@@ -99,6 +99,9 @@ export default async function AdminDashboardPage() {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
+                <Link href="/admin/users">Manage Users</Link>
+              </Button>
+              <Button variant="outline" asChild>
                 <Link href="/admin/polls">Manage All Polls</Link>
               </Button>
               <Button variant="outline" asChild>

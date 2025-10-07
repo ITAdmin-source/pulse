@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,10 @@ const STEPS = 5;
 
 export default function CreatePollPage() {
   const router = useRouter();
-  const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
+  const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading, userRoles } = useCurrentUser();
   const [currentStep, setCurrentStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   // Form state
   const [question, setQuestion] = useState("");
@@ -39,6 +40,31 @@ export default function CreatePollPage() {
   const [statements, setStatements] = useState<string[]>(["", "", "", "", "", ""]);
 
   const progress = (currentStep / STEPS) * 100;
+
+  // Check authorization on mount
+  useEffect(() => {
+    if (isUserLoading) return;
+
+    // User must be authenticated to create polls
+    if (!dbUser?.id) {
+      toast.error("Please sign in to create polls");
+      router.push("/login");
+      return;
+    }
+
+    // Check if user has permission to create polls
+    const hasPermission = userRoles.some(
+      role => role.role === 'system_admin' || role.role === 'poll_creator' || role.role === 'poll_manager'
+    );
+
+    if (!hasPermission) {
+      toast.error("You need Poll Creator permissions. Contact a system administrator.");
+      router.push("/unauthorized");
+      return;
+    }
+
+    setAuthCheckComplete(true);
+  }, [isUserLoading, dbUser, userRoles, router]);
 
   const addStatement = () => {
     setStatements([...statements, ""]);
@@ -180,6 +206,18 @@ export default function CreatePollPage() {
       setIsCreating(false);
     }
   };
+
+  // Show loading state while checking authorization
+  if (!authCheckComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

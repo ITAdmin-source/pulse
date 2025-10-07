@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { UserManagementService } from "@/lib/services/user-management-service";
+import { UserService } from "@/lib/services/user-service";
 
 interface ListUsersOptions {
   page: number;
@@ -53,6 +54,32 @@ export async function revokeSystemAdminAction(userId: string) {
   } catch (error) {
     console.error("Error revoking system admin:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to revoke system admin";
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function assignPollCreatorAction(userId: string) {
+  try {
+    await UserService.assignPollCreatorRole(userId);
+    revalidatePath("/admin/users");
+    revalidatePath("/admin/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error assigning poll creator:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to assign poll creator role";
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function revokePollCreatorAction(userId: string) {
+  try {
+    await UserService.revokePollCreatorRole(userId);
+    revalidatePath("/admin/users");
+    revalidatePath("/admin/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error revoking poll creator:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to revoke poll creator role";
     return { success: false, error: errorMessage };
   }
 }

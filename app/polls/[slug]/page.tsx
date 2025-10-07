@@ -3,11 +3,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Settings } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getVotingProgressAction } from "@/actions/votes-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
+import { getUserRolesByUserIdAction } from "@/actions/user-roles-actions";
 import { UserService } from "@/lib/services/user-service";
 import { WelcomeBackBanner } from "@/components/polls/welcome-back-banner";
+import { canManagePoll as checkCanManagePoll } from "@/lib/utils/permissions";
 
 interface PollEntryPageProps {
   params: Promise<{
@@ -71,6 +74,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
   const { userId: clerkUserId } = await auth();
   let dbUser = null;
   let votingProgress = null;
+  let canManage = false;
 
   try {
     // Resolve to database user
@@ -85,8 +89,14 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
       }
     }
 
-    // If user exists in database, get their progress
+    // If user exists in database, check permissions and get progress
     if (dbUser) {
+      // Check if user can manage this poll - MUST use user-specific roles
+      const rolesResult = await getUserRolesByUserIdAction(dbUser.id);
+      if (rolesResult.success && rolesResult.data) {
+        canManage = checkCanManagePoll(rolesResult.data, poll.id);
+      }
+
       const progressResult = await getVotingProgressAction(poll.id, dbUser.id);
       if (progressResult.success && progressResult.data) {
         votingProgress = progressResult.data;
@@ -111,6 +121,18 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-72px)]">
         <div className="max-w-2xl w-full text-center space-y-8">
+          {/* Manage Poll Button - show for owners/managers */}
+          {canManage && (
+            <div className="flex justify-end mb-4">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/polls/${poll.slug}/manage`}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Poll
+                </Link>
+              </Button>
+            </div>
+          )}
+
           {/* Welcome Back Banner - show for returning users */}
           {isInProgress && (
             <WelcomeBackBanner

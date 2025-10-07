@@ -1,6 +1,7 @@
-import { eq, desc, and, isNull, or, lte, gt } from "drizzle-orm";
+import { eq, desc, and, isNull, or, lte, gt, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { polls, type Poll, type NewPoll } from "../schema/polls";
+import { userRoles } from "../schema/user-roles";
 
 export async function getPollById(id: string): Promise<Poll | undefined> {
   const result = await db
@@ -120,4 +121,36 @@ export async function unpublishPoll(id: string): Promise<Poll | undefined> {
 
 export async function closePoll(id: string): Promise<Poll | undefined> {
   return await updatePoll(id, { status: "closed" });
+}
+
+/**
+ * Get all polls where user is owner or manager
+ */
+export async function getPollsByUserRoles(userId: string): Promise<Poll[]> {
+  // Get all poll IDs where user has owner or manager role
+  const roles = await db
+    .select({ pollId: userRoles.pollId })
+    .from(userRoles)
+    .where(
+      and(
+        eq(userRoles.userId, userId),
+        or(
+          eq(userRoles.role, 'poll_owner'),
+          eq(userRoles.role, 'poll_manager')
+        )
+      )
+    );
+
+  const pollIds = roles.map(r => r.pollId).filter(id => id !== null) as string[];
+
+  if (pollIds.length === 0) {
+    return [];
+  }
+
+  // Get all polls for those poll IDs
+  return await db
+    .select()
+    .from(polls)
+    .where(inArray(polls.id, pollIds))
+    .orderBy(desc(polls.createdAt));
 }

@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, isNull } from "drizzle-orm";
 import { db } from "@/db/db";
 import { users, userRoles, userDemographics } from "@/db/schema";
 import type { User } from "@/db/schema";
@@ -328,5 +328,110 @@ export class UserService {
         politicalPartyId: demographics.politicalPartyId || null,
       })
       .onConflictDoNothing({ target: userDemographics.userId });
+  }
+
+  /**
+   * Assign poll_creator role to user (system-wide)
+   */
+  static async assignPollCreatorRole(userId: string): Promise<void> {
+    // Check if user already has poll_creator role
+    const existingRole = await db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.role, 'poll_creator'),
+          isNull(userRoles.pollId)
+        )
+      )
+      .limit(1);
+
+    if (existingRole.length > 0) {
+      throw new Error("User already has poll_creator role");
+    }
+
+    // Create poll_creator role (pollId is null for global roles)
+    await db.insert(userRoles).values({
+      userId,
+      role: 'poll_creator',
+      pollId: null,
+    });
+  }
+
+  /**
+   * Revoke poll_creator role from user
+   */
+  static async revokePollCreatorRole(userId: string): Promise<void> {
+    const result = await db
+      .delete(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.role, 'poll_creator'),
+          isNull(userRoles.pollId)
+        )
+      )
+      .returning({ id: userRoles.id });
+
+    if (result.length === 0) {
+      throw new Error("User does not have poll_creator role");
+    }
+  }
+
+  /**
+   * Check if user can create polls
+   * Returns true if user has: system_admin, poll_creator, or poll_manager role
+   */
+  static async canUserCreatePolls(userId: string): Promise<boolean> {
+    const roles = await this.getUserRoles(userId);
+
+    // System admin can create polls
+    if (roles.some(r => r.role === 'system_admin')) {
+      return true;
+    }
+
+    // Poll creator can create polls
+    if (roles.some(r => r.role === 'poll_creator')) {
+      return true;
+    }
+
+    // Poll managers can create polls
+    if (roles.some(r => r.role === 'poll_manager')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Assign poll_owner role to user for a specific poll
+   * Called automatically when user creates a poll
+   */
+  static async assignPollOwnerRole(userId: string, pollId: string): Promise<void> {
+    // Check if user already has owner role for this poll
+    const existingRole = await db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.role, 'poll_owner'),
+          eq(userRoles.pollId, pollId)
+        )
+      )
+      .limit(1);
+
+    if (existingRole.length > 0) {
+      // User already owns this poll
+      return;
+    }
+
+    // Create poll_owner role for this specific poll
+    await db.insert(userRoles).values({
+      userId,
+      role: 'poll_owner',
+      pollId,
+    });
   }
 }

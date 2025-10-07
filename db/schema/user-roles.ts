@@ -3,7 +3,7 @@ import { users } from "./users";
 import { polls } from "./polls";
 
 // Define role enum
-export const roleEnum = pgEnum("role", ["system_admin", "poll_owner", "poll_manager"]);
+export const roleEnum = pgEnum("role", ["system_admin", "poll_creator", "poll_owner", "poll_manager"]);
 
 export const userRoles = pgTable("user_roles", {
   id: uuid("id").defaultRandom().primaryKey(),

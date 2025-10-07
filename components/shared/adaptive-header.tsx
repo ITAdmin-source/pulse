@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Menu, ArrowLeft } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
 import { useHeader, type HeaderVariant } from "@/contexts/header-context";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { canCreatePoll, isSystemAdmin, hasAnyManagementRole } from "@/lib/utils/permissions";
 import { cn } from "@/lib/utils";
 
 export function AdaptiveHeader() {
@@ -15,6 +17,12 @@ export function AdaptiveHeader() {
   const { signOut } = useClerk();
   const { config } = useHeader();
   const pathname = usePathname();
+  const { user: dbUser, userRoles } = useCurrentUser();
+
+  // Check user permissions
+  const userCanCreatePoll = userRoles.length > 0 && canCreatePoll(userRoles);
+  const userIsSystemAdmin = userRoles.length > 0 && isSystemAdmin(userRoles);
+  const userHasManagementRole = userRoles.length > 0 && hasAnyManagementRole(userRoles);
 
   // Auto-detect variant based on route if not explicitly set
   const detectedVariant = detectVariantFromRoute(pathname);
@@ -218,12 +226,24 @@ export function AdaptiveHeader() {
               Polls
             </Link>
             <SignedIn>
-              <Link href="/polls/create" className="text-gray-700 hover:text-gray-900">
-                Create Poll
-              </Link>
-              <Link href="/admin/dashboard" className="text-gray-700 hover:text-gray-900">
-                Admin
-              </Link>
+              {/* Dashboard - visible only to users who own/manage polls */}
+              {userHasManagementRole && (
+                <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
+                  Dashboard
+                </Link>
+              )}
+              {/* Create Poll - visible to System Admins, Poll Creators, Poll Managers */}
+              {userCanCreatePoll && (
+                <Link href="/polls/create" className="text-gray-700 hover:text-gray-900">
+                  Create Poll
+                </Link>
+              )}
+              {/* Admin Dashboard - visible only to System Admins */}
+              {userIsSystemAdmin && (
+                <Link href="/admin/dashboard" className="text-gray-700 hover:text-gray-900">
+                  Admin Dashboard
+                </Link>
+              )}
             </SignedIn>
             {/* Custom navigation items */}
             {config.customContent}
