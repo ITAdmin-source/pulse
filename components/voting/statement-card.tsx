@@ -5,18 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface StatementCardProps {
   statement: string;
-  keepLabel?: string;
-  throwLabel?: string;
-  skipLabel?: string;
+  agreeLabel?: string;
+  disagreeLabel?: string;
+  passLabel?: string;
   onVote: (value: -1 | 0 | 1) => void;
   disabled?: boolean;
 }
 
 export function StatementCard({
   statement,
-  keepLabel = "Keep",
-  throwLabel = "Throw",
-  skipLabel = "Skip",
+  agreeLabel = "Keep",
+  disagreeLabel = "Throw",
+  passLabel = "Skip",
   onVote,
   disabled = false,
 }: StatementCardProps) {
@@ -53,14 +53,14 @@ export function StatementCard({
           className="flex-1 max-w-[140px] h-11 text-base font-semibold shadow-md hover:shadow-lg transition-all"
           variant="destructive"
         >
-          {throwLabel}
+          {disagreeLabel}
         </Button>
         <Button
           onClick={() => onVote(1)}
           disabled={disabled}
           className="flex-1 max-w-[140px] h-11 text-base font-semibold shadow-md hover:shadow-lg transition-all bg-emerald-600 hover:bg-emerald-700"
         >
-          {keepLabel}
+          {agreeLabel}
         </Button>
       </div>
       
@@ -71,7 +71,7 @@ export function StatementCard({
         variant="ghost"
         className="text-muted-foreground hover:text-foreground text-sm"
       >
-        {skipLabel}
+        {passLabel}
       </Button>
     </div>
   );
