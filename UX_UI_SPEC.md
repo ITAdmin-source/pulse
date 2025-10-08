@@ -1,10 +1,11 @@
 # Pulse - UX/UI Specification Document
 
-**Version:** 1.1
-**Date:** 2025-10-02
+**Version:** 1.2
+**Date:** 2025-10-08
 **Purpose:** Complete frontend specification for designers and developers
 
 **Changelog:**
+- **v1.2 (2025-10-08)**: Card deck metaphor refinements - InsightCard/ResultsCard redesigns, Continuation page achievement metaphor, Closed poll dual-card layout, Poll listing deck cards with emoji
 - **v1.1 (2025-10-02)**: Implemented AdaptiveHeader system - unified context-aware navigation with 5 variants, removed duplicate headers across all pages
 
 ---
@@ -29,15 +30,21 @@
 ### Visual Style
 - **Inspiration:** Card deck with Stories progress bar
   - Each statement is a card in the deck
-  - Each poll is a complete card deck
-  - Voting is like sorting cards (deciding which cards you like or not)
+  - Each poll is a complete card deck (shown as deck package on listing page)
+  - Voting is like sorting cards (Keep/Throw/Unsure metaphor)
   - Adding statements is like adding cards to the deck
   - Progress bar shows position in the deck (Instagram Stories style)
-- **Primary Colors:** TBD by designer
-- **Secondary Colors:** TBD by designer
+  - Personal insights and poll results are collectible cards
+  - Continuation page uses achievement/milestone metaphor
+- **Color System (Card-Coded Gradients):**
+  - **Amber**: Voting cards, active polls, progress pages (`from-amber-50 via-orange-50/40 to-amber-50`)
+  - **Indigo/Violet**: Personal insights (`#ddd6fe`, `#e0e7ff`, `#dbeafe` with animated shimmer)
+  - **Emerald/Teal**: Poll results (`#d1fae5`, `#dbeafe` with animated shimmer)
+  - **Gray**: Closed/archived polls
 - **Typography:** Clean, modern sans-serif
 - **Spacing System:** 4px base grid (4, 8, 16, 24, 32, 48, 64px)
-- **Border Radius:** Cards: 16px, Buttons: 8px, Small elements: 4px
+- **Border Radius:** Cards: 24px (rounded-3xl), Buttons: 8px, Small elements: 4px
+- **Card Aspect Ratio:** Consistent 2:3 ratio for all card types (voting, insights, results, poll decks)
 
 ### Mobile-First Approach
 - **Primary Target:** Mobile portrait (375px - 428px width)
@@ -67,50 +74,57 @@
 
 ## Public-Facing Pages
 
-### 1. Homepage / Poll Directory
-**Route:** `/`
+### 1. Poll Directory / Deck Listing
+**Route:** `/polls`
+
+**Design Philosophy:** Present each poll as a physical card deck package that users can browse and select.
 
 #### Layout
 ```
 ┌─────────────────────────┐
 │      Header/Nav         │
 ├─────────────────────────┤
-│   Welcome Section       │
-│   - App description     │
-│   - Key features        │
+│  Pick a Deck to Explore │ ← Title
+│  Choose a deck, sort    │
+│  the cards, discover... │
 ├─────────────────────────┤
 │   Poll Filters          │
 │   [Active] [Closed]     │
 │   [Search: ______ ]     │
 │   Sort: [Dropdown]      │
 ├─────────────────────────┤
-│   Poll List             │
-│   ┌─────────────────┐   │
-│   │  Poll Card 1    │   │
-│   │  - Question     │   │
-│   │  - Description  │   │
-│   │  - Stats        │   │
-│   │  - Status badge │   │
-│   └─────────────────┘   │
-│   ┌─────────────────┐   │
-│   │  Poll Card 2    │   │
-│   └─────────────────┘   │
+│   Poll Deck Grid        │
+│   (4 columns desktop,   │
+│    3 tablet, 2 mobile)  │
+│                         │
+│   ┌─────┐  ┌─────┐     │
+│   │ 🎴  │  │ 📊  │     │ ← Large emoji at top
+│   │Deck1│  │Deck2│     │
+│   │Quest│  │Quest│     │
+│   │ ✦   │  │ ✦   │     │ ← Decorative elements
+│   └─────┘  └─────┘     │
 │                         │
 │   [Load More]           │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Header Component**
-  - Logo/branding
-  - Navigation menu (hamburger on mobile)
-  - Sign In / Sign Up buttons (if not authenticated)
-  - User menu (if authenticated)
-
-- **Poll Card Component**
-  - Poll question (headline)
-  - Status badge (Active/Closed)
-  - CTA button: "Vote Now" or "View Results"
+- **PollDeckCard Component** (`components/polls/poll-deck-card.tsx`)
+  - 2:3 aspect ratio card (vertical orientation like a deck box)
+  - **Large emoji at top** - Unique to each poll (stored in poll.emoji field)
+  - **3-layer stacked depth effect** - 2 shadow layers behind for visual depth
+  - **Status badge** - Top right corner (Active/Closed)
+  - **Poll question** - Centered, bold, line-clamp-5
+  - **Decorative element** - Bottom (✦ for active, ◆ for closed)
+  - **CLOSED ribbon** - Diagonal semi-transparent overlay for closed decks
+  - **Amber gradient** - Active decks use amber theme
+  - **Gray gradient** - Closed decks use gray theme
+  - **Hover animation:**
+    - Scale to 1.05
+    - Lift up 5px (translateY: -5px)
+    - Enhanced shadow
+    - Duration: 200ms
+  - **Click** - Navigate to `/polls/[slug]`
 
 - **Filter Bar Component**
   - Status filter (Active/Closed toggles)
@@ -119,43 +133,68 @@
   - Clear filters button
 
 #### States
-- Loading state (skeleton screens)
+- Loading state (skeleton screens matching 2:3 cards)
 - Empty state (no polls found)
 - Error state (connection failed)
 
 #### Interactions
-- Click poll card → Navigate to voting interface (if active) or results (if closed)
-- Filter changes → Update poll list
+- **Click deck card** → Navigate to poll entry page (`/polls/[slug]`)
+- **Hover deck card** → Lift and scale animation
+- Filter changes → Update deck grid
 - Search input → Debounced search, update list
 - Infinite scroll or pagination for poll list
+
+#### Visual Details
+- **Grid Layout:**
+  - Desktop: 4 columns (lg:grid-cols-4)
+  - Tablet: 3 columns (md:grid-cols-3)
+  - Mobile: 2 columns (grid-cols-2)
+  - Gap: 8 (2rem between cards)
+- **Background:** Blue-indigo gradient (from-blue-50 to-indigo-100)
+- **Deck card stacking:**
+  - Back layer: translateY(3), translateX(2), opacity 30%
+  - Middle layer: translateY(1.5), translateX(1), opacity 60%
+  - Front layer: Full opacity, interactive
 
 ---
 
 ### 2. Poll Entry / Landing Page
 **Route:** `/polls/[slug]`
 
-**IMPORTANT:** This page now adapts to 4 distinct user states based on voting progress. See detailed state guide in `POLL_PAGE_STATES_GUIDE.md`.
+**IMPORTANT:** This page uses a card deck package metaphor to present polls as physical card decks. The page adapts to 4 distinct user states based on voting progress.
+
+**Design Philosophy:** Clean, focused layout with the card deck as the visual centerpiece. No clutter - let the deck speak for itself.
 
 #### Layout States (Adaptive)
 
 ##### State A: New User (No Votes)
 ```
 ┌─────────────────────────┐
-│   [< Back] [Sign In]    │
+│   [Manage Poll] (owner) │ ← Top right only
 ├─────────────────────────┤
 │                         │
-│   Poll Question         │
-│   (Large, centered)     │
+│   ┌─────────────────┐   │
+│   │  ✦  Poll Deck   │   │ ← Card deck package
+│   │                 │   │   (clickable, 2:3 ratio)
+│   │  Poll Question  │   │
+│   │  Description    │   │
+│   │                 │   │
+│   │   • • •         │   │ ← Dot divider
+│   │                 │   │
+│   │ Keep, throw, or │   │
+│   │ skip each card  │   │
+│   │                 │   │
+│   │ Add a winning   │   │ ← If poll allows
+│   │ card            │   │   user statements
+│   │                 │   │
+│   │ Discover your   │   │
+│   │ insights        │   │
+│   │                 │   │
+│   │ ═══ ═══ ═══     │   │ ← Decorative bars
+│   └─────────────────┘   │
 │                         │
-│   Poll Description      │
-│   (if provided)         │
-│                         │
-│   [Start Voting]        │
-│   (Large CTA button)    │
-│                         │
-│   Helper text: Vote on  │
-│   statements one at a   │
-│   time and discover...  │
+│   [Open Deck]           │ ← Primary CTA
+│   (Large button)        │
 │                         │
 └─────────────────────────┘
 ```
@@ -163,29 +202,16 @@
 ##### State B: In Progress (Below Threshold)
 ```
 ┌─────────────────────────┐
-│   [< Back] [Sign In]    │
+│   [Manage Poll] (owner) │
 ├─────────────────────────┤
-│  ┌────────────────────┐ │
-│  │ ℹ️  Welcome back!  │ │
-│  │ You've voted on 5  │ │
-│  │ of 15 statements   │ │
-│  │ [5/15 statements]  │ │
-│  └────────────────────┘ │
 │                         │
-│   Poll Question         │
-│   (Large, centered)     │
+│   ┌─────────────────┐   │
+│   │  Card Deck      │   │ ← Same deck visual
+│   │  (as State A)   │   │   Click navigates to
+│   └─────────────────┘   │   /vote to continue
 │                         │
-│   Poll Description      │
-│   (if provided)         │
-│                         │
-│   [5/15 Statements]     │
-│   (Badge)               │
-│                         │
-│   [Continue Voting]     │
-│   (Large CTA button)    │
-│                         │
-│   Helper: Vote on 10    │
-│   more to see insights  │
+│   [Continue Deck]       │ ← Primary CTA
+│   (Large button)        │
 │                         │
 └─────────────────────────┘
 ```
@@ -193,30 +219,19 @@
 ##### State C: Threshold Reached (Not All Voted)
 ```
 ┌─────────────────────────┐
-│   [< Back] [Sign In]    │
+│   [Manage Poll] (owner) │
 ├─────────────────────────┤
-│  ┌────────────────────┐ │
-│  │ ✨ Your insights   │ │
-│  │ are ready!         │ │
-│  │ You've voted on 10 │ │
-│  │ statements...      │ │
-│  └────────────────────┘ │
 │                         │
-│   Poll Question         │
+│   ┌─────────────────┐   │
+│   │  Card Deck      │   │ ← Same deck visual
+│   │  (as State A)   │   │   Click navigates to
+│   └─────────────────┘   │   /insights
 │                         │
-│   Poll Description      │
+│   [View Your Insights]  │ ← Primary CTA
+│   (Large button)        │
 │                         │
-│   [✨ Insights Ready]   │
-│   (Badge)               │
-│                         │
-│   [View Your Insights]  │
-│   (Primary CTA)         │
-│                         │
-│   [Continue Voting]     │
-│   (Secondary button)    │
-│                         │
-│   Helper: You've        │
-│   unlocked insights!    │
+│   [Continue Deck]       │ ← Secondary button
+│   (Secondary style)     │
 │                         │
 └─────────────────────────┘
 ```
@@ -224,55 +239,60 @@
 ##### State D: Completed (All Statements Voted)
 ```
 ┌─────────────────────────┐
-│   [< Back] [Sign In]    │
+│   [Manage Poll] (owner) │
 ├─────────────────────────┤
-│  ┌────────────────────┐ │
-│  │ ✨ Poll completed! │ │
-│  │ You've voted on    │ │
-│  │ all 15 statements  │ │
-│  └────────────────────┘ │
 │                         │
-│   Poll Question         │
+│   ┌─────────────────┐   │
+│   │  Card Deck      │   │ ← Same deck visual
+│   │  (as State A)   │   │   Click navigates to
+│   └─────────────────┘   │   /insights
 │                         │
-│   Poll Description      │
+│   [View Your Insights]  │ ← Primary CTA
+│   (Large button)        │
 │                         │
-│   [✨ Insights Ready]   │
-│   (Badge)               │
-│                         │
-│   [View Your Insights]  │
-│   (Primary CTA)         │
-│                         │
-│   [View Poll Results]   │
-│   (Secondary button)    │
-│                         │
-│   Helper: You've        │
-│   completed this poll!  │
+│   [View Poll Results]   │ ← Secondary button
+│   (Secondary style)     │
 │                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Poll Header** (AdaptiveHeader - minimal variant)
-  - Back button
-  - Sign In button (if anonymous)
-  - User avatar menu (if authenticated)
 
-- **Welcome Back Banner** (NEW - `components/polls/welcome-back-banner.tsx`)
-  - Three variants: in-progress, threshold-reached, completed
-  - Info/Sparkles icon
-  - Progress message
-  - Optional badge showing vote count
+- **CardDeckPackage Component** (`components/polls/card-deck-package.tsx`)
+  - Displays poll as a physical card deck (2:3 aspect ratio)
+  - Visual structure:
+    - Top: ✦ symbol + "Poll Deck" label
+    - Middle: Poll question (bold) + optional description
+    - Divider: Three dots (• • •)
+    - Instructions: "Keep, throw, or skip each card"
+    - Optional: "Add a winning card" (if allowUserStatements)
+    - Bottom: "Discover your insights"
+    - Decorative bars: Three amber bars at bottom (always visible)
+  - Stacked card depth effect (2 shadow layers behind)
+  - Amber gradient background (from-amber-50 via-orange-50/40 to-amber-50)
+  - Size: max-w-xs (matches voting card size)
+  - Clickable with hover effect:
+    - Scale 1.02 + lift 4px on hover
+    - Enhanced shadow (xl → 2xl)
+    - Cursor pointer
+  - Click navigation based on user state:
+    - New/In Progress → /vote
+    - Threshold/Completed → /insights
 
-- **Progress Badge** (NEW)
-  - Shows "X/Y Statements" (in progress)
-  - Shows "✨ Insights Ready" (threshold reached/completed)
-  - Variant changes based on state
+- **ClickableCardDeck Wrapper** (`components/polls/clickable-card-deck.tsx`)
+  - Client component wrapper for navigation
+  - Receives: pollSlug, pollQuestion, allowUserStatements, description, navigateTo
+  - Handles click → router.push()
 
-- **Poll Intro Section**
-  - Poll question (H1)
-  - Description text
-  - Adaptive CTA buttons (changes based on state)
-  - Helper text (adaptive)
+- **Adaptive CTA Buttons**
+  - State A: "Open Deck" (primary)
+  - State B: "Continue Deck" (primary)
+  - State C: "View Your Insights" (primary) + "Continue Deck" (secondary)
+  - State D: "View Your Insights" (primary) + "View Poll Results" (secondary)
+
+- **Manage Poll Button** (top right, owners/managers only)
+  - Small outline button with Settings icon
+  - Links to `/polls/[slug]/manage`
 
 #### State Detection Logic
 1. **Check if user exists in database:**
@@ -451,26 +471,23 @@
 #### Layout
 ```
 ┌─────────────────────────┐
-│ ▬▬▬▬░░░░░░░░░  [Finish] │ ← Progress bar
+│ ▬▬▬▬░░░░░░░░░  [+][Finish] │ ← Progress bar & actions
 ├─────────────────────────┤
-│                         │
-│   Poll Question         │
-│   (Small, persistent)   │
+│   Poll Question         │ ← In header
+│   (Small, center-aligned)│
+├─────────────────────────┤
 │                         │
 │  ┌─────────────────┐    │
 │  │                 │    │
 │  │   STATEMENT     │    │
 │  │   TEXT HERE     │    │
+│  │   (max 140 ch)  │    │
 │  │                 │    │
 │  │  [Agree] [Disagree] │ ← ON card
 │  │                 │    │
 │  └─────────────────┘    │
 │                         │
 │     [Pass/Unsure]       │ ← BELOW card
-│                         │
-│   Statement 1 of 10     │ ← Cumulative count
-│                         │
-│  [Submit Statement]     │ ← Optional
 │                         │
 └─────────────────────────┘
 ```
@@ -479,16 +496,24 @@
 
 ##### Statement Card Component
 - **Card Container**
-  - Shadow, rounded corners (16px)
+  - Fixed aspect ratio (2:3) for all cards
+  - Shadow, rounded corners (24px)
+  - Amber gradient background (from-amber-50 via-orange-50/40 to-amber-50)
+  - Stacked card depth effect (2 shadow layers behind)
+  - Decorative ✦ symbols top and bottom
   - Centered, prominent
-  - Statement text (large, readable)
-  - Agree button (left/top)
-  - Disagree button (right/bottom)
+  - **Statement text (max 140 characters)**
+    - Center-aligned
+    - Medium font weight
+    - Responsive sizing (text-sm on mobile, text-base on desktop)
+    - All cards same size regardless of text length
+  - Agree button (left/top, on card)
+  - Disagree button (right/bottom, on card)
   - Customizable button labels
 
 - **Button Positioning**
-  - Agree/Disagree: ON the card
-  - Pass/Unsure: BELOW the card, separated
+  - Agree/Disagree: ON the card (primary actions)
+  - Pass/Unsure: BELOW the card, separated (secondary action)
 
 ##### Progress Bar Component (Instagram-style)
 - Segmented bar at very top
@@ -503,26 +528,30 @@
   - Statement counter uses cumulative numbering
 
 ##### Header Controls
-- Poll question (small, top)
+- Poll question (small, center-aligned in header)
+- Add Card button (right side, with + icon)
+  - Shows as icon-only on mobile, "Add Card" text on larger screens
+  - Tooltip: "Add a new card to share a missing perspective"
+  - Opens modal for statement submission
 - Finish button (right side)
   - Disabled state (grayed out) until threshold
   - Enabled state (clickable) after threshold
   - Tooltip when disabled:
     - "Complete the first 10 statements to finish" (polls with 10+ statements)
     - "Vote on all X statements to finish" (polls with <10 statements)
-- Submit Statement button (optional, in menu or header)
+- **No statement counter** - Progress bar is sufficient visual indicator
 
-##### Vote Result Overlay
+##### Vote Result Overlay (Card Flip Animation)
 ```
 ┌─────────────────────────┐
 │  ┌─────────────────┐    │
+│  │                 │    │ ← Same 2:3 aspect ratio
+│  │ STATEMENT (sm)  │    │ ← Statement text smaller
 │  │                 │    │
-│  │   STATEMENT     │    │
-│  │                 │    │
-│  │  ✓ YOU AGREED   │    │ ← User's vote
+│  │  ✓ YOU AGREED   │    │ ← User's vote indicator
 │  │                 │    │
 │  │  Agree:    65%  │    │
-│  │  ████████░░     │    │ ← Animated bar
+│  │  ████████░░     │    │ ← Animated bars
 │  │                 │    │
 │  │  Disagree: 25%  │    │
 │  │  ███░░░░░░░     │    │
@@ -532,12 +561,22 @@
 │  │                 │    │
 │  │  Based on 234   │    │
 │  │  votes          │    │
-│  │                 │    │
 │  └─────────────────┘    │
 │                         │
-│  [Next →] (optional)    │
+│      [Next →]           │ ← Manual advance
 └─────────────────────────┘
 ```
+
+**Card Flip Animation:**
+- 600ms 3D rotation on Y-axis (0° → 180°)
+- Front side (statement) hidden after 90°
+- Back side (results) appears from 90° → 180°
+- Same amber gradient background as statement card
+- Results animate in after flip completes:
+  - Vote indicator scales + fades in (300ms)
+  - Bars fill sequentially with staggered delays (500ms each, 200ms stagger)
+- Next button fades in after animations (1.2s delay)
+- No auto-advance - user must click Next
 
 #### States
 
@@ -549,33 +588,51 @@
 - Progress bar shows current position
 
 ##### Post-Vote State (Results Display)
-- Statement card remains
-- User's vote highlighted
-- Vote distribution appears with animation:
+- Statement card flips to reveal results (3D card flip animation)
+- Results appear on back of card (same amber gradient)
+- User's vote highlighted with icon
+- Vote distribution appears with staggered animations:
   - Percentages (X% agree, Y% disagree, Z% neutral)
-  - Horizontal bars (animated fill)
+  - Horizontal bars (animated fill, 500ms each with 200ms stagger)
   - Total vote count
   - User's vote indicator
-- Results visible for 3-5 seconds
-- Auto-advance OR manual Next button
+- Next button fades in below card
+- **Manual advance only** - no auto-advance
+- **Result card is also clickable** - tapping card advances to next (discoverable interaction)
 
-##### Transition State
-- Smooth fade out of results
-- Card slides/fades away
-- Next card slides/fades in
-- Progress bar segment fills
+##### Transition State (Card-to-Card Animation)
+**Slide Away + Slide In Animation:**
+- **Results card exit:**
+  - Slides left (x: -400px) with fade out
+  - Duration: 400ms
+  - Easing: ease-in-out
+- **Next statement card enter:**
+  - Slides in from right (x: 400px)
+  - Scale effect: 0.95 → 1.0 for depth
+  - Duration: 400ms
+  - Easing: ease-in-out
+- **Buttons fade separately:**
+  - Vote buttons fade out/in (not sliding)
+  - Pass button fades out/in (not sliding)
+  - Next button fades out/in (not sliding)
+  - Duration: 300ms
+  - Keeps UI stable while cards transition
+- **Progress bar updates** after animation completes
 - Clean slate for next statement
 
 #### Interactions
 
 1. **Voting Flow**
-   - Tap Agree → Vote recorded → Results reveal (animated) → Auto-advance (3-5s) → Next card
-   - Tap Disagree → Same flow
-   - Tap Pass/Unsure → Same flow
+   - Tap Agree/Disagree/Pass → Vote recorded
+   - Card flips (600ms 3D rotation)
+   - Results animate in (staggered)
+   - Next button appears
+   - User clicks Next OR taps result card → Next card slides in
 
 2. **Manual Advancement**
-   - Optional "Next" button during results display
-   - Allows users to skip ahead faster
+   - "Next →" button below results (required - no auto-advance)
+   - OR tap anywhere on result card to advance (discoverable)
+   - Triggers slide-away animation
 
 3. **No Back Navigation**
    - No back button
@@ -616,327 +673,465 @@
 
 ---
 
-### 6a. Continuation Page (Between Batches)
+### 6a. Continuation Page (Achievement/Milestone)
 **Displayed after every 10 statements voted**
 
-#### Layout
+**Design Philosophy:** Use achievement/milestone metaphor (NOT card collection). This is a progress checkpoint where users decide their next action.
+
+#### Scenario 1: Progress Milestone (More Statements Available)
 ```
 ┌─────────────────────────┐
 │                         │
-│   Great progress!       │
-│                         │
-│   You've voted on 10    │
-│   statements so far.    │
-│   (or 20, 30, etc.)     │
-│                         │
 │   ┌─────────────────┐   │
-│   │  Your Stats     │   │
-│   │  -------------  │   │
-│   │  Agree:    6    │   │
-│   │  Disagree: 3    │   │
-│   │  Unsure:   1    │   │
+│   │      🏆         │   │ ← Trophy (spinning animation)
+│   │ Progress        │   │   Amber gradient card
+│   │ Milestone!      │   │   (matches voting flow)
+│   │                 │   │
+│   │ X cards sorted  │   │
+│   │                 │   │
+│   │ ┌─────────────┐ │   │
+│   │ │ Your Tally  │ │   │ ← White inset card
+│   │ │ Keep:    6  │ │   │   with icons
+│   │ │ Throw:   3  │ │   │   (TrendingUp/Down/Minus)
+│   │ │ Unsure:  1  │ │   │
+│   │ └─────────────┘ │   │
+│   │                 │   │
+│   │ More cards to   │   │
+│   │ explore         │   │
+│   │                 │   │
 │   └─────────────────┘   │
 │                         │
-│   There are more        │
-│   statements to explore.│
+│  [Continue Sorting]     │ ← Primary
+│  [Sort X more to finish]│ ← Secondary (if below threshold)
+│  OR                     │
+│  [Finish & See Insights]│ ← Secondary (if threshold met)
 │                         │
-│   What would you like   │
-│   to do?                │
+└─────────────────────────┘
+```
+
+#### Scenario 2: Deck Complete (No More Statements)
+```
+┌─────────────────────────┐
 │                         │
-│  [Continue Voting]      │ ← Primary
+│   ┌─────────────────┐   │
+│   │      🏆         │   │ ← Trophy (spinning animation)
+│   │ Deck Complete!  │   │   Amber gradient card
+│   │ 🎉              │   │   (celebration theme)
+│   │                 │   │
+│   │ You've sorted   │   │
+│   │ all X cards     │   │
+│   │                 │   │
+│   │ ┌─────────────┐ │   │
+│   │ │ Final Tally │ │   │ ← White inset card
+│   │ │ Keep:   12  │ │   │   Same structure
+│   │ │ Throw:   8  │ │   │
+│   │ │ Unsure:  2  │ │   │
+│   │ └─────────────┘ │   │
+│   │                 │   │
+│   └─────────────────┘   │
 │                         │
-│  [Finish & See Results] │ ← Secondary
+│  [See Your Insights]    │ ← Single CTA (primary)
 │                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- Progress summary card
-- Vote distribution summary
-- Statement count indicator
-- Continue button (primary, prominent)
-- Finish button (secondary)
+- **ContinuationPage Component** (`components/voting/continuation-page.tsx`)
+  - Two scenarios based on `hasMoreStatements` prop
+  - **Achievement card:**
+    - Amber gradient background (from-amber-50 via-orange-50/40 to-amber-50)
+    - Same 2:3 aspect ratio as voting cards (max-w-md)
+    - Trophy icon with spin animation (scale 0 → 1, rotate -180° → 0°, spring transition)
+    - Title: "Progress Milestone!" or "Deck Complete! 🎉"
+    - Card count display
+  - **Tally section:**
+    - White inset card (bg-white rounded-xl p-4 border border-gray-200)
+    - Three rows: Keep (green), Throw (red), Unsure (gray)
+    - Icons: TrendingUp, TrendingDown, Minus
+    - Bold count numbers (text-xl)
+  - **Compact sizing:**
+    - Card padding: p-6 (not p-8)
+    - Trophy icon: h-10 w-10 (not h-12 w-12)
+    - Font sizes: text-2xl title, text-sm body
+    - Reduced margins to fit on screen without scrolling
+  - **Action buttons:**
+    - Scenario 1: "Continue Sorting" (primary) + conditional "Finish & See Insights" (secondary, if threshold met)
+    - Scenario 2: "See Your Insights" (primary only)
 
 #### Interactions
-- **Continue Voting** → Load next batch of up to 10 statements
-- **Finish & See Results** → End voting session, generate insights
+- **Continue Sorting** → Load next batch of up to 10 statements
+- **Finish & See Insights** → End voting session, navigate to `/insights`
+- **Sort X more to finish** → Shows remaining needed, disabled button
 - **No skip/dismiss** → User must choose one option
-- **Cumulative progress display:** Shows total votes so far (10, 20, 30, etc.)
-- Does NOT show total remaining or total statement count (keeps exploration open-ended)
-- Next batch continues cumulative numbering (e.g., after voting 10, next batch starts at "Statement 11 of 20")
+- **Error handling** → If batch loading fails, show error message with Retry button
+- **Cumulative progress:** Shows total sorted (10, 20, 30, etc.)
+- No total statement count displayed (keeps exploration open-ended)
+
+#### Animation Specs
+- **Trophy icon:**
+  - Initial: scale(0), rotate(-180deg)
+  - Animate to: scale(1), rotate(0deg)
+  - Delay: 200ms
+  - Transition: spring with stiffness 200
+- **Card entrance:**
+  - Initial: scale(0.9), opacity(0)
+  - Animate to: scale(1), opacity(1)
+  - Duration: 400ms
+  - Easing: ease-out
 
 ---
 
-### 7. Statement Submission Modal
-**Triggered from voting interface**
+### 7. Add Card Modal (Statement Submission)
+**Triggered from voting interface via "Add Card" button**
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  Submit a Statement [X] │
+│  Add a New Card         │
 ├─────────────────────────┤
+│  Create a new card to   │
+│  add a missing          │
+│  perspective to this    │
+│  poll's deck.           │
 │                         │
-│  Write your statement:  │
+│  What should your card  │
+│  say?                   │
 │                         │
 │  ┌─────────────────┐    │
 │  │                 │    │
-│  │                 │    │
+│  │ Textarea...     │    │
 │  │                 │    │
 │  └─────────────────┘    │
 │                         │
-│  Characters: 45/200     │
+│  X/140 characters       │
 │                         │
-│  Preview:               │
+│  Preview your card:     │
 │  ┌─────────────────┐    │
-│  │ Your statement  │    │
-│  │ will appear     │    │
-│  │ like this       │    │
+│  │ ✦  Your text  ✦ │    │ ← Mini horizontal preview
 │  └─────────────────┘    │
 │                         │
-│  [Cancel]    [Submit]   │
+│  [Cancel]  [Add Card]   │
 │                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
 - Modal overlay (darkened background)
-- Modal container
-- Text area input
-- Character counter
-- Statement preview card
+- Modal container with title "Add a New Card"
+- Description: "Create a new card to add a missing perspective to this poll's deck"
+- Label: "What should your card say?"
+- Text area input (max 140 characters)
+- Character counter (X/140 characters)
+- **Compact horizontal preview card:**
+  - Amber gradient background (same as voting cards)
+  - Decorative ✦ symbols left and right
+  - Text center-aligned, text-sm font, medium weight
+  - Line-clamp-2 (max 2 lines)
+  - Minimal height to keep modal compact
 - Cancel button (secondary)
-- Submit button (primary, disabled if empty)
+- "Add Card" button (primary, disabled if empty or over limit)
 
 #### States
-- Empty state (submit disabled)
+- Empty state ("Add Card" button disabled)
 - Typing state (live character count)
-- Limit warning (approaching/at character limit)
-- Submitting state (loading spinner)
-- Success state (confirmation message)
+- Limit warning (text red when over 140 characters)
+- Submitting state (loading spinner, "Adding Card...")
+- Success state (toast notification)
 - Error state (submission failed)
 
 #### Post-Submission Flow
-- Auto-approval: "Your statement is now live!"
-- Moderation: "Your statement is pending approval"
+- Auto-approval: Toast shows "Your card has been added to the deck!"
+- Moderation: Toast shows "Card submitted for review"
 - Modal closes
 - Returns to same voting card
+- User can continue voting immediately
 
 ---
 
 ## Results & Insights Pages
 
 ### 8. Personal Insights Page
+**Route:** `/polls/[slug]/insights`
 **Shown after completing voting (pressing Finish button after threshold met)**
+
+**Design Philosophy:** Present insight as a special, collectible card distinct from voting cards. Clean layout with minimal clutter.
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│                         │
-│   Your Insights         │
+│   [Compact anon banner] │ ← If anonymous user
+├─────────────────────────┤
 │                         │
 │   ┌─────────────────┐   │
-│   │  INSIGHT TITLE  │   │
-│   │  (Your position │   │
-│   │   summary)      │   │
+│   │       🌟        │   │ ← Large emoji (extracted from title)
+│   │ Personal Insight│   │   Indigo/violet gradient
+│   │                 │   │   with animated shimmer
+│   │ Strong Alignment│   │
+│   │ with Key        │   │ ← Title (emoji removed)
+│   │ Proposals       │   │
+│   │                 │   │
+│   │ Based on your   │   │ ← Body (scrollable)
+│   │ voting pattern, │   │
+│   │ you show strong │   │
+│   │ support for...  │   │
+│   │                 │   │
+│   │ ─────────────── │   │ ← Metadata section
+│   │ Poll Question   │   │   (bottom of card)
+│   │ Jan 8, 2025     │   │
 │   └─────────────────┘   │
 │                         │
-│   Insight Body Text:    │
-│   - How you align with  │
-│     majority/minority   │
-│   - Your thematic       │
-│     positions           │
-│   - Unique perspectives │
-│   - Demographic         │
-│     correlations        │
+│   [Share] [Save]        │ ← Inline action buttons
 │                         │
-│   Generated: [timestamp]│
-│                         │
-│   [Share] [Save]        │
-│   [View Poll Results]   │
-│                         │
-│   [Back to Polls]       │
-│                         │
+│   [View All Results]    │ ← Navigation buttons
+│   [Back to All Decks]   │ ← (stacked on mobile,
+│                         │    row on desktop)
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Insight Display Component**
-  - Title section (headline)
-  - Body section (detailed text)
-  - Timestamp
-  - Share button (opens share menu)
-  - Save button (authenticated only, saves to profile)
-  - View Poll Results button (navigates to results summary)
-  - Back to Polls button
+- **InsightCard Component** (`components/shared/insight-card.tsx`)
+  - **2:3 aspect ratio** (same as voting cards - max-w-xs)
+  - **Indigo/violet animated gradient background:**
+    - Colors cycle: #ddd6fe → #e0e7ff → #dbeafe
+    - Duration: 8 seconds, infinite loop
+    - Smooth transitions
+  - **Large emoji hero element:**
+    - Extracted from title string using regex `/^(\p{Emoji})\s+(.+)$/u`
+    - Displayed at 5xl size (text-5xl)
+    - Spin-in animation on load (scale 0 → 1, rotate -180° → 0°)
+  - **"Personal Insight" badge:**
+    - Small uppercase label (px-3 py-0.5)
+    - Indigo color scheme (bg-indigo-100 text-indigo-700)
+  - **Title and body:**
+    - Title without emoji (text-base md:text-lg, font-bold)
+    - Body in scrollable section (max-h-[180px], overflow-y-auto)
+    - Text size: text-xs md:text-sm
+  - **Bottom metadata section:**
+    - Border top (border-t border-indigo-200/50)
+    - Poll question (line-clamp-2)
+    - Generated date (en-US format to prevent hydration errors)
+    - Both text-xs text-gray-500/400
 
-#### Loading State
-```
-┌─────────────────────────┐
-│                         │
-│     [Spinner]           │
-│                         │
-│  Analyzing your         │
-│  responses...           │
-│                         │
-└─────────────────────────┘
-```
+- **InsightActions Component** (`components/polls/insight-actions.tsx`)
+  - Share button (Share2 icon)
+  - Save button (Save icon, disabled for anonymous)
+  - Inline flex row, gap-3
+  - Outline button style
 
-#### Error State
-```
-┌─────────────────────────┐
-│                         │
-│   ⚠️ Insight Generation │
-│      Failed             │
-│                         │
-│  We couldn't generate   │
-│  your insights right    │
-│  now. Please try again  │
-│  later.                 │
-│                         │
-│   [Retry]               │
-│   [View Poll Results]   │
-│                         │
-└─────────────────────────┘
-```
+- **Compact Anonymous Banner:**
+  - If user not signed in
+  - Yellow bg (bg-yellow-50 border-yellow-200)
+  - Text: "Anonymous session • [Sign up] to save your insights"
+  - Small padding (px-4 py-2), text-xs
+
+#### States
+- **Loading** - Generating insights spinner
+- **Success** - Show InsightCard with actions
+- **Error** - "Could Not Generate Insights" with retry/fallback options
+- **Threshold not met** - "Sort More Cards First" with remaining count
 
 #### Interactions
-- Share button → Native share menu or custom share options
-- Save button → Save to user profile (authenticated only)
-- View Poll Results → Navigate to Poll Results Summary page
-- Back to Polls → Navigate to poll directory
+- **Share button** → Native share API or clipboard fallback
+- **Save button** → Download .txt file (authenticated only)
+- **View All Results** → Navigate to `/polls/[slug]/results`
+- **Back to All Decks** → Navigate to `/polls`
+- **Anonymous sign up link** → Navigate to `/signup`
+
+#### Visual Details
+- **Page background:** Blue-indigo gradient (from-blue-50 to-indigo-100)
+- **Container:** max-w-3xl, px-4 py-4
+- **Spacing:** space-y-4 between elements
+- **Reduced clutter:** No header duplication, compact banner, minimal text
 
 ---
 
 ### 9. Poll Results Summary Page
-**Accessible after viewing personal insights**
+**Route:** `/polls/[slug]/results`
+**Accessible to all users (voters and non-voters)**
+
+**Design Philosophy:** Clean, card-focused layout matching insights page structure. Results presented as collectible summary card.
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  [< Back to Insights]   │
-├─────────────────────────┤
-│                         │
-│   Poll Results          │
-│   Poll Question Here    │
 │                         │
 │   ┌─────────────────┐   │
-│   │  AI Summary     │   │
+│   │  Poll Results   │   │ ← Badge at top
+│   │                 │   │   Emerald/teal gradient
+│   │  👥 234  🗳️ 1.5K│   │   with animated shimmer
+│   │                 │   │ ← Participant/vote stats
+│   │ The poll shows  │   │
+│   │ strong consensus│   │ ← AI-generated summary
+│   │ on core issues, │   │   (scrollable)
+│   │ with notable    │   │
+│   │ divergence on...│   │
 │   │                 │   │
-│   │  Overall poll   │   │
-│   │  sentiment and  │   │
-│   │  consensus:     │   │
+│   │ Most agreed:    │   │
+│   │ "Statement..."  │   │
 │   │                 │   │
-│   │  - Main themes  │   │
-│   │  - Polarizing   │   │
-│   │    statements   │   │
-│   │  - Key trends   │   │
+│   │ Most divisive:  │   │
+│   │ "Statement..."  │   │
 │   │                 │   │
+│   │ ─────────────── │   │ ← Metadata section
+│   │ Poll Question   │   │   (bottom of card)
+│   │ Jan 8, 2025     │   │
 │   └─────────────────┘   │
 │                         │
-│   Participation Stats:  │
-│   - X voters            │
-│   - Y total votes       │
-│                         │
-│   Generated: [timestamp]│
-│                         │
-│   [Back to Polls]       │
+│  [Back to All Decks]    │ ← Single centered button
 │                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Results Summary Component**
-  - Back button (to insights)
-  - Poll question heading
-  - AI-generated summary text section
-  - Participation statistics
-  - Timestamp of generation
-  - Back to polls button
+- **ResultsCard Component** (`components/shared/results-card.tsx`)
+  - **2:3 aspect ratio** (same as insights/voting cards - max-w-xs)
+  - **Emerald/teal animated gradient background:**
+    - Colors cycle: #d1fae5 → #dbeafe → #d1fae5
+    - Duration: 8 seconds, infinite loop
+    - Smooth transitions
+  - **"Poll Results" badge:**
+    - Small uppercase label (px-3 py-0.5)
+    - Emerald color scheme (bg-emerald-100 text-emerald-700)
+  - **Statistics display:**
+    - Icons: Users (👥 participants), Vote (🗳️ votes)
+    - Inline flex with gap
+    - Icon + number pairs
+    - Color: emerald-600
+  - **Summary text:**
+    - AI-generated poll summary
+    - Scrollable section (max-h-[220px], overflow-y-auto)
+    - Text size: text-xs md:text-sm
+    - Includes key findings, most agreed/disagreed/divisive statements
+  - **Bottom metadata section:**
+    - Border top (border-t border-emerald-200/50)
+    - Poll question (line-clamp-2)
+    - Generated date (en-US format to prevent hydration errors)
+    - Both text-xs text-gray-500/400
 
 #### States
-- Loading state (if summary not yet generated)
-- Generated state (show summary)
-- Error state (generation failed)
+- **Loading** - "Generating results summary" spinner
+- **Success** - Show ResultsCard
+- **Error** - "Results summary is being generated. Please check back later." fallback
+- **Cache** - AI summaries cached for 24 hours, show cached version if available
+
+#### Interactions
+- **Back to All Decks** → Navigate to `/polls`
+- **Card itself** - Static display, no interactions
+
+#### Visual Details
+- **Page background:** Blue-indigo gradient (from-blue-50 to-indigo-100)
+- **Container:** max-w-3xl, px-4 py-4
+- **Spacing:** space-y-4 between elements
+- **Clean layout:** Just card + back button, no clutter
 
 ---
 
 ### 10. Closed Poll Access Page
+**Route:** `/polls/[slug]/closed`
 **For ALL users (voters and non-voters) accessing closed polls**
 
-#### Layout (For Voters)
+**Design Philosophy:** Show both InsightCard and ResultsCard together to reduce clicks. Users get all information at once.
+
+#### Layout (Desktop - Side by Side)
 ```
-┌─────────────────────────┐
-│  [< Back to Polls]      │
-├─────────────────────────┤
-│                         │
-│   Poll Question (CLOSED)│
-│                         │
-│   ┌─────────────────┐   │
-│   │  Your Insights  │   │
-│   │  (if completed  │   │
-│   │    voting)      │   │
-│   └─────────────────┘   │
-│                         │
-│   [View Poll Results]   │ ← Navigates to Poll Results Page
-│                         │
-│   ┌─────────────────┐   │
-│   │  Your Votes:    │   │
-│   │                 │   │
-│   │  Statement 1    │   │
-│   │  ✓ You agreed   │   │
-│   │                 │   │
-│   │  Statement 2    │   │
-│   │  ✗ You disagreed│   │
-│   │                 │   │
-│   │  ... (all votes)│   │
-│   │                 │   │
-│   └─────────────────┘   │
-│                         │
-└─────────────────────────┘
+┌─────────────────────────────────────────┐
+│                                         │
+│  ┌──────────────┐  ┌──────────────┐    │
+│  │   🌟         │  │ Poll Results │    │ ← InsightCard (left)
+│  │ Personal     │  │              │    │   ResultsCard (right)
+│  │ Insight      │  │  👥 234      │    │
+│  │              │  │  🗳️ 1.5K     │    │ ← Only for voters who
+│  │ Your voting  │  │              │    │   reached threshold
+│  │ pattern...   │  │ Summary...   │    │
+│  │              │  │              │    │
+│  │ ──────────── │  │ ──────────── │    │
+│  │ Poll Ques... │  │ Poll Ques... │    │
+│  │ Jan 8, 2025  │  │ Jan 8, 2025  │    │
+│  └──────────────┘  └──────────────┘    │
+│                                         │
+│       [Back to All Decks]               │ ← Single centered button
+│                                         │
+└─────────────────────────────────────────┘
 ```
 
-#### Layout (For Non-Voters)
+#### Layout (Mobile - Stacked)
 ```
 ┌─────────────────────────┐
-│  [< Back to Polls]      │
-├─────────────────────────┤
 │                         │
-│   Poll Question (CLOSED)│
+│   ┌─────────────────┐   │
+│   │       🌟        │   │ ← InsightCard (top)
+│   │ Personal Insight│   │   (only for voters)
+│   │                 │   │
+│   │ Your pattern... │   │
+│   │                 │   │
+│   │ ─────────────── │   │
+│   │ Poll Question   │   │
+│   │ Jan 8, 2025     │   │
+│   └─────────────────┘   │
 │                         │
-│   This poll has ended.  │
+│   ┌─────────────────┐   │
+│   │  Poll Results   │   │ ← ResultsCard (bottom)
+│   │                 │   │   (shown to everyone)
+│   │  👥 234         │   │
+│   │  🗳️ 1.5K        │   │
+│   │                 │   │
+│   │ Summary text... │   │
+│   │                 │   │
+│   │ ─────────────── │   │
+│   │ Poll Question   │   │
+│   │ Jan 8, 2025     │   │
+│   └─────────────────┘   │
 │                         │
-│   You can view the      │
-│   results and insights  │
-│   from this poll.       │
-│                         │
-│   [View Poll Results]   │ ← Navigates to Poll Results Page
-│                         │
-│   (No personal insights │
-│    or vote history      │
-│    available)           │
+│  [Back to All Decks]    │
 │                         │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Closed Poll View Component**
-  - Poll status badge (CLOSED)
-  - Personal insights section (if available, voters only)
-  - View Poll Results button → **Navigates to Poll Results Page (route: `/polls/[slug]/results`)**
-  - Vote summary list (read-only, voters only)
-    - Statement text
-    - User's vote indicator
-    - Vote distribution (optional)
+- **InsightCard** (`components/shared/insight-card.tsx`) - Reused component
+  - Only shown for voters who reached threshold
+  - Same indigo/violet gradient with emoji
+  - Includes poll question and date metadata
 
-#### Access Rules
-- **Voters (participated and completed):**
-  - See personal insights (if they completed voting/reached threshold)
-  - See their vote history (read-only)
-  - Can view poll results page
-- **Non-voters (did not participate):**
-  - NO personal insights (didn't participate)
-  - NO vote history (didn't vote)
-  - CAN view poll results page (public results)
+- **ResultsCard** (`components/shared/results-card.tsx`) - Reused component
+  - Always shown for everyone (voters and non-voters)
+  - Same emerald/teal gradient
+  - Includes poll question and date metadata
+
+#### Layout System
+- **Container:** max-w-6xl (wider to accommodate side-by-side on desktop)
+- **Cards Container:**
+  - Desktop: `flex flex-row gap-8` (lg:flex-row)
+  - Mobile: `flex flex-col gap-6` (flex-col)
+  - Alignment: `items-start justify-center`
+- **Card Wrappers:**
+  - Mobile: `w-full` with `flex justify-center`
+  - Desktop: `lg:w-auto` with `flex justify-center`
+  - Ensures cards stay centered and max-w-xs
+
+#### Access Rules & Display Logic
+- **Voters who reached threshold:**
+  - See both InsightCard (left/top) and ResultsCard (right/bottom)
+  - Both cards shown simultaneously
+
+- **Voters who didn't reach threshold:**
+  - See only ResultsCard (centered)
+  - No personal insights (didn't vote enough)
+
+- **Non-voters (never participated):**
+  - See only ResultsCard (centered)
+  - No personal insights (didn't participate)
+
+#### Visual Details
+- **Page background:** Blue-indigo gradient (from-blue-50 to-indigo-100)
+- **Spacing:** space-y-4, gap-6 (mobile), gap-8 (desktop)
+- **Responsive breakpoint:** lg (1024px) for side-by-side layout
+- **No extra UI:** Just cards + back button, extremely clean
+
+#### Interactions
+- **Back to All Decks** → Navigate to `/polls`
+- **Cards** → Static display, no click interactions
+- **No separate navigation** → All info visible at once (UX win!)
 
 ---
 
@@ -1763,20 +1958,75 @@ useEffect(() => {
   - Social links
 
 #### 2. Card Components
-- **Poll Card** (list view)
-- **Statement Card** (voting interface)
-- **Insight Card**
-- **Results Summary Card**
+
+**Card Design System:** All cards use consistent 2:3 aspect ratio with color-coded gradients.
+
+- **PollDeckCard** (`components/polls/poll-deck-card.tsx`) - Poll listing page
+  - 2:3 aspect ratio vertical card
+  - Large emoji at top (text-6xl) from poll.emoji field
+  - 3-layer stacked depth effect (2 shadow layers)
+  - Status badge top-right (Active/Closed)
+  - Poll question centered (line-clamp-5)
+  - Decorative element bottom (✦ active, ◆ closed)
+  - CLOSED ribbon for closed polls (diagonal semi-transparent)
+  - Amber gradient for active, gray for closed
+  - Hover: scale 1.05, lift -5px, enhanced shadow
+  - Props: `slug`, `question`, `status`
+
+- **StatementCard** (`components/voting/statement-card.tsx`) - Voting interface
+  - 2:3 aspect ratio card
+  - Amber gradient background
+  - Stacked depth effect
+  - Statement text centered (max 140 chars)
+  - Agree/Disagree buttons ON card
+  - Pass/Unsure button BELOW card
+  - Decorative ✦ symbols top and bottom
+  - Props: `statement`, `onVote`, button labels
+
+- **VoteResultOverlay** (`components/voting/vote-result-overlay.tsx`) - Post-vote results
+  - Same 2:3 aspect ratio as statement card
+  - 3D card flip animation (600ms, Y-axis rotation)
+  - Amber gradient background (matches voting flow)
+  - User's vote indicator with icon
+  - Animated vote distribution bars (staggered 500ms fills)
+  - Clickable to advance to next card
+  - Next button for manual advance
+  - Props: `statement`, `userVote`, percentages, `totalVotes`, `onNext`
+
+- **InsightCard** (`components/shared/insight-card.tsx`) - Personal insights
+  - 2:3 aspect ratio card (max-w-xs)
+  - **Indigo/violet animated gradient** (8s cycle: #ddd6fe → #e0e7ff → #dbeafe)
+  - Large emoji hero (text-5xl) extracted from title via regex
+  - Spin-in animation (scale 0 → 1, rotate -180° → 0°)
+  - "Personal Insight" badge (indigo-100/700)
+  - Title without emoji (text-base md:text-lg)
+  - Scrollable body (max-h-[180px])
+  - Bottom metadata section: poll question + date
+  - Props: `title`, `body`, `pollQuestion`
+
+- **ResultsCard** (`components/shared/results-card.tsx`) - Poll results summary
+  - 2:3 aspect ratio card (max-w-xs)
+  - **Emerald/teal animated gradient** (8s cycle: #d1fae5 → #dbeafe)
+  - "Poll Results" badge (emerald-100/700)
+  - Stats display (Users icon + count, Vote icon + count)
+  - Scrollable summary text (max-h-[220px])
+  - Bottom metadata section: poll question + date
+  - Props: `pollQuestion`, `summaryText`, `participantCount`, `voteCount`, `generatedAt`
+
+- **ContinuationPage** (`components/voting/continuation-page.tsx`) - Progress milestone
+  - Achievement card (max-w-md, not 2:3 ratio)
+  - Amber gradient matching voting flow
+  - Trophy icon with spin animation
+  - Two scenarios: "Progress Milestone!" vs "Deck Complete!"
+  - White inset tally card (Keep/Throw/Unsure with icons)
+  - Compact sizing (p-6, text-2xl title, h-10 w-10 trophy)
+  - Props: `statementsVoted`, vote counts, `hasMoreStatements`, action handlers
+
 - **Stat Card** (analytics)
-- **Welcome Back Banner** (NEW - poll entry page)
+- **Welcome Back Banner** (poll entry page)
   - File: `components/polls/welcome-back-banner.tsx`
-  - Three variants:
-    - **in-progress**: Info icon, "Welcome back!" message with vote count
-    - **threshold-reached**: Sparkles icon, "Your insights are ready!" message
-    - **completed**: Sparkles icon, "Poll completed!" message
-  - Uses Alert, AlertTitle, AlertDescription components
-  - Blue color scheme (border-blue-200 bg-blue-50)
-  - Optional badge showing vote progress
+  - Three variants: in-progress, threshold-reached, completed
+  - Blue color scheme
   - Props: `votedCount`, `totalCount`, `variant`
 
 #### 3. Form Components
@@ -1905,7 +2155,9 @@ Desktop: 1024px+         (expanded layout)
 ### Mobile (375px - 767px)
 - **Navigation:** Hamburger menu
 - **Voting Interface:** Full screen cards
-- **Poll List:** Single column, stacked cards
+- **Poll Deck Grid:** 2-column grid (grid-cols-2)
+- **Insights/Results:** Stacked cards vertically
+- **Closed Poll Page:** Stacked InsightCard + ResultsCard
 - **Modals:** Full screen on small devices
 - **Forms:** Full width inputs
 - **Admin Tables:** Horizontal scroll or stacked view
@@ -1913,7 +2165,9 @@ Desktop: 1024px+         (expanded layout)
 ### Tablet (768px - 1023px)
 - **Navigation:** Visible menu bar
 - **Voting Interface:** Slightly larger cards, same flow
-- **Poll List:** 2-column grid
+- **Poll Deck Grid:** 3-column grid (md:grid-cols-3)
+- **Insights/Results:** Single centered card
+- **Closed Poll Page:** Stacked cards (not side-by-side yet)
 - **Modals:** Centered, max-width 600px
 - **Forms:** Optimized spacing
 - **Admin Tables:** Full table view
@@ -1921,7 +2175,9 @@ Desktop: 1024px+         (expanded layout)
 ### Desktop (1024px+)
 - **Navigation:** Full menu bar with dropdowns
 - **Voting Interface:** Centered card, max-width 500px
-- **Poll List:** 3-column grid
+- **Poll Deck Grid:** 4-column grid (lg:grid-cols-4)
+- **Insights/Results:** Single centered card
+- **Closed Poll Page:** Side-by-side InsightCard + ResultsCard (lg:flex-row)
 - **Modals:** Centered, max-width 800px
 - **Forms:** Multi-column layouts where appropriate
 - **Admin Tables:** Full featured tables with sorting/filtering
@@ -1939,22 +2195,63 @@ Desktop: 1024px+         (expanded layout)
 - Easing: ease-out
 
 #### 2. Card Transitions (Voting)
-- **Vote Reveal:**
-  - Results fade in: 300ms
-  - Bars animate fill: 500ms (staggered by 100ms)
+
+**A. Card Flip (Vote → Results):**
+- 3D rotation on Y-axis: 0° → 180°
+- Duration: 600ms
+- Easing: ease-in-out
+- Front (statement) hidden after 90°
+- Back (results) appears from 90° → 180°
+- Same amber gradient on both sides
+- Perspective: 1000px on parent container
+
+**B. Results Reveal (After Flip):**
+- Vote indicator: Scale 0.8 → 1.0 + Fade in, 300ms, delay 100ms
+- Bar 1 (Agree): Fill 0% → X%, 500ms, delay 300ms
+- Bar 2 (Disagree): Fill 0% → Y%, 500ms, delay 500ms
+- Bar 3 (Unsure): Fill 0% → Z%, 500ms, delay 700ms
+- Next button: Fade in, 300ms, delay 1200ms
+- Easing: ease-out for all
+
+**C. Card-to-Card Transition (Results → Next Statement):**
+- **Results card exit:**
+  - Slide left: translateX(-400px)
+  - Fade out: opacity 0
+  - Duration: 400ms
+  - Easing: ease-in-out
+- **Next statement card enter:**
+  - Slide in from right: translateX(400px → 0)
+  - Scale: 0.95 → 1.0 (depth effect)
+  - Fade in: opacity 0 → 1
+  - Duration: 400ms
+  - Easing: ease-in-out
+- **Buttons transition separately:**
+  - Vote buttons: Fade only (300ms), no slide
+  - Pass button: Fade only (300ms), no slide
+  - Next button: Fade out (300ms) on exit
+  - Keeps UI stable during card transition
+
+#### 3. Card Deck Package (Poll Entry Page)
+- **Initial Load:**
+  - Scale: 0.95 → 1.0
+  - Fade in: opacity 0 → 1
+  - Duration: 500ms
   - Easing: ease-out
 
-- **Card Exit:**
-  - Fade out: 200ms
-  - Slide left: 300ms
-  - Easing: ease-in
-
-- **Card Enter:**
-  - Fade in: 200ms
-  - Slide in from right: 300ms
+- **Hover Effect:**
+  - Scale: 1.0 → 1.02
+  - Lift: translateY(0 → -4px)
+  - Shadow: xl → 2xl
+  - Duration: 300ms
   - Easing: ease-out
+  - Cursor: pointer
 
-#### 3. Progress Bar
+- **Click Feedback:**
+  - Brief scale down to 0.98
+  - Duration: 100ms
+  - Then navigate to target route
+
+#### 4. Progress Bar
 - **Segment Fill:**
   - Width transition: 300ms
   - Easing: ease-in-out
@@ -1964,7 +2261,7 @@ Desktop: 1024px+         (expanded layout)
   - Duration: 1500ms
   - Loop: infinite
 
-#### 4. Modal Animations
+#### 5. Modal Animations
 - **Open:**
   - Overlay fade in: 200ms
   - Modal scale: 0.9 → 1.0, 250ms
@@ -1975,7 +2272,44 @@ Desktop: 1024px+         (expanded layout)
   - Overlay fade out: 200ms
   - Easing: ease-in
 
-#### 5. Loading States
+#### 6. Poll Deck Card (Listing Page)
+- **Hover Effect:**
+  - Scale: 1.0 → 1.05
+  - Lift: translateY(0 → -5px)
+  - Shadow: enhanced
+  - Duration: 200ms
+  - Easing: ease-out
+
+#### 7. Insight & Results Cards
+- **Animated Shimmer Gradient:**
+  - InsightCard: Cycles indigo/violet colors (#ddd6fe → #e0e7ff → #dbeafe and back)
+  - ResultsCard: Cycles emerald/teal colors (#d1fae5 → #dbeafe and back)
+  - Duration: 8 seconds
+  - Loop: infinite
+  - Smooth transitions between color stops
+
+- **Emoji Hero Animation (InsightCard):**
+  - Initial: scale(0), rotate(-180deg)
+  - Animate to: scale(1), rotate(0deg)
+  - Duration: 500ms
+  - Easing: spring-like bounce
+  - Triggered on card mount
+
+#### 8. Continuation Page (Achievement)
+- **Trophy Icon Animation:**
+  - Initial: scale(0), rotate(-180deg)
+  - Animate to: scale(1), rotate(0deg)
+  - Delay: 200ms after mount
+  - Transition: spring with stiffness 200
+  - Creates celebratory spin-in effect
+
+- **Card Entrance:**
+  - Initial: scale(0.9), opacity(0)
+  - Animate to: scale(1), opacity(1)
+  - Duration: 400ms
+  - Easing: ease-out
+
+#### 9. Loading States
 - **Spinner:** Continuous rotation, 1s per revolution
 - **Skeleton:** Shimmer effect, 1.5s loop
 - **Progress Bar:** Indeterminate animation

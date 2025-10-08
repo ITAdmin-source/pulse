@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, X, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,128 +31,159 @@ export function VoteResultOverlay({
   disagreeLabel = "Disagree",
   unsureLabel = "Unsure",
 }: VoteResultOverlayProps) {
-  const [animationPhase, setAnimationPhase] = useState<'idle' | 'started' | 'complete'>('idle');
+  const [animationPhase, setAnimationPhase] = useState<'entering' | 'visible'>('entering');
 
   useEffect(() => {
-    setAnimationPhase('idle');
-    const timer = setTimeout(() => setAnimationPhase('started'), 100);
-    const completeTimer = setTimeout(() => setAnimationPhase('complete'), 1100);
-    
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(completeTimer);
-    };
-  }, []); // Only runs on mount
+    // Start animation sequence after flip completes
+    const timer = setTimeout(() => setAnimationPhase('visible'), 700);
+    return () => clearTimeout(timer);
+  }, []);
 
   const getUserVoteLabel = () => {
-    if (userVote === 1) return `✓ YOU ${agreeLabel.toUpperCase()}D`;
-    if (userVote === -1) return `✗ YOU ${disagreeLabel.toUpperCase()}D`;
-    return `− YOU PASSED`;
+    if (userVote === 1) return `YOU ${agreeLabel.toUpperCase()}D`;
+    if (userVote === -1) return `YOU ${disagreeLabel.toUpperCase()}D`;
+    return `YOU PASSED`;
   };
 
   const VoteIcon = userVote === 1 ? Check : userVote === -1 ? X : Minus;
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto px-4">
-      <Card className="w-full shadow-lg">
-        <CardContent className="p-6 md:p-8 space-y-4">
-          {/* Statement Text */}
-          <p className="text-lg md:text-xl text-center leading-relaxed text-muted-foreground">
-            {statement}
-          </p>
+    <div className="flex flex-col items-center gap-6 w-full max-w-xs mx-auto px-4">
+      {/* Card container with flip animation */}
+      <motion.div
+        className="relative w-full cursor-pointer"
+        style={{ perspective: '1000px' }}
+        initial={{ x: 0, opacity: 1 }}
+        exit={{ x: -400, opacity: 0 }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+        onClick={onNext}
+      >
+        <motion.div
+          className="relative w-full aspect-[2/3] shadow-lg rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50"
+          initial={{ rotateY: 0 }}
+          animate={{ rotateY: 180 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+          style={{
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          {/* Results content - visible after flip */}
+          <div
+            className="absolute inset-0 p-4 flex flex-col justify-between"
+            style={{
+              transform: 'rotateY(180deg)',
+              backfaceVisibility: 'hidden',
+            }}
+          >
+            {/* Statement text (smaller, at top) */}
+            <div className="text-center">
+              <p className="text-sm text-gray-700 leading-tight line-clamp-3 mb-3">
+                {statement}
+              </p>
+            </div>
 
-          {/* User's Vote */}
-          <div className="flex items-center justify-center gap-2 py-3">
-            <VoteIcon
-              className={cn(
-                "h-5 w-5 transition-all duration-300",
-                animationPhase !== 'idle' && "scale-100 opacity-100",
-                animationPhase === 'idle' && "scale-75 opacity-0",
-                userVote === 1 && "text-green-600",
-                userVote === -1 && "text-red-600",
-                userVote === 0 && "text-gray-600"
-              )}
-            />
-            <span
-              className={cn(
-                "font-semibold text-sm transition-all duration-300",
-                animationPhase !== 'idle' && "opacity-100 translate-x-0",
-                animationPhase === 'idle' && "opacity-0 translate-x-2",
-                userVote === 1 && "text-green-600",
-                userVote === -1 && "text-red-600",
-                userVote === 0 && "text-gray-600"
-              )}
-            >
-              {getUserVoteLabel()}
-            </span>
+            {/* User's vote indicator */}
+            <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+              <motion.div
+                className="flex items-center gap-2"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={animationPhase === 'visible' ? { scale: 1, opacity: 1 } : {}}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <VoteIcon
+                  className={cn(
+                    "h-6 w-6",
+                    userVote === 1 && "text-green-600",
+                    userVote === -1 && "text-red-600",
+                    userVote === 0 && "text-gray-600"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "font-bold text-sm",
+                    userVote === 1 && "text-green-600",
+                    userVote === -1 && "text-red-600",
+                    userVote === 0 && "text-gray-600"
+                  )}
+                >
+                  {getUserVoteLabel()}
+                </span>
+              </motion.div>
+
+              {/* Vote distributions */}
+              <div className="w-full space-y-2">
+                {/* Agree bar */}
+                <div>
+                  <div className="flex justify-between text-xs mb-0.5">
+                    <span className="text-gray-700">{agreeLabel}</span>
+                    <span className="font-semibold text-gray-900">{agreePercent}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className="bg-green-600 h-full"
+                      initial={{ width: "0%" }}
+                      animate={animationPhase === 'visible' ? { width: `${agreePercent}%` } : {}}
+                      transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Disagree bar */}
+                <div>
+                  <div className="flex justify-between text-xs mb-0.5">
+                    <span className="text-gray-700">{disagreeLabel}</span>
+                    <span className="font-semibold text-gray-900">{disagreePercent}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className="bg-red-600 h-full"
+                      initial={{ width: "0%" }}
+                      animate={animationPhase === 'visible' ? { width: `${disagreePercent}%` } : {}}
+                      transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Unsure bar */}
+                <div>
+                  <div className="flex justify-between text-xs mb-0.5">
+                    <span className="text-gray-700">{unsureLabel}</span>
+                    <span className="font-semibold text-gray-900">{unsurePercent}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className="bg-gray-600 h-full"
+                      initial={{ width: "0%" }}
+                      animate={animationPhase === 'visible' ? { width: `${unsurePercent}%` } : {}}
+                      transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Total votes (at bottom) */}
+            <div className="text-center">
+              <p className="text-xs text-gray-600">
+                Based on {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
+        </motion.div>
+      </motion.div>
 
-          {/* Vote Distributions */}
-          <div className="space-y-3">
-            {/* Agree */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>{agreeLabel}:</span>
-                <span className="font-semibold">{agreePercent}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-green-600 h-full transition-all duration-500 ease-out"
-                  style={{ 
-                    width: animationPhase !== 'idle' ? `${agreePercent}%` : "0%",
-                    transitionDelay: animationPhase === 'started' ? '0ms' : '0ms'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Disagree */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>{disagreeLabel}:</span>
-                <span className="font-semibold">{disagreePercent}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-red-600 h-full transition-all duration-500 ease-out"
-                  style={{ 
-                    width: animationPhase !== 'idle' ? `${disagreePercent}%` : "0%",
-                    transitionDelay: animationPhase === 'started' ? '200ms' : '0ms'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Unsure */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>{unsureLabel}:</span>
-                <span className="font-semibold">{unsurePercent}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-gray-600 h-full transition-all duration-500 ease-out"
-                  style={{ 
-                    width: animationPhase !== 'idle' ? `${unsurePercent}%` : "0%",
-                    transitionDelay: animationPhase === 'started' ? '400ms' : '0ms'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Total Votes */}
-          <p className="text-center text-sm text-muted-foreground">
-            Based on {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Optional Next Button */}
+      {/* Next Button */}
       {onNext && (
-        <Button onClick={onNext} variant="outline" className="mt-2">
-          Next →
-        </Button>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, delay: animationPhase === 'entering' ? 1.2 : 0 }}
+        >
+          <Button onClick={onNext} size="lg" className="shadow-md">
+            Next →
+          </Button>
+        </motion.div>
       )}
     </div>
   );

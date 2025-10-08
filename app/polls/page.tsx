@@ -12,11 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedPollsAction } from "@/actions/polls-actions";
 import { toast } from "sonner";
+import { PollDeckCard } from "@/components/polls/poll-deck-card";
 
 type PollStatus = "all" | "active" | "closed";
 type SortBy = "recent" | "popular" | "ending";
@@ -26,6 +25,7 @@ interface Poll {
   slug: string;
   question: string;
   description?: string | null;
+  emoji?: string | null;
   status: string;
   endTime?: Date | null;
   createdAt: Date;
@@ -133,10 +133,10 @@ export default function PollsPage() {
         {/* Welcome Section */}
         <section className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Explore Active Polls
+            Pick a Deck to Explore
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Share your voice on important topics. Vote on statements, see how others think, and discover personalized insights.
+            Choose a deck, sort the cards, and discover your unique perspective.
           </p>
         </section>
 
@@ -189,47 +189,28 @@ export default function PollsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="flex flex-col h-full">
-                <CardHeader className="flex-grow">
-                  <Skeleton className="h-6 w-20 mb-4" />
-                  <Skeleton className="h-8 w-full mb-2" />
-                </CardHeader>
-                <CardFooter>
-                  <Skeleton className="h-10 w-full" />
-                </CardFooter>
-              </Card>
+          <section className="grid gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="w-full aspect-[2/3]">
+                <Skeleton className="w-full h-full rounded-3xl" />
+              </div>
             ))}
           </section>
         )}
 
-        {/* Poll List */}
+        {/* Poll Deck Grid */}
         {!isLoading && filteredPolls.length > 0 && (
-          <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <section className="grid gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {filteredPolls.map((poll) => {
               const displayStatus = getPollStatus(poll);
               return (
-                <Card key={poll.id} className="flex flex-col hover:shadow-lg transition-shadow h-full">
-                  <CardHeader className="flex-grow">
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge variant={displayStatus === "active" ? "default" : "secondary"}>
-                        {displayStatus === "active" ? "Active" : "Closed"}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl leading-tight">
-                      {poll.question}
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardFooter>
-                    <Button asChild className="w-full">
-                      <Link href={`/polls/${poll.slug}`}>
-                        {displayStatus === "active" ? "Vote Now" : "View Results"}
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
+                <PollDeckCard
+                  key={poll.id}
+                  slug={poll.slug}
+                  question={poll.question}
+                  status={displayStatus}
+                  emoji={poll.emoji}
+                />
               );
             })}
           </section>

@@ -9,6 +9,7 @@ import { getSessionIdAction } from "@/actions/users-actions";
 import { UserService } from "@/lib/services/user-service";
 import { AIService } from "@/lib/services/ai-service";
 import { InsightActions } from "@/components/polls/insight-actions";
+import { InsightCard } from "@/components/shared/insight-card";
 
 interface InsightsPageProps {
   params: Promise<{
@@ -81,17 +82,17 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-6 max-w-md px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Complete Voting First
+            Sort More Cards First
           </h1>
           <p className="text-gray-600 leading-relaxed">
-            You need to vote on {remainingVotes} more statement{remainingVotes !== 1 ? 's' : ''} to unlock your personalized insights.
+            You need to sort {remainingVotes} more card{remainingVotes !== 1 ? 's' : ''} to unlock your personalized insights.
           </p>
           <div className="flex flex-col gap-3">
             <Button size="lg" asChild>
-              <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
+              <Link href={`/polls/${slug}/vote`}>Continue Deck</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href={`/polls/${slug}`}>Back to Poll</Link>
+              <Link href={`/polls/${slug}`}>Back to Deck</Link>
             </Button>
           </div>
         </div>
@@ -153,77 +154,42 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="space-y-6">
-          {/* Anonymous User Warning */}
-          {!clerkUserId && (
-            <Card className="bg-yellow-50 border-yellow-200">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-yellow-900 mb-1">Anonymous Session</h3>
-                    <p className="text-sm text-yellow-800 mb-3">
-                      You&apos;re viewing insights as an anonymous user. Your insights will be lost when you close your browser or clear cookies.
-                    </p>
-                    <Button size="sm" asChild>
-                      <Link href="/signup">Sign Up to Save Your Insights</Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Title Section */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Your Insights
-            </h1>
-            <p className="text-sm text-gray-500">
-              {poll.question}
+      <main className="container mx-auto px-4 py-4 max-w-3xl">
+        {/* Compact Anonymous User Banner */}
+        {!clerkUserId && (
+          <div className="mb-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+            <p className="text-xs text-yellow-800">
+              Anonymous session • <Link href="/signup" className="underline font-semibold">Sign up</Link> to save your insights
             </p>
           </div>
+        )}
 
+        <div className="space-y-4">
           {/* Insight Card */}
-          <Card className="shadow-lg">
-            <CardContent className="p-6 md:p-8 space-y-6">
-              {/* Insight Title */}
-              <div className="text-center pb-4 border-b">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {insight.title}
-                </h2>
-              </div>
+          <InsightCard
+            title={insight.title}
+            body={insight.body}
+            pollQuestion={poll.question}
+          />
 
-              {/* Insight Body */}
-              <div className="prose prose-lg max-w-none">
-                <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-                  {insight.body}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
+          {/* Action Buttons - Inline row */}
           <InsightActions
             pollTitle={poll.question}
             insightTitle={insight.title}
             insightBody={insight.body}
             userId={clerkUserId || undefined}
           />
-          <div className="flex justify-center pt-3">
-            <Button size="lg" asChild>
+
+          {/* Navigation Buttons - Single row */}
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <Button size="lg" asChild className="w-full sm:w-auto">
               <Link href={`/polls/${slug}/results`}>
-                View Poll Results
+                View All Results
               </Link>
             </Button>
-          </div>
-
-          {/* Back to Polls Link */}
-          <div className="text-center pt-4">
-            <Button variant="link" asChild>
+            <Button variant="ghost" asChild className="w-full sm:w-auto">
               <Link href="/polls">
-                Back to All Polls
+                Back to All Decks
               </Link>
             </Button>
           </div>

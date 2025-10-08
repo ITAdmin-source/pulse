@@ -4,7 +4,7 @@ export const createStatementSchema = z.object({
   pollId: z.string().uuid("Invalid poll ID"),
   text: z.string()
     .min(1, "Statement text is required")
-    .max(280, "Statement too long (max 280 characters)"),
+    .max(140, "Statement too long (max 140 characters)"),
   submittedBy: z.string().uuid("Invalid user ID").optional(),
 });
 
@@ -12,7 +12,7 @@ export const updateStatementSchema = z.object({
   id: z.string().uuid("Invalid statement ID"),
   text: z.string()
     .min(1, "Statement text is required")
-    .max(280, "Statement too long (max 280 characters)")
+    .max(140, "Statement too long (max 140 characters)")
     .optional(),
   approved: z.boolean().optional(),
   approvedBy: z.string().uuid("Invalid approver ID").optional(),

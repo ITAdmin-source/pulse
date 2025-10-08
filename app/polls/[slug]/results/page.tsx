@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getPollResultsSummaryAction } from "@/actions/poll-results-actions";
+import { ResultsCard } from "@/components/shared/results-card";
 
 interface ResultsPageProps {
   params: Promise<{
@@ -86,57 +86,22 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="space-y-6">
-          {/* Title Section */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Poll Results
-            </h1>
-            <p className="text-lg text-gray-600">
-              {results.pollQuestion}
-            </p>
-          </div>
+      <main className="container mx-auto px-4 py-4 max-w-3xl">
+        <div className="space-y-4">
+          {/* Results Card */}
+          <ResultsCard
+            pollQuestion={results.pollQuestion}
+            summaryText={results.summaryText}
+            participantCount={results.participantCount}
+            voteCount={results.voteCount}
+            generatedAt={results.generatedAt}
+          />
 
-          {/* Summary Card */}
-          <Card className="shadow-lg">
-            <CardContent className="p-6 md:p-8 space-y-6">
-              {/* Summary Text */}
-              <div className="prose prose-lg max-w-none">
-                <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-                  {results.summaryText}
-                </div>
-              </div>
-
-              {/* Participation Stats */}
-              <div className="pt-6 border-t">
-                <h3 className="font-semibold text-gray-900 mb-3">Participation Statistics:</h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <p className="text-3xl font-bold text-gray-900">{results.participantCount}</p>
-                    <p className="text-sm text-gray-600">Voters</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-gray-900">{results.voteCount}</p>
-                    <p className="text-sm text-gray-600">Total Votes</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Metadata */}
-              <div className="pt-4 border-t text-sm text-gray-500 text-center">
-                <p>
-                  Generated {new Date(results.generatedAt).toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Back to Polls Link */}
-          <div className="text-center pt-4">
-            <Button asChild>
+          {/* Back Button */}
+          <div className="text-center">
+            <Button size="lg" asChild>
               <Link href="/polls">
-                Back to All Polls
+                Back to All Decks
               </Link>
             </Button>
           </div>

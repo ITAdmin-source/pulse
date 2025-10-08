@@ -124,6 +124,7 @@ export default function ManagePage({ params }: ManagePageProps) {
   const [settingsForm, setSettingsForm] = useState({
     question: "",
     description: "",
+    emoji: "",
     allowUserStatements: false,
     autoApproveStatements: false,
     supportButtonLabel: "",
@@ -186,6 +187,7 @@ export default function ManagePage({ params }: ManagePageProps) {
         setSettingsForm({
           question: fetchedPoll.question || "",
           description: fetchedPoll.description || "",
+          emoji: fetchedPoll.emoji || "",
           allowUserStatements: fetchedPoll.allowUserStatements || false,
           autoApproveStatements: fetchedPoll.autoApproveStatements || false,
           supportButtonLabel: fetchedPoll.supportButtonLabel || "",
@@ -467,6 +469,7 @@ export default function ManagePage({ params }: ManagePageProps) {
       const updateData = {
         question: settingsForm.question,
         description: settingsForm.description || null,
+        emoji: settingsForm.emoji || null,
         allowUserStatements: settingsForm.allowUserStatements,
         autoApproveStatements: settingsForm.autoApproveStatements,
         supportButtonLabel: settingsForm.supportButtonLabel || null,
@@ -1075,6 +1078,23 @@ export default function ManagePage({ params }: ManagePageProps) {
                         placeholder="Provide context for your poll..."
                         rows={3}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="emoji">Deck Emoji (optional)</Label>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          id="emoji"
+                          placeholder="🎴"
+                          maxLength={10}
+                          value={settingsForm.emoji}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, emoji: e.target.value })}
+                          className="text-4xl text-center w-24 h-16"
+                        />
+                        <div className="text-sm text-gray-500 flex-1">
+                          Emoji to represent this poll deck (e.g., 🎴 📊 💭 🗳️)
+                        </div>
+                      </div>
                     </div>
                   </div>
 

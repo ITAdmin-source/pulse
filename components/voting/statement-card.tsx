@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -23,7 +24,12 @@ export function StatementCard({
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-xs mx-auto px-4">
       {/* Statement Card - Wisdom Card Style */}
-      <div className="relative w-full group">
+      <motion.div
+        className="relative w-full group"
+        initial={{ x: 400, opacity: 0, scale: 0.95 }}
+        animate={{ x: 0, opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+      >
         {/* Card deck depth effect - stacked cards behind */}
         <div className="absolute inset-0 bg-amber-50 rounded-3xl shadow-sm transform translate-y-3 translate-x-2 opacity-30 pointer-events-none -z-10" />
         <div className="absolute inset-0 bg-amber-50 rounded-3xl shadow-sm transform translate-y-1.5 translate-x-1 opacity-60 pointer-events-none -z-10" />
@@ -43,10 +49,15 @@ export function StatementCard({
             <div className="mt-4 text-3xl opacity-60">✦</div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {/* Action Buttons - Below the card */}
-      <div className="flex gap-3 w-full justify-center">
+      <motion.div
+        className="flex gap-3 w-full justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
         <Button
           onClick={() => onVote(-1)}
           disabled={disabled}
@@ -62,10 +73,15 @@ export function StatementCard({
         >
           {agreeLabel}
         </Button>
-      </div>
-      
+      </motion.div>
+
       {/* Skip option */}
-      <Button
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        <Button
         onClick={() => onVote(0)}
         disabled={disabled}
         variant="ghost"
@@ -73,6 +89,7 @@ export function StatementCard({
       >
         {passLabel}
       </Button>
+      </motion.div>
     </div>
   );
 }

@@ -6,12 +6,12 @@ import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { useHeader } from "@/contexts/header-context";
 import {
   StatementCard,
   ProgressBar,
-  StatementCounter,
   VoteResultOverlay,
   ContinuationPage,
   StatementSubmissionModal,
@@ -408,14 +408,23 @@ export default function VotingPage({ params }: VotingPageProps) {
       actions: (
         <>
           {poll.allowUserStatements && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowStatementModal(true)}
-              disabled={isSavingVote}
-            >
-              Submit Statement
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowStatementModal(true)}
+                  disabled={isSavingVote}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Card</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add a new card to share a missing perspective</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -840,6 +849,9 @@ export default function VotingPage({ params }: VotingPageProps) {
   }
 
   if (votingState.phase === 'continuation') {
+    // Check if there are more statements to vote on
+    const hasMoreStatements = statementManager ? !statementManager.hasVotedOnAll() : false;
+
     return (
       <ContinuationPage
         statementsVoted={votedCount}
@@ -847,6 +859,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         disagreeCount={disagreeCount}
         unsureCount={unsureCount}
         minStatementsRequired={threshold}
+        hasMoreStatements={hasMoreStatements}
         onContinue={handleContinue}
         onFinish={handleFinish}
         error={batchLoadError}
@@ -872,9 +885,10 @@ export default function VotingPage({ params }: VotingPageProps) {
       {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
         <div className="w-full max-w-md space-y-6">
-          {votingState.phase === 'viewing' && votingState.currentStatement ? (
-            <>
+          <AnimatePresence mode="wait">
+            {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard
+                key={`statement-${votingState.currentStatement.id}`}
                 statement={votingState.currentStatement.text}
                 agreeLabel={poll?.supportButtonLabel || "Agree"}
                 disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
@@ -882,35 +896,28 @@ export default function VotingPage({ params }: VotingPageProps) {
                 onVote={handleVote}
                 disabled={isSavingVote}
               />
-              <StatementCounter
-                currentStatement={progress?.totalVoted ? progress.totalVoted + 1 : 1}
-                totalInBatch={Math.min(
-                  (progress?.currentBatch || 1) * 10,
-                  progress?.totalStatementsInPoll || totalStatementsInPoll
-                )}
-                className="text-center text-sm text-gray-600"
+            ) : votingState.phase === 'results' && votingState.votedStatement && votingState.voteDistribution ? (
+              <VoteResultOverlay
+                key={`results-${votingState.votedStatement.id}`}
+                statement={votingState.votedStatement.text}
+                userVote={statementManager?.getUserVote(votingState.votedStatement.id) || 0}
+                agreePercent={votingState.voteDistribution.agreePercent}
+                disagreePercent={votingState.voteDistribution.disagreePercent}
+                unsurePercent={votingState.voteDistribution.unsurePercent}
+                totalVotes={votingState.voteDistribution.totalVotes}
+                agreeLabel={poll?.supportButtonLabel || "Agree"}
+                disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
+                unsureLabel={poll?.unsureButtonLabel || "Unsure"}
+                onNext={handleManualNext}
               />
-            </>
-          ) : votingState.phase === 'results' && votingState.votedStatement && votingState.voteDistribution ? (
-            <VoteResultOverlay
-              statement={votingState.votedStatement.text}
-              userVote={statementManager?.getUserVote(votingState.votedStatement.id) || 0}
-              agreePercent={votingState.voteDistribution.agreePercent}
-              disagreePercent={votingState.voteDistribution.disagreePercent}
-              unsurePercent={votingState.voteDistribution.unsurePercent}
-              totalVotes={votingState.voteDistribution.totalVotes}
-              agreeLabel={poll?.supportButtonLabel || "Agree"}
-              disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
-              unsureLabel={poll?.unsureButtonLabel || "Unsure"}
-              onNext={handleManualNext}
-            />
-          ) : (
-            // Transitioning between states
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="text-gray-600">Loading...</p>
-            </div>
-          )}
+            ) : (
+              // Transitioning between states
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-gray-600">Loading...</p>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
 

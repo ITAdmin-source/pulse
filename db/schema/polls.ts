@@ -24,6 +24,9 @@ export const polls = pgTable("polls", {
   supportButtonLabel: varchar("support_button_label", { length: 10 }),
   opposeButtonLabel: varchar("oppose_button_label", { length: 10 }),
   unsureButtonLabel: varchar("unsure_button_label", { length: 10 }),
+
+  // Visual customization
+  emoji: varchar("emoji", { length: 10 }),
 });
 
 export type Poll = typeof polls.$inferSelect;

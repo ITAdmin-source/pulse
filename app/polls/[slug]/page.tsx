@@ -2,14 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Settings } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getVotingProgressAction } from "@/actions/votes-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
 import { getUserRolesByUserIdAction } from "@/actions/user-roles-actions";
 import { UserService } from "@/lib/services/user-service";
-import { WelcomeBackBanner } from "@/components/polls/welcome-back-banner";
+import { ClickableCardDeck } from "@/components/polls/clickable-card-deck";
 import { canManagePoll as checkCanManagePoll } from "@/lib/utils/permissions";
 
 interface PollEntryPageProps {
@@ -120,7 +119,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-72px)]">
-        <div className="max-w-2xl w-full text-center space-y-8">
+        <div className="max-w-2xl w-full space-y-8">
           {/* Manage Poll Button - show for owners/managers */}
           {canManage && (
             <div className="flex justify-end mb-4">
@@ -133,55 +132,20 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             </div>
           )}
 
-          {/* Welcome Back Banner - show for returning users */}
-          {isInProgress && (
-            <WelcomeBackBanner
-              votedCount={votedCount}
-              totalCount={totalStatements}
-              variant="in-progress"
-            />
-          )}
-          {isThresholdReached && (
-            <WelcomeBackBanner
-              votedCount={votedCount}
-              totalCount={totalStatements}
-              variant="threshold-reached"
-            />
-          )}
-          {isCompleted && (
-            <WelcomeBackBanner
-              votedCount={votedCount}
-              totalCount={totalStatements}
-              variant="completed"
-            />
-          )}
-
-          {/* Poll Question */}
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-            {poll.question}
-          </h1>
-
-          {/* Description */}
-          {poll.description && (
-            <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-              {poll.description}
-            </p>
-          )}
-
-          {/* Progress Badge - show for users with votes */}
-          {votedCount > 0 && (
-            <div className="flex justify-center">
-              <Badge
-                variant={thresholdReached ? "default" : "secondary"}
-                className="text-sm px-4 py-1"
-              >
-                {thresholdReached
-                  ? "✨ Insights Ready"
-                  : `${votedCount}/${totalStatements} Statements`
-                }
-              </Badge>
-            </div>
-          )}
+          {/* Card Deck Package */}
+          <ClickableCardDeck
+            pollSlug={poll.slug}
+            pollQuestion={poll.question}
+            allowUserStatements={poll.allowUserStatements}
+            description={poll.description || undefined}
+            navigateTo={
+              isNewUser || isInProgress
+                ? "vote"
+                : isThresholdReached || isCompleted
+                ? "insights"
+                : "vote"
+            }
+          />
 
           {/* CTA Buttons - Adaptive based on user state */}
           <div className="flex flex-col gap-3 items-center">
@@ -189,7 +153,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             {isNewUser && (
               <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                 <Link href={`/polls/${poll.slug}/vote`}>
-                  Start Voting
+                  Open Deck
                 </Link>
               </Button>
             )}
@@ -198,7 +162,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             {isInProgress && (
               <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                 <Link href={`/polls/${poll.slug}/vote`}>
-                  Continue Voting
+                  Continue Deck
                 </Link>
               </Button>
             )}
@@ -218,7 +182,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
                   asChild
                 >
                   <Link href={`/polls/${poll.slug}/vote`}>
-                    Continue Voting
+                    Continue Deck
                   </Link>
                 </Button>
               </>
@@ -245,14 +209,6 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
               </>
             )}
           </div>
-
-          {/* Helper Text - Adaptive based on state */}
-          <p className="text-sm text-gray-500">
-            {isNewUser && "Vote on statements one at a time and discover your personalized insights"}
-            {isInProgress && votingProgress && `Vote on ${votingProgress.totalStatements - votingProgress.totalVoted} more statements to see your insights`}
-            {isThresholdReached && "You've unlocked your insights! Continue voting or view your results"}
-            {isCompleted && "You've completed this poll! View your insights and see how others voted"}
-          </p>
         </div>
       </main>
     </div>

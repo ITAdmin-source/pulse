@@ -1,7 +1,11 @@
 # Pulse - Use Cases & User Workflows
 
-**Version:** 1.3
+**Version:** 1.4
+**Date:** 2025-10-08
 **Purpose:** Comprehensive documentation of all user workflows for UX/UI design
+
+**Changelog:**
+- **v1.4 (2025-10-08)**: Card deck metaphor refinements - Continuation page achievement flow, Insights/Results as collectible cards, Closed poll dual-card display, Poll listing as deck browsing
 
 ---
 
@@ -124,15 +128,24 @@
    - User sees **one statement at a time** displayed as a **card**
    - Clean interface showing:
      - **Stories-style progress bar** at top (segmented bars showing position in the deck)
+     - **Poll question** (small, center-aligned in header)
      - **Statement card** (centered, prominent)
-       - Statement text prominently displayed
+       - **Fixed 2:3 aspect ratio** (all cards same size)
+       - **Amber gradient background** with decorative ✦ symbols
+       - **Stacked card depth effect** (shadow layers behind)
+       - **Statement text (max 140 characters)** prominently displayed
+         - Center-aligned, medium font weight
+         - All cards same size regardless of text length
        - **Two primary buttons ON the card:** Agree and Disagree (with custom labels if set)
-       - Card may have visual styling (shadow, border, background)
      - **Pass/Unsure button BELOW the card** (secondary, less prominent)
        - Default label: "Pass" or "Unsure"
        - Can be customized per poll
        - Positioned under the card, not on it
+     - **Add Card button** in header (+ icon)
+       - Tooltip: "Add a new card to share a missing perspective"
+       - Opens modal for submitting new statements
    - **No vote distribution shown yet**
+   - **No statement counter** - progress bar is sufficient
    - No back/review options visible
 
 4. **First Vote Action**
@@ -143,17 +156,21 @@
    - **System creates user record in database** (with session_id)
    - Vote is recorded
    - **Vote is final and irreversible** - no changing votes later
-   - **Vote distribution reveals immediately:**
-     - Animated reveal of percentages
-     - Visual representation (horizontal bars, animated counters)
+   - **Card flip animation (600ms 3D rotation):**
+     - Card rotates 180° on Y-axis
+     - Front (statement) hidden, back (results) revealed
+     - Same amber gradient background on results side
+   - **Vote distribution reveals with animation:**
+     - Vote indicator scales + fades in (300ms)
+     - Horizontal bars fill sequentially with staggered delays (500ms each, 200ms stagger)
      - Shows: X% agree, Y% disagree, Z% neutral
      - Total vote count displayed
-     - User's vote highlighted or indicated
+     - User's vote highlighted with icon and color
+     - Statement text shown smaller at top for context
 
-5. **Automatic Transition to Next Statement**
-   - After viewing statistics for a few seconds (e.g., 3-5 seconds)
-   - **Automatic transition to next statement** (no manual control needed)
-   - Optional: User can manually advance with "Next" button for faster progression
+5. **Manual Transition to Next Statement**
+   - After animations complete, **Next button appears** (fades in at 1.2s)
+   - **User must click "Next →" button** to advance (no auto-advance)
    - **No "back" button** - forward-only progression
    - Previous vote statistics disappear
    - New statement card appears (clean slate, no distributions shown)
@@ -161,7 +178,7 @@
 
 6. **Continued Voting**
    - Process repeats for each statement in sequence
-   - Vote → See results → Auto-advance to next
+   - Vote → Card flips → See results → Click Next → Next statement
    - Stories-style progress bar shows overall completion
    - **No ability to review or change previous votes**
    - One-way journey through all statements
@@ -170,20 +187,46 @@
    - When poll has more than 10 approved statements:
      - User sees first batch of 10 statements
      - After voting on 10th statement, **continuation page appears**
-   - **Continuation Page:**
-     - Shows progress summary ("You've voted on 10 statements so far" or 20, 30, etc.)
-     - Displays vote distribution summary (Agree: X, Disagree: Y, Unsure: Z)
-     - Does NOT show total remaining or total count (keeps exploration open-ended)
-     - Two options:
-       - **Continue Voting** (primary) → Load next batch of up to 10 statements
-       - **Finish & See Results** (secondary) → End voting session, generate insights
-     - User must choose one option (no skip/dismiss)
-   - **Cumulative counting system:**
-     - Batch 1: Shows "Statement 1 of 10", "2 of 10"... "10 of 10"
-     - Batch 2: Shows "Statement 11 of 20", "12 of 20"... "20 of 20"
-     - Batch 3: Shows "Statement 21 of 30", "22 of 30"... "30 of 30"
-     - Final batch: Continues pattern (e.g., "31 of 32", "32 of 32")
-   - **Progress bar resets visually** after each batch but counter remains cumulative
+
+   - **Continuation Page (Achievement/Milestone Metaphor):**
+     - **NOT a card collection** - uses achievement metaphor instead
+     - This is a progress checkpoint where user decides next action
+
+     - **Scenario 1: Progress Milestone (More Statements Available)**
+       - Amber gradient card (matches voting flow)
+       - 🏆 Trophy icon with spinning animation
+       - Title: "Progress Milestone!"
+       - Shows cards sorted count (X cards sorted)
+       - **Tally section** (white inset card):
+         - Keep: X (with TrendingUp icon, green)
+         - Throw: X (with TrendingDown icon, red)
+         - Unsure: X (with Minus icon, gray)
+       - Status: "More cards to explore"
+       - Two buttons:
+         - **Continue Sorting** (primary) → Load next batch
+         - **Finish & See Insights** (secondary, if threshold met) OR
+         - **Sort X more to finish** (secondary, disabled if below threshold)
+
+     - **Scenario 2: Deck Complete (No More Statements)**
+       - Same amber gradient card
+       - 🏆 Trophy icon with spinning animation
+       - Title: "Deck Complete! 🎉"
+       - Shows total cards sorted
+       - **Final Tally** (same structure as above)
+       - Single button: **See Your Insights** (primary)
+
+     - **Visual Details:**
+       - Compact sizing to fit on screen without scrolling
+       - Card padding: p-6 (not p-8)
+       - Trophy: h-10 w-10, spins in from scale(0) rotate(-180°)
+       - All text sizes reduced for screen fit
+       - User must choose an option (no skip/dismiss)
+
+   - **Progress bar only** (no statement counter):
+     - Shows 10 segments per batch
+     - Resets visually after each batch
+     - Clear visual indicator of position in current batch
+
    - **Finish button** - Disabled until threshold reached, then enabled throughout voting
    - Process repeats every 10 statements until poll exhausted or user finishes
 
@@ -199,21 +242,44 @@
    - **When user finishes** (threshold reached and Finish button pressed):
      - System generates AI-powered personal insights
      - Loading state: "Analyzing your responses..."
-     - Personal insight screen appears with analysis
-     - Shows title and detailed body text
-     - Option to share, save, or continue to results summary
+     - **Personal Insight Card** appears (collectible card design):
+       - **2:3 aspect ratio card** (max-w-xs, same as voting cards)
+       - **Indigo/violet animated gradient background** (8s shimmer cycle)
+       - **Large emoji hero** at top (extracted from AI-generated title)
+         - Examples: 🌟 (strong alignment), 🎯 (critical perspective), 🤔 (thoughtful), ⚖️ (balanced), 👍 (supportive), 🔍 (skeptical)
+         - Spins in with animation (scale 0 → 1, rotate -180° → 0°)
+       - **"Personal Insight" badge** (indigo color scheme)
+       - **Title** (emoji removed, text-base md:text-lg, bold)
+       - **Body text** (scrollable, max-h-[180px], text-xs md:text-sm)
+       - **Metadata section at bottom**:
+         - Poll question (line-clamp-2)
+         - Generated date (hydration-safe en-US format)
+     - **Action buttons** below card:
+       - Share button (native share API or clipboard)
+       - Save button (downloads .txt file, authenticated users only)
+     - **Navigation buttons**:
+       - "View All Results" → Navigate to results card
+       - "Back to All Decks" → Navigate to poll listing
+     - **Anonymous user banner** (if applicable):
+       - Compact yellow banner at top
+       - "Anonymous session • Sign up to save your insights"
 
-9. **Optional: Statement Submission** (if poll allows)
-   - **Available during voting via popup/modal**
-   - Accessible via "Submit Statement" button in header/menu
-   - Opens popup overlay without leaving voting flow
-   - User writes statement in modal
-   - Submits statement:
-     - If auto-approval enabled: statement added to voting queue for other users
-     - If moderation required: statement enters approval queue
+9. **Optional: Add Card** (if poll allows)
+   - **Available during voting via "Add Card" button in header**
+   - Button shows Plus icon with "Add Card" text (icon-only on mobile)
+   - Tooltip: "Add a new card to share a missing perspective"
+   - Opens modal overlay without leaving voting flow
+   - Modal displays:
+     - Title: "Add a New Card"
+     - Description: "Create a new card to add a missing perspective to this poll's deck"
+     - Text input with 140 character limit and counter
+     - Compact horizontal preview showing card with amber gradient and decorative symbols
+   - Submits card:
+     - If auto-approval enabled: card added to voting queue for other users
+     - If moderation required: card enters approval queue
      - User receives feedback about submission status
    - **Returns to voting flow** at the same statement they were on
-   - Can submit multiple statements during voting session
+   - Can submit multiple cards during voting session
 
 10. **Session Persistence**
     - Votes persist across browser sessions via session ID
@@ -376,16 +442,37 @@
 
 ### Journey 3: Poll Discovery & Browsing
 
-#### Public Poll Listing
-1. **Homepage/Poll Directory**
-   - User sees list of published polls
-   - Each poll card shows:
-     - Question/title
-     - Status badge (active/closed)
-     - CTA button ("Vote Now" or "View Results")
+#### Public Poll Listing (Deck Browsing)
+1. **Poll Deck Listing Page** (`/polls`)
+   - **Design Metaphor:** Browse card decks like choosing a game to play
+   - **Heading:** "Pick a Deck to Explore"
+   - **Subheading:** "Choose a deck, sort the cards, and discover your unique perspective"
+   - User sees grid of poll deck cards:
+     - Desktop: 4 columns (lg:grid-cols-4)
+     - Tablet: 3 columns (md:grid-cols-3)
+     - Mobile: 2 columns (grid-cols-2)
+     - Gap: 8 (2rem between cards)
+
+   - **Each Poll Deck Card shows:**
+     - **2:3 aspect ratio** (vertical orientation like deck box)
+     - **Large emoji at top** (text-6xl) - unique to each poll
+     - **3-layer stacked depth effect** (2 shadow layers behind for depth)
+     - **Status badge** top-right (Active in green, Closed in gray)
+     - **Poll question** centered, bold, line-clamp-5
+     - **Decorative element** at bottom (✦ for active, ◆ for closed)
+     - **CLOSED ribbon** for closed decks (diagonal semi-transparent overlay)
+     - **Amber gradient** for active decks
+     - **Gray gradient** for closed decks
+     - **Hover animation:**
+       - Scale to 1.05
+       - Lift up 5px
+       - Enhanced shadow
+       - Duration: 200ms
+
+   - **Click deck card** → Navigate to `/polls/[slug]` entry page
 
 2. **Filtering & Search**
-   - Filter by status (active/closed)
+   - Filter by status (Active/Closed)
    - Search by keywords in question/description
    - Sort by recent, popular, ending soon
 
@@ -512,18 +599,21 @@
 
 #### Vote Distribution Display Rules
 - **Before voting:** No distribution shown (clean card)
-- **After voting:** Distribution reveals with animation
-- **Timing:** Visible for 3-5 seconds, then auto-advances
+- **After voting:** Card flips with 3D animation to reveal results
+- **Animation:** 600ms card flip (rotateY 180°) with same aspect ratio and amber gradient
+- **Timing:** Results remain visible until user clicks "Next →" button (manual advance)
 - **Components:**
-  - Percentage breakdown (agree/disagree/neutral)
-  - Animated horizontal bars or visual representation
-  - Total vote count
-  - User's vote clearly indicated
+  - Statement text at top (smaller, text-sm)
+  - User's vote indicator with icon (center)
+  - Percentage breakdown (agree/disagree/neutral) with animated bars
+  - Animated horizontal bars filling from 0% to actual percentage
+  - Total vote count at bottom
+  - "Next →" button below card
 - **Visibility:** Only after user commits their vote (no peeking)
 
 ---
 
-### Journey 5: Statement Submission
+### Journey 5: Add Card (Statement Submission)
 
 #### Prerequisites
 - Poll must allow user statements (`allowUserStatements = true`)
@@ -531,33 +621,42 @@
 - User can be anonymous or authenticated
 
 #### Flow
-1. **Access Submission Interface**
-   - User sees "Submit a statement" option (if enabled)
-   - Clicks to open submission form
+1. **Access Add Card Interface**
+   - User sees "Add Card" button in voting header (Plus icon)
+   - Tooltip: "Add a new card to share a missing perspective"
+   - Button is responsive: shows icon + text on desktop, icon-only on mobile
+   - Clicks to open modal
 
-2. **Writing Statement**
-   - Text input field
-   - Character limit guidance (recommended)
-   - Preview of how it will appear
+2. **Writing Card**
+   - Modal title: "Add a New Card"
+   - Modal description: "Create a new card to add a missing perspective to this poll's deck"
+   - Text input field with 140 character limit
+   - Character counter showing remaining characters
+   - Compact horizontal preview showing card with:
+     - Amber gradient background (matching voting cards)
+     - Decorative symbols (✦) on both sides
+     - Text preview centered between symbols
 
 3. **Submission**
-   - User submits statement
+   - User submits card
    - **If auto-approval enabled:**
-     - Statement appears immediately in voting list
-     - User receives: "Your statement is now live"
+     - Card appears immediately in voting list for other users
+     - User receives: "Your card is now live!"
    - **If moderation required:**
-     - Statement enters approval queue
-     - User receives: "Your statement is pending approval"
-     - Statement not visible to others yet
+     - Card enters approval queue
+     - User receives: "Your card is pending approval"
+     - Card not visible to others yet
 
 4. **Post-Submission**
-   - User can continue voting on other statements
+   - Modal closes, user returns to voting flow at same position
+   - Can continue voting on other statements
+   - Can submit multiple cards during session
    - If authenticated: can track submission status
-   - Submitted statements tied to user ID
+   - Submitted cards tied to user ID
 
 5. **Approval Notification** (if moderation enabled)
-   - When approved: statement appears in poll
-   - When rejected: statement deleted (not shown to user)
+   - When approved: card appears in poll
+   - When rejected: card deleted (not shown to user)
    - No notification currently implemented (potential feature)
 
 ---
@@ -661,34 +760,60 @@
 - Latest summary replaces previous version (UPDATE operation)
 
 #### Display & Access
-1. **From Personal Insight Screen:**
-   - User clicks "View Poll Results Summary" after seeing personal insight
-   - Transitions to results summary view
 
-2. **Results Summary View:**
-   - Full-screen text display
-   - AI-generated summary of poll-wide patterns
-   - Read-only view
-   - Shows timestamp of summary generation
-   - Displays participation stats (X voters, Y total votes)
+1. **Results Card (Collectible Design):**
+   - **Route:** `/polls/[slug]/results`
+   - **Accessible to:** All users (voters and non-voters)
+   - **Card Design:**
+     - **2:3 aspect ratio card** (max-w-xs, matches insights card)
+     - **Emerald/teal animated gradient background** (8s shimmer cycle)
+     - **"Poll Results" badge** at top (emerald color scheme)
+     - **Statistics display** with icons:
+       - Users icon + participant count
+       - Vote icon + total vote count
+       - Inline flex layout with gap
+     - **AI-generated summary text** (scrollable, max-h-[220px]):
+       - Overall poll sentiment
+       - Most agreed/disagreed statements
+       - Divisive topics
+       - Key themes and trends
+     - **Metadata section at bottom**:
+       - Poll question (line-clamp-2)
+       - Generated date (hydration-safe en-US format)
+   - **Page Layout:**
+     - Clean, minimal design
+     - Just card + "Back to All Decks" button
+     - No clutter, no extra navigation
+     - Blue-indigo gradient background
+     - Container: max-w-3xl, px-4 py-4
+
+2. **From Personal Insight Screen:**
+   - User clicks "View All Results" button
+   - Navigates to `/polls/[slug]/results`
+   - Shows ResultsCard as described above
 
 3. **Accessing Later:**
    - **Authenticated users:** Can access from user dashboard for completed polls
    - **Anonymous users:** Lost after leaving page (unless they authenticate)
    - Available for both active and closed polls
 
-4. **Closed Poll Access:**
-   - **For voters (users who participated and reached threshold):**
-     - Can view their personal insight
-     - Can view Poll Results Summary (overall trends) via "View Poll Results" button
-     - Can view their vote summary: Read-only list of all their votes on each statement
-     - No ability to change votes (already final during voting)
-   - **For non-voters (users who did not participate):**
-     - Can still access closed polls
-     - NO personal insights (didn't vote)
-     - NO vote history (didn't participate)
-     - CAN view Poll Results Summary (public results) via "View Poll Results" button
-     - Informational message: "This poll has ended. You can view the results and insights."
+4. **Closed Poll Access (`/polls/[slug]/closed`):**
+   - **For voters who reached threshold:**
+     - See **both InsightCard and ResultsCard** simultaneously
+     - Desktop: Side-by-side layout (lg:flex-row)
+     - Mobile: Stacked layout (flex-col)
+     - Reduces clicks - all info visible at once
+     - Single "Back to All Decks" button below
+
+   - **For voters who didn't reach threshold:**
+     - See only ResultsCard (centered)
+     - No personal insights (didn't vote enough)
+
+   - **For non-voters (never participated):**
+     - See only ResultsCard (centered)
+     - NO personal insights (didn't participate)
+     - CAN view poll results (public data)
+     - Same clean, minimal layout
 
 #### Content Structure
 - Overall poll sentiment and consensus areas
@@ -740,13 +865,13 @@ To access "Create Poll" interface, user must have ONE of:
    - Instructions for participants
 
 #### Step 2: Control Settings
-1. **User Statement Submission**
-   - Toggle: Allow users to submit statements
+1. **User Card Submission**
+   - Toggle: Allow users to add cards (submit statements)
    - Default: disabled
 
 2. **Auto-Approval**
-   - Toggle: Auto-approve user statements
-   - Only relevant if submission enabled
+   - Toggle: Auto-approve user-submitted cards
+   - Only relevant if card submission enabled
    - Default: disabled (moderation required)
 
 3. **Voting Threshold**
@@ -2112,7 +2237,8 @@ This document outlines the complete functionality of Pulse, a participatory poll
 4. **Key UX Principles:**
    - **One statement card at a time** - Instagram Stories-style focused experience
    - **Vote before reveal** - Statistics shown only after user commits their vote (no peeking)
-   - **Automatic progression** - Smooth auto-advance from vote → results (3-5s) → next statement
+   - **Manual progression** - User clicks "Next →" button after viewing results to advance
+   - **Card flip animation** - 600ms 3D flip reveals results on back of card
    - **Forward-only flow** - No back button, no vote changes, irreversible progression
    - **Completion-triggered insights** - AI-generated insights appear after user finishes or votes all statements
    - Low-friction participation (anonymous allowed with optional demographics)

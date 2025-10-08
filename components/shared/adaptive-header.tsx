@@ -36,7 +36,7 @@ export function AdaptiveHeader() {
   // Minimal variant - auth pages, results, insights
   if (variant === "minimal") {
     return (
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Back Button */}
@@ -97,7 +97,7 @@ export function AdaptiveHeader() {
   // Voting variant - special header for voting interface
   if (variant === "voting") {
     return (
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex-1 min-w-0">
@@ -126,7 +126,7 @@ export function AdaptiveHeader() {
   // Management variant - poll owner/manager interface
   if (variant === "management") {
     return (
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Back Button */}
@@ -177,7 +177,7 @@ export function AdaptiveHeader() {
   // Admin variant - admin dashboard and pages
   if (variant === "admin") {
     return (
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Back Button */}
@@ -212,7 +212,7 @@ export function AdaptiveHeader() {
 
   // Default variant - standard public/authenticated navigation
   return (
-    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}

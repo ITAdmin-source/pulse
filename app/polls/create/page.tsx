@@ -29,6 +29,7 @@ export default function CreatePollPage() {
   // Form state
   const [question, setQuestion] = useState("");
   const [description, setDescription] = useState("");
+  const [emoji, setEmoji] = useState("");
   const [allowUserStatements, setAllowUserStatements] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
   const [votingGoal, setVotingGoal] = useState("");
@@ -157,6 +158,7 @@ export default function CreatePollPage() {
       const pollData = {
         question: question.trim(),
         description: description.trim() || null,
+        emoji: emoji.trim() || null,
         createdBy: userId,
         allowUserStatements,
         autoApproveStatements: autoApprove,
@@ -274,6 +276,23 @@ export default function CreatePollPage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emoji">Deck Emoji (optional)</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="emoji"
+                      placeholder="🎴"
+                      maxLength={10}
+                      value={emoji}
+                      onChange={(e) => setEmoji(e.target.value)}
+                      className="text-4xl text-center w-24 h-16"
+                    />
+                    <div className="text-sm text-gray-500 flex-1">
+                      Enter an emoji to represent this poll deck (e.g., 🎴 📊 💭 🗳️)
+                    </div>
+                  </div>
                 </div>
               </>
             )}

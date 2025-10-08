@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { X, Loader2 } from "lucide-react";
 import { createStatementAction } from "@/actions/statements-actions";
 import { toast } from "sonner";
@@ -24,7 +23,7 @@ interface StatementSubmissionModalProps {
   autoApprove: boolean;
 }
 
-const MAX_CHARACTERS = 200;
+const MAX_CHARACTERS = 140;
 
 export function StatementSubmissionModal({
   open,
@@ -56,16 +55,16 @@ export function StatementSubmissionModal({
       if (result.success) {
         toast.success(
           autoApprove
-            ? "Statement submitted and approved!"
-            : "Statement submitted for approval"
+            ? "Your card has been added to the deck!"
+            : "Card submitted for review"
         );
         setText(""); // Clear form
         onOpenChange(false);
       } else {
-        toast.error(result.error || "Failed to submit statement");
+        toast.error(result.error || "Failed to add card");
       }
     } catch (error) {
-      console.error("Error submitting statement:", error);
+      console.error("Error submitting card:", error);
       toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
@@ -81,34 +80,24 @@ export function StatementSubmissionModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Submit a Statement</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              disabled={isSubmitting}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle>Add a New Card</DialogTitle>
           <DialogDescription>
-            Share your perspective by adding a statement to this poll.
-            {!autoApprove && " Your statement will be reviewed before appearing in the poll."}
+            Create a new card to add a missing perspective to this poll&apos;s deck.
+            {!autoApprove && " Your card will be reviewed before being added."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Text Input */}
           <div className="space-y-2">
-            <label htmlFor="statement-text" className="text-sm font-medium">
-              Write your statement:
+            <label htmlFor="card-text" className="text-sm font-medium">
+              What should your card say?
             </label>
             <Textarea
-              id="statement-text"
-              placeholder="Enter your statement here..."
+              id="card-text"
+              placeholder="Write your statement here..."
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -117,7 +106,7 @@ export function StatementSubmissionModal({
             />
             <div className="flex items-center justify-between text-sm">
               <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-500"}>
-                Characters: {characterCount}/{MAX_CHARACTERS}
+                {characterCount}/{MAX_CHARACTERS} characters
               </span>
               {isOverLimit && (
                 <span className="text-red-600 font-medium">
@@ -127,15 +116,22 @@ export function StatementSubmissionModal({
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Mini Card Preview */}
           {text.trim().length > 0 && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Preview:</label>
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-sm text-center leading-relaxed">{text}</p>
-                </CardContent>
-              </Card>
+              <label className="text-sm font-medium text-gray-600">Preview:</label>
+              <div className="relative">
+                {/* Mini horizontal card preview */}
+                <div className="relative p-4 rounded-xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xl opacity-60 flex-shrink-0">✦</div>
+                    <p className="text-sm font-medium text-gray-800 leading-relaxed line-clamp-2 flex-1 text-center">
+                      {text}
+                    </p>
+                    <div className="text-xl opacity-60 flex-shrink-0">✦</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -155,10 +151,10 @@ export function StatementSubmissionModal({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Submitting...
+                Adding Card...
               </>
             ) : (
-              "Submit Statement"
+              "Add Card"
             )}
           </Button>
         </DialogFooter>

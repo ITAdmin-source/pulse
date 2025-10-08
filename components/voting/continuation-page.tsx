@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface ContinuationPageProps {
   statementsVoted: number;
@@ -9,6 +10,7 @@ interface ContinuationPageProps {
   disagreeCount: number;
   unsureCount: number;
   minStatementsRequired: number;
+  hasMoreStatements: boolean;
   onContinue: () => void;
   onFinish: () => void;
   error?: string | null;
@@ -21,6 +23,7 @@ export function ContinuationPage({
   disagreeCount,
   unsureCount,
   minStatementsRequired,
+  hasMoreStatements,
   onContinue,
   onFinish,
   error,
@@ -29,67 +32,172 @@ export function ContinuationPage({
   const canFinish = statementsVoted >= minStatementsRequired;
   const remainingVotes = minStatementsRequired - statementsVoted;
 
-  return (
-    <div className="flex items-center justify-center min-h-[60vh] px-4">
-      <div className="max-w-md w-full space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Great progress!</h2>
-          <p className="text-muted-foreground">
-            You&apos;ve voted on {statementsVoted} statement
-            {statementsVoted !== 1 ? "s" : ""} so far.
-          </p>
-        </div>
+  // Scenario 1: No more statements - Deck Complete (Celebration)
+  if (!hasMoreStatements) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="max-w-md w-full"
+        >
+          {/* Celebration Card */}
+          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-6">
+            {/* Trophy Icon */}
+            <div className="flex justify-center mb-4">
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-full p-4 shadow-lg"
+              >
+                <Trophy className="h-10 w-10 text-white" />
+              </motion.div>
+            </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-3 text-center">Your Stats</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Agree:</span>
-                <span className="font-medium">{agreeCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Disagree:</span>
-                <span className="font-medium">{disagreeCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Unsure:</span>
-                <span className="font-medium">{unsureCount}</span>
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
+              Deck Complete! 🎉
+            </h2>
+            <p className="text-center text-gray-600 text-sm mb-6">
+              You&apos;ve sorted all {statementsVoted} cards
+            </p>
+
+            {/* Final Tally */}
+            <div className="bg-white rounded-xl p-4 mb-6 border border-gray-200">
+              <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
+                Final Tally
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-gray-700 text-sm font-medium">Keep</span>
+                  </div>
+                  <span className="text-xl font-bold text-green-600">{agreeCount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                    <span className="text-gray-700 text-sm font-medium">Throw</span>
+                  </div>
+                  <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Minus className="h-4 w-4 text-gray-600" />
+                    <span className="text-gray-700 text-sm font-medium">Unsure</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <div className="text-center text-sm text-muted-foreground">
-          <p>There are more statements to explore.</p>
-          <p className="mt-1">What would you like to do?</p>
-        </div>
-
-        {error && onRetry && (
-          <div className="text-center space-y-2">
-            <p className="text-sm text-red-600">{error}</p>
-            <Button onClick={onRetry} variant="outline" size="sm" className="w-full">
-              Retry Loading Next Batch
+            {/* Call to Action */}
+            <Button onClick={onFinish} className="w-full h-12" size="lg">
+              See Your Insights
             </Button>
           </div>
-        )}
-
-        <div className="space-y-3">
-          <Button onClick={onContinue} className="w-full h-12" size="lg" disabled={!!error}>
-            Continue Voting
-          </Button>
-          <Button
-            onClick={onFinish}
-            variant="outline"
-            className="w-full h-12"
-            size="lg"
-            disabled={!canFinish}
-            title={!canFinish ? `Vote on ${remainingVotes} more to finish` : "Finish voting"}
-          >
-            {canFinish ? "Finish & See Results" : `Vote on ${remainingVotes} more to finish`}
-          </Button>
-        </div>
+        </motion.div>
       </div>
+    );
+  }
+
+  // Scenario 2: More statements available - Progress Milestone
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] px-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="max-w-md w-full"
+      >
+        {/* Progress Card - Same amber theme as voting cards */}
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-6">
+          {/* Milestone Badge */}
+          <div className="flex justify-center mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-full p-4 shadow-lg"
+            >
+              <Trophy className="h-10 w-10 text-white" />
+            </motion.div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
+            Progress Milestone!
+          </h2>
+          <p className="text-center text-gray-600 text-sm mb-6">
+            {statementsVoted} card{statementsVoted !== 1 ? "s" : ""} sorted
+          </p>
+
+          {/* Score Tally */}
+          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+            <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
+              Your Tally
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <span className="text-gray-700 text-sm font-medium">Keep</span>
+                </div>
+                <span className="text-xl font-bold text-green-600">{agreeCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <span className="text-gray-700 text-sm font-medium">Throw</span>
+                </div>
+                <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Minus className="h-4 w-4 text-gray-600" />
+                  <span className="text-gray-700 text-sm font-medium">Unsure</span>
+                </div>
+                <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Message */}
+          <div className="text-center text-xs text-gray-600 mb-4">
+            <p className="font-medium">More cards to explore</p>
+          </div>
+
+          {/* Error State */}
+          {error && onRetry && (
+            <div className="text-center space-y-2 mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-xs text-red-600 font-medium">{error}</p>
+              <Button onClick={onRetry} variant="outline" size="sm" className="w-full h-9">
+                Retry Loading Next Batch
+              </Button>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button onClick={onContinue} className="w-full h-11" size="lg" disabled={!!error}>
+              Continue Sorting
+            </Button>
+            <Button
+              onClick={onFinish}
+              variant="outline"
+              className="w-full h-11"
+              size="lg"
+              disabled={!canFinish}
+              title={!canFinish ? `Sort ${remainingVotes} more cards to finish` : "Finish and see insights"}
+            >
+              {canFinish ? "Finish & See Insights" : `Sort ${remainingVotes} more to finish`}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

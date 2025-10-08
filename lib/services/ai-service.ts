@@ -174,37 +174,38 @@ export class AIService {
 
   /**
    * Generate insight title based on voting pattern
+   * Includes contextual emoji for visual distinction and personality
    */
   private static generateInsightTitle(stats: VoteStatistics, poll: Poll): string {
     const { agreePercent, disagreePercent, unsurePercent } = stats;
 
     // Strong agreement pattern
     if (agreePercent >= 70) {
-      return "Strong Alignment with Key Proposals";
+      return "🌟 Strong Alignment with Key Proposals";
     }
 
     // Strong disagreement pattern
     if (disagreePercent >= 70) {
-      return "Critical Perspective on Current Issues";
+      return "🎯 Critical Perspective on Current Issues";
     }
 
     // High uncertainty
     if (unsurePercent >= 40) {
-      return "Thoughtful Consideration of Complex Topics";
+      return "🤔 Thoughtful Consideration of Complex Topics";
     }
 
     // Balanced views
     if (Math.abs(agreePercent - disagreePercent) <= 20) {
-      return "Balanced Viewpoint with Nuanced Opinions";
+      return "⚖️ Balanced Viewpoint with Nuanced Opinions";
     }
 
     // Moderate agreement
     if (agreePercent > disagreePercent) {
-      return "Generally Supportive with Some Reservations";
+      return "👍 Generally Supportive with Some Reservations";
     }
 
     // Moderate disagreement
-    return "Cautiously Skeptical of Proposed Ideas";
+    return "🔍 Cautiously Skeptical of Proposed Ideas";
   }
 
   /**
