@@ -51,11 +51,11 @@ export default function PollsPage() {
         if (result.success && result.data) {
           setPolls(result.data);
         } else {
-          toast.error("Failed to load polls");
+          toast.error("נכשל לטעון סקרים");
         }
       } catch (error) {
         console.error("Error fetching polls:", error);
-        toast.error("Failed to load polls");
+        toast.error("נכשל לטעון סקרים");
       } finally {
         setIsLoading(false);
       }
@@ -133,10 +133,10 @@ export default function PollsPage() {
         {/* Welcome Section */}
         <section className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Pick a Deck to Explore
+            בחר חפיסה לחקור
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose a deck, sort the cards, and discover your unique perspective.
+            בחר חפיסה, מיין את הקלפים וגלה את נקודת המבט הייחודית שלך.
           </p>
         </section>
 
@@ -148,40 +148,40 @@ export default function PollsPage() {
               size="sm"
               onClick={() => setStatusFilter("active")}
             >
-              Active
+              פעיל
             </Button>
             <Button
               variant={statusFilter === "closed" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("closed")}
             >
-              Closed
+              סגור
             </Button>
             <Button
               variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("all")}
             >
-              All
+              הכל
             </Button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Input
               type="search"
-              placeholder="Search polls..."
+              placeholder="חפש סקרים..."
               className="w-full md:w-64"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
               <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="מיון לפי" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="ending">Ending Soon</SelectItem>
+                <SelectItem value="recent">הכי חדש</SelectItem>
+                <SelectItem value="popular">הכי פופולרי</SelectItem>
+                <SelectItem value="ending">מסתיים בקרוב</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -219,13 +219,13 @@ export default function PollsPage() {
         {/* Empty State */}
         {!isLoading && filteredPolls.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-xl text-gray-600 mb-4">No polls found</p>
+            <p className="text-xl text-gray-600 mb-4">לא נמצאו סקרים</p>
             <p className="text-gray-500 mb-6">
-              {searchQuery ? "Try adjusting your search or filters" : "Try adjusting your filters or check back later"}
+              {searchQuery ? "נסה לשנות את החיפוש או הסינון" : "נסה לשנות את הסינון או חזור מאוחר יותר"}
             </p>
             {isSignedIn && (
               <Button variant="outline" asChild>
-                <Link href="/polls/create">Create a Poll</Link>
+                <Link href="/polls/create">צור סקר</Link>
               </Button>
             )}
           </div>

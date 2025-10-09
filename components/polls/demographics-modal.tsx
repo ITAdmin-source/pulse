@@ -122,9 +122,9 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Help us understand you</DialogTitle>
+          <DialogTitle>עזור לנו להבין אותך</DialogTitle>
           <DialogDescription>
-            All fields are optional and help us provide better insights.
+            כל השדות אופציונליים ועוזרים לנו לספק תובנות טובות יותר.
           </DialogDescription>
         </DialogHeader>
 
@@ -135,10 +135,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
         ) : (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="age">Age Group (optional)</Label>
+              <Label htmlFor="age">קבוצת גיל (אופציונלי)</Label>
               <Select value={ageGroupId} onValueChange={setAgeGroupId}>
                 <SelectTrigger id="age">
-                  <SelectValue placeholder="Select age group" />
+                  <SelectValue placeholder="בחר קבוצת גיל" />
                 </SelectTrigger>
                 <SelectContent>
                   {ageGroups.map((group) => (
@@ -151,10 +151,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender (optional)</Label>
+              <Label htmlFor="gender">מגדר (אופציונלי)</Label>
               <Select value={genderId} onValueChange={setGenderId}>
                 <SelectTrigger id="gender">
-                  <SelectValue placeholder="Select gender" />
+                  <SelectValue placeholder="בחר מגדר" />
                 </SelectTrigger>
                 <SelectContent>
                   {genders.map((gender) => (
@@ -167,10 +167,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ethnicity">Ethnicity (optional)</Label>
+              <Label htmlFor="ethnicity">מוצא אתני (אופציונלי)</Label>
               <Select value={ethnicityId} onValueChange={setEthnicityId}>
                 <SelectTrigger id="ethnicity">
-                  <SelectValue placeholder="Select ethnicity" />
+                  <SelectValue placeholder="בחר מוצא אתני" />
                 </SelectTrigger>
                 <SelectContent>
                   {ethnicities.map((ethnicity) => (
@@ -183,10 +183,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="party">Political Party (optional)</Label>
+              <Label htmlFor="party">מפלגה פוליטית (אופציונלי)</Label>
               <Select value={politicalPartyId} onValueChange={setPoliticalPartyId}>
                 <SelectTrigger id="party">
-                  <SelectValue placeholder="Select political party" />
+                  <SelectValue placeholder="בחר מפלגה פוליטית" />
                 </SelectTrigger>
                 <SelectContent>
                   {politicalParties.map((party) => (
@@ -207,14 +207,14 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             className="w-full sm:w-auto"
             disabled={isSubmitting}
           >
-            Skip
+            דלג
           </Button>
           <Button
             onClick={handleSubmit}
             className="w-full sm:w-auto"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : "Continue"}
+            {isSubmitting ? "שומר..." : "המשך"}
           </Button>
         </DialogFooter>
       </DialogContent>

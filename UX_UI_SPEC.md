@@ -1,10 +1,11 @@
 # Pulse - UX/UI Specification Document
 
-**Version:** 1.2
-**Date:** 2025-10-08
+**Version:** 1.3
+**Date:** 2025-10-09
 **Purpose:** Complete frontend specification for designers and developers
 
 **Changelog:**
+- **v1.3 (2025-10-09)**: Hebrew RTL makeover - Complete Hebrew translation with gender-neutral forms, RTL layout using CSS logical properties, Rubik font, Clerk Hebrew localization, all UI components translated
 - **v1.2 (2025-10-08)**: Card deck metaphor refinements - InsightCard/ResultsCard redesigns, Continuation page achievement metaphor, Closed poll dual-card layout, Poll listing deck cards with emoji
 - **v1.1 (2025-10-02)**: Implemented AdaptiveHeader system - unified context-aware navigation with 5 variants, removed duplicate headers across all pages
 
@@ -12,16 +13,205 @@
 
 ## Table of Contents
 
-1. [Design System & Foundations](#design-system--foundations)
-2. [Public-Facing Pages](#public-facing-pages)
-3. [Authentication Pages](#authentication-pages)
-4. [Voting Interface](#voting-interface)
-5. [Results & Insights Pages](#results--insights-pages)
-6. [Creator/Owner Pages](#creatorowner-pages)
-7. [Admin Pages](#admin-pages)
-8. [Shared Components](#shared-components)
-9. [Responsive Behavior](#responsive-behavior)
-10. [Animation & Interaction Specs](#animation--interaction-specs)
+1. [Language & RTL Design](#language--rtl-design)
+2. [Design System & Foundations](#design-system--foundations)
+3. [Public-Facing Pages](#public-facing-pages)
+4. [Authentication Pages](#authentication-pages)
+5. [Voting Interface](#voting-interface)
+6. [Results & Insights Pages](#results--insights-pages)
+7. [Creator/Owner Pages](#creatorowner-pages)
+8. [Admin Pages](#admin-pages)
+9. [Shared Components](#shared-components)
+10. [Responsive Behavior](#responsive-behavior)
+11. [Animation & Interaction Specs](#animation--interaction-specs)
+
+---
+
+## Language & RTL Design
+
+### Primary Language: Hebrew
+**Pulse is a Hebrew-only application** with no English fallback or bilingual support. All UI elements, labels, messages, and content are in Hebrew with full RTL (right-to-left) layout.
+
+#### Language Configuration
+- **HTML:** `<html lang="he" dir="rtl">`
+- **Font Family:** Rubik (Google Fonts)
+  - Subsets: Hebrew + Latin
+  - Variable: `--font-rubik`
+  - Replaces: Geist Sans and Geist Mono
+- **Date/Time:** Hebrew locale (`he` from date-fns)
+- **Authentication:** Clerk Hebrew localization (`heIL`)
+
+#### Translation Approach
+**Gender-Neutral Hebrew Strategy:**
+All text uses gender-neutral forms to be inclusive of all genders:
+- **Infinitive forms:** "כניסה" (entering) instead of "התחבר" (masculine) or "התחברי" (feminine)
+- **Noun forms:** "יצירת סקר" (poll creation), "צפייה בתובנות" (viewing insights)
+- **Neutral constructions:** Avoids gendered pronouns and verb conjugations
+- **Professional tone:** Maintains welcoming, inclusive language throughout
+
+**Translation Examples:**
+```
+Sign In → כניסה
+Sign Up → הצטרפות
+Create Poll → יצירת סקר
+Continue Voting → המשך מיון
+View Insights → צפייה בתובנות
+Back → חזרה
+Next → הבא
+Finish → סיום
+```
+
+#### RTL Layout Principles
+**CSS Approach:** Tailwind CSS v4 logical properties throughout (183 replacements across 43 files)
+
+**Directional Properties:**
+- **Margins:**
+  - `ml-*` → `ms-*` (margin-inline-start)
+  - `mr-*` → `me-*` (margin-inline-end)
+- **Padding:**
+  - `pl-*` → `ps-*` (padding-inline-start)
+  - `pr-*` → `pe-*` (padding-inline-end)
+- **Positioning:**
+  - `left-*` → `start-*` (inset-inline-start)
+  - `right-*` → `end-*` (inset-inline-end)
+- **Text Alignment:**
+  - `text-left` → `text-start`
+  - `text-right` → `text-end`
+- **Borders:**
+  - `border-l-*` → `border-s-*`
+  - `border-r-*` → `border-e-*`
+- **Rounded Corners:**
+  - `rounded-l-*` → `rounded-s-*`
+  - `rounded-r-*` → `rounded-e-*`
+
+**Component Direction:**
+- Radix UI components automatically respect `dir="rtl"` attribute
+- No need for DirectionProvider wrapper
+- Native HTML directionality handles most layout
+
+**Icon Direction:**
+- Directional icons reversed: Back buttons use `ArrowRight` instead of `ArrowLeft`
+- Navigation drawer opens from right side
+- Progress flows right-to-left
+
+#### Typography for Hebrew
+**Font Rendering:**
+- Rubik provides excellent Hebrew glyph coverage
+- Clear distinction between similar Hebrew letters
+- Proper diacritic (nikud) support
+- Latin fallback for usernames and technical terms
+
+**Text Sizing:**
+- Hebrew text generally appears slightly larger than Latin
+- Font weights adjusted for Hebrew readability
+- Line heights optimized for Hebrew character shapes
+
+**Character Limits:**
+- Statement text: 140 characters (sufficient for Hebrew)
+- Button labels: 10 characters (adequate for Hebrew button text)
+- Form validation adapted for Hebrew message lengths
+
+#### UI Component Examples with Hebrew
+
+**Voting Interface:**
+- Statement card: "שמירה" (Keep) / "השלכה" (Throw)
+- Pass button: "דילוג" (Skip)
+- Finish button: "סיום" (Finish)
+- Add card button: "הוספת כרטיס" (Add Card)
+
+**Poll Entry Page:**
+- "פתיחת חפיסה" (Open Deck)
+- "המשך חפיסה" (Continue Deck)
+- "צפייה בתובנות שלך" (View Your Insights)
+
+**Navigation:**
+- "סקרים" (Polls)
+- "לוח בקרה" (Dashboard)
+- "יצירת סקר" (Create Poll)
+- "פאנל ניהול" (Admin Panel)
+- "כניסה" (Sign In)
+- "הצטרפות" (Sign Up)
+
+**Validation Messages (Zod):**
+- "שאלה נדרשת" (Question required)
+- "תיאור ארוך מדי" (Description too long)
+- "זמן הסיום חייב להיות אחרי זמן ההתחלה" (End time must be after start time)
+
+#### Accessibility for RTL Hebrew
+**Screen Readers:**
+- Proper `lang="he"` attribute for Hebrew pronunciation
+- ARIA labels translated to Hebrew
+- Form validation messages announced in Hebrew
+
+**Keyboard Navigation:**
+- Tab order flows naturally in RTL context
+- Arrow key navigation reversed for RTL
+- Focus indicators work correctly with RTL layout
+
+**Visual Indicators:**
+- Progress bars fill right-to-left
+- Loading spinners rotate correctly
+- Directional animations reversed for RTL
+
+#### Date and Time Formatting
+**Hebrew Locale:**
+- Date format: Using `he` locale from date-fns
+- Time format: 24-hour format preferred in Israel
+- Date picker: Hebrew month/day names
+- Relative dates: "לפני שעה" (an hour ago), "אתמול" (yesterday)
+
+**Example in Code:**
+```typescript
+import { he } from "date-fns/locale";
+format(date, "PPP 'בשעה' HH:mm", { locale: he });
+// Output: "8 בינואר 2025 בשעה 14:30"
+```
+
+#### Translation Coverage
+All user-facing elements translated:
+- ✅ Navigation menus and headers
+- ✅ Button labels (all variants)
+- ✅ Form inputs and placeholders
+- ✅ Validation error messages
+- ✅ Toast notifications
+- ✅ Modal titles and descriptions
+- ✅ Empty states and help text
+- ✅ Loading messages
+- ✅ Success/error confirmations
+- ✅ Poll creation wizard
+- ✅ Voting interface
+- ✅ Insights and results pages
+- ✅ Admin interface
+- ✅ Date/time pickers
+
+#### Design Considerations for Hebrew RTL
+**Layout Flow:**
+- Content flows right-to-left
+- Primary actions on right side (instead of left)
+- Navigation menus anchor to right
+- Progress indicators fill from right
+
+**Visual Hierarchy:**
+- Maintain same visual weight as LTR version
+- Cards and components mirror horizontally
+- Icon placement adjusted for RTL flow
+- Text alignment follows natural Hebrew direction
+
+**Component Mirroring:**
+- Drawer/Sheet components open from right
+- Dropdown menus expand to left
+- Tooltip arrows point correctly
+- Modal positioning centered (not affected by RTL)
+
+**Testing Checklist:**
+- [ ] All text displays correctly in Hebrew
+- [ ] No layout breaks with long Hebrew words
+- [ ] Icons face correct direction
+- [ ] Animations flow right-to-left
+- [ ] Form validation works in Hebrew
+- [ ] Date pickers show Hebrew months
+- [ ] Screen readers pronounce Hebrew correctly
+- [ ] Keyboard navigation flows RTL
 
 ---
 
@@ -41,7 +231,11 @@
   - **Indigo/Violet**: Personal insights (`#ddd6fe`, `#e0e7ff`, `#dbeafe` with animated shimmer)
   - **Emerald/Teal**: Poll results (`#d1fae5`, `#dbeafe` with animated shimmer)
   - **Gray**: Closed/archived polls
-- **Typography:** Clean, modern sans-serif
+- **Typography:** Rubik font family (Hebrew + Latin support)
+  - Primary font: Rubik (replaces Geist Sans/Mono)
+  - Font weights: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
+  - Optimized for Hebrew readability with excellent glyph coverage
+  - Clean, modern sans-serif style works well for both Hebrew and Latin characters
 - **Spacing System:** 4px base grid (4, 8, 16, 24, 32, 48, 64px)
 - **Border Radius:** Cards: 24px (rounded-3xl), Buttons: 8px, Small elements: 4px
 - **Card Aspect Ratio:** Consistent 2:3 ratio for all card types (voting, insights, results, poll decks)

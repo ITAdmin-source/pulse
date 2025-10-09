@@ -15,9 +15,9 @@ interface StatementCardProps {
 
 export function StatementCard({
   statement,
-  agreeLabel = "Keep",
-  disagreeLabel = "Throw",
-  passLabel = "Skip",
+  agreeLabel = "שמירה",
+  disagreeLabel = "השלכה",
+  passLabel = "דילוג",
   onVote,
   disabled = false,
 }: StatementCardProps) {

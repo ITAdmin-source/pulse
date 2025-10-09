@@ -25,9 +25,9 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Poll Not Found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">סקר לא נמצא</h1>
           <Button asChild>
-            <Link href="/polls">Back to Polls</Link>
+            <Link href="/polls">חזרה לסקרים</Link>
           </Button>
         </div>
       </div>
@@ -53,16 +53,16 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {isScheduled ? "Poll Not Yet Active" : "Poll Not Available"}
+            {isScheduled ? "סקר עדיין לא פעיל" : "סקר לא זמין"}
           </h1>
           <p className="text-gray-600 mb-4">
             {isScheduled && poll.startTime
-              ? `This poll will be available on ${new Date(poll.startTime).toLocaleDateString()} at ${new Date(poll.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-              : "This poll is not currently active."
+              ? `סקר זה יהיה זמין ב-${new Date(poll.startTime).toLocaleDateString()} בשעה ${new Date(poll.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : "סקר זה אינו פעיל כרגע."
             }
           </p>
           <Button asChild>
-            <Link href="/polls">Back to Polls</Link>
+            <Link href="/polls">חזרה לסקרים</Link>
           </Button>
         </div>
       </div>
@@ -125,8 +125,8 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             <div className="flex justify-end mb-4">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/polls/${poll.slug}/manage`}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage Poll
+                  <Settings className="w-4 h-4 me-2" />
+                  ניהול סקר
                 </Link>
               </Button>
             </div>
@@ -153,7 +153,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             {isNewUser && (
               <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                 <Link href={`/polls/${poll.slug}/vote`}>
-                  Open Deck
+                  פתיחת חפיסה
                 </Link>
               </Button>
             )}
@@ -162,7 +162,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
             {isInProgress && (
               <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                 <Link href={`/polls/${poll.slug}/vote`}>
-                  Continue Deck
+                  המשך חפיסה
                 </Link>
               </Button>
             )}
@@ -172,7 +172,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
               <>
                 <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                   <Link href={`/polls/${poll.slug}/insights`}>
-                    View Your Insights
+                    צפה בתובנות שלך
                   </Link>
                 </Button>
                 <Button
@@ -182,7 +182,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
                   asChild
                 >
                   <Link href={`/polls/${poll.slug}/vote`}>
-                    Continue Deck
+                    המשך חפיסה
                   </Link>
                 </Button>
               </>
@@ -193,7 +193,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
               <>
                 <Button size="lg" className="text-lg px-8 py-6 h-auto" asChild>
                   <Link href={`/polls/${poll.slug}/insights`}>
-                    View Your Insights
+                    צפה בתובנות שלך
                   </Link>
                 </Button>
                 <Button
@@ -203,7 +203,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
                   asChild
                 >
                   <Link href={`/polls/${poll.slug}/results`}>
-                    View Poll Results
+                    צפה בתוצאות הסקר
                   </Link>
                 </Button>
               </>

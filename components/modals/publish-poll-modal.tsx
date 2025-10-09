@@ -33,23 +33,23 @@ export function PublishPollModal({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Publish Poll?</AlertDialogTitle>
+          <AlertDialogTitle>לפרסם את הסקר?</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-4">
-              <p>Ready to publish your poll?</p>
+              <p>מוכן לפרסם את הסקר שלך?</p>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  <span>{statementCount} statements added</span>
+                  <span>{statementCount} הצהרות נוספו</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  <span>Settings configured</span>
+                  <span>ההגדרות הוגדרו</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  <span>Threshold set to {threshold}</span>
+                  <span>סף מינימום הוגדר ל-{threshold}</span>
                 </div>
               </div>
 
@@ -57,29 +57,29 @@ export function PublishPollModal({
                 <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
                   <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium">Recommendation:</p>
-                    <p>Add more statements for better insights. We recommend at least 10 statements.</p>
+                    <p className="font-medium">המלצה:</p>
+                    <p>הוסף עוד הצהרות לתובנות טובות יותר. אנו ממליצים על לפחות 10 הצהרות.</p>
                   </div>
                 </div>
               )}
 
               <p className="text-sm text-gray-600">
-                Once published, you can unpublish later if needed (returns to draft state).
+                לאחר הפרסום, ניתן לבטל את הפרסום במידת הצורך (חזרה למצב טיוטה).
               </p>
 
               <div className="text-sm">
-                <span className="font-medium">Start Time: </span>
+                <span className="font-medium">זמן התחלה: </span>
                 <span className="text-gray-600">
-                  {hasScheduledStart ? "Scheduled" : "Immediately"}
+                  {hasScheduledStart ? "מתוזמן" : "מיידי"}
                 </span>
               </div>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>ביטול</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>
-            Publish Now
+            פרסם כעת
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -21,10 +21,10 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-72">
+      <SheetContent side="right" className="w-72">
         <SheetHeader>
           <div className="flex items-center justify-between">
-            <SheetTitle>Menu</SheetTitle>
+            <SheetTitle>תפריט</SheetTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
@@ -45,7 +45,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               >
                 <UserButton.MenuItems>
                   <UserButton.Action
-                    label="Sign out"
+                    label="יציאה"
                     labelIcon={<span>🚪</span>}
                     onClick={() => signOut({ redirectUrl: "/" })}
                   />
@@ -64,7 +64,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               onClick={onClose}
               className="text-gray-700 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-100"
             >
-              Browse Polls
+              עיון בסקרים
             </Link>
 
             <SignedIn>
@@ -75,7 +75,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                   onClick={onClose}
                   className="text-gray-700 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-100"
                 >
-                  Dashboard
+                  לוח בקרה
                 </Link>
               )}
               <Link
@@ -83,14 +83,14 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                 onClick={onClose}
                 className="text-gray-700 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-100"
               >
-                Create Poll
+                יצירת סקר
               </Link>
               <Link
                 href="/admin/dashboard"
                 onClick={onClose}
                 className="text-gray-700 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-100"
               >
-                Admin Dashboard
+                פאנל ניהול
               </Link>
             </SignedIn>
           </nav>
@@ -100,12 +100,12 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             <div className="flex flex-col gap-2 pt-4 border-t">
               <SignInButton mode="modal">
                 <Button variant="outline" className="w-full">
-                  Sign In
+                  כניסה
                 </Button>
               </SignInButton>
               <Button asChild className="w-full">
                 <Link href="/signup" onClick={onClose}>
-                  Sign Up
+                  הצטרפות
                 </Link>
               </Button>
             </div>

@@ -1,12 +1,12 @@
 /**
- * AI Service - Mock implementations ready for API integration
+ * AI Service - Real AI-powered insights using OpenAI GPT-5 mini
  *
- * This service provides mock AI-generated content for:
- * - Personal insights (user voting patterns)
- * - Poll results summaries (aggregate analysis)
+ * This service provides AI-generated content for:
+ * - Personal insights (user voting patterns) - Uses OpenAI GPT-5 mini API
+ * - Poll results summaries (aggregate analysis) - Uses mock for now
  *
- * TODO: Replace mock implementations with actual AI API calls
- * Recommended APIs: OpenAI GPT-4, Anthropic Claude, or similar
+ * Personal insights are generated via /api/insights/generate endpoint
+ * which calls OpenAI GPT-5 mini with Hebrew prompts
  */
 
 import { getVotesByUserId } from "@/db/queries/votes-queries";
@@ -15,6 +15,8 @@ import { getApprovedStatementsByPollId } from "@/db/queries/statements-queries";
 import type { Vote } from "@/db/schema/votes";
 import type { Poll } from "@/db/schema/polls";
 import type { Statement } from "@/db/schema/statements";
+import type { InsightGenerationRequest } from "@/lib/types/openai";
+import { generateInsight, generateFallbackInsight } from "@/lib/ai/openai-client";
 
 interface VoteStatistics {
   agreeCount: number;
@@ -52,24 +54,14 @@ interface PollStatistics {
 
 export class AIService {
   /**
-   * Generate personal insight for user's voting pattern
+   * Generate personal insight for user's voting pattern using GPT-5 mini
    *
-   * @param userId - User ID (clerk or internal)
+   * @param userId - User ID (internal database ID)
    * @param pollId - Poll ID
    * @returns Object with title and body text for insight
    *
-   * TODO: Replace with actual AI API call
-   * Example integration:
-   * ```typescript
-   * const response = await openai.chat.completions.create({
-   *   model: "gpt-4",
-   *   messages: [
-   *     { role: "system", content: "You are an expert analyst..." },
-   *     { role: "user", content: JSON.stringify(votesData) }
-   *   ]
-   * });
-   * return { title: response.title, body: response.body };
-   * ```
+   * Now uses real OpenAI GPT-5 mini API with Hebrew prompts
+   * Falls back to template-based insight if API fails
    */
   static async generatePersonalInsight(
     userId: string,
@@ -98,13 +90,42 @@ export class AIService {
       // Calculate user statistics
       const stats = this.calculateUserStatistics(pollVotes);
 
-      // Generate insight title
-      const title = this.generateInsightTitle(stats, poll);
+      // Build statements with votes for AI
+      const statementsWithVotes = pollVotes.map((vote) => {
+        const statement = statements.find((s) => s.id === vote.statementId);
+        return {
+          text: statement?.text || "",
+          vote: vote.value as 1 | 0 | -1,
+        };
+      });
 
-      // Generate insight body
-      const body = this.generateInsightBody(stats, poll, pollVotes.length);
+      // Build request for AI
+      const insightRequest: InsightGenerationRequest = {
+        userId,
+        pollId: poll.id,
+        pollQuestion: poll.question,
+        pollDescription: poll.description,
+        statements: statementsWithVotes,
+        voteStatistics: stats,
+      };
 
-      return { title, body };
+      // Try to generate with OpenAI GPT-5 mini
+      try {
+        const result = await generateInsight(insightRequest);
+        return {
+          title: result.title,
+          body: result.body,
+        };
+      } catch (aiError) {
+        console.error("[AIService] OpenAI generation failed, using fallback:", aiError);
+
+        // Use fallback template-based insight
+        const fallback = generateFallbackInsight(insightRequest);
+        return {
+          title: fallback.title,
+          body: fallback.body,
+        };
+      }
     } catch (error) {
       console.error("Error generating personal insight:", error);
       throw error;

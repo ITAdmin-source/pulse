@@ -63,7 +63,7 @@ export function InsightCard({ title, body, pollQuestion }: InsightCardProps) {
               {/* "Personal Insight" Badge */}
               <div className="mb-2">
                 <span className="inline-block px-3 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wider rounded-full border border-indigo-200">
-                  Personal Insight
+                  תובנה אישית
                 </span>
               </div>
 

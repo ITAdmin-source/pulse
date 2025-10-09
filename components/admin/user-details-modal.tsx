@@ -287,7 +287,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
                         <div>
                           <Badge variant="outline">{role.role}</Badge>
                           {role.pollId && (
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-gray-500 ms-2">
                               Poll: {role.pollId.substring(0, 8)}...
                             </span>
                           )}
@@ -315,7 +315,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
                         }}
                         disabled={isProcessing}
                       >
-                        <ShieldOff className="h-4 w-4 mr-2" />
+                        <ShieldOff className="h-4 w-4 me-2" />
                         Revoke System Admin Role
                       </Button>
                     ) : (
@@ -328,7 +328,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
                         }}
                         disabled={isProcessing}
                       >
-                        <Shield className="h-4 w-4 mr-2" />
+                        <Shield className="h-4 w-4 me-2" />
                         Assign System Admin Role
                       </Button>
                     )}
@@ -382,7 +382,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
                   Processing...
                 </>
               ) : (

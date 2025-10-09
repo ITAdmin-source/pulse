@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Menu, ArrowLeft } from "lucide-react";
+import { Menu, ArrowRight } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
 import { useHeader, type HeaderVariant } from "@/contexts/header-context";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -43,8 +43,8 @@ export function AdaptiveHeader() {
             {config.backUrl && (
               <Button variant="ghost" size="sm" asChild>
                 <Link href={config.backUrl}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {config.backLabel || "Back"}
+                  <ArrowRight className="h-4 w-4 me-2" />
+                  {config.backLabel || "חזרה"}
                 </Link>
               </Button>
             )}
@@ -63,7 +63,7 @@ export function AdaptiveHeader() {
               {config.actions}
               <SignedOut>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/login">Sign In</Link>
+                  <Link href="/login">כניסה</Link>
                 </Button>
               </SignedOut>
               <SignedIn>
@@ -77,7 +77,7 @@ export function AdaptiveHeader() {
                 >
                   <UserButton.MenuItems>
                     <UserButton.Action
-                      label="Sign out"
+                      label="יציאה"
                       labelIcon={<span>🚪</span>}
                       onClick={() => signOut({ redirectUrl: "/" })}
                     />
@@ -133,8 +133,8 @@ export function AdaptiveHeader() {
             {config.backUrl && (
               <Button variant="ghost" size="sm" asChild>
                 <Link href={config.backUrl}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {config.backLabel || "Back to Polls"}
+                  <ArrowRight className="h-4 w-4 me-2" />
+                  {config.backLabel || "חזרה לסקרים"}
                 </Link>
               </Button>
             )}
@@ -160,7 +160,7 @@ export function AdaptiveHeader() {
                 >
                   <UserButton.MenuItems>
                     <UserButton.Action
-                      label="Sign out"
+                      label="יציאה"
                       labelIcon={<span>🚪</span>}
                       onClick={() => signOut({ redirectUrl: "/" })}
                     />
@@ -184,8 +184,8 @@ export function AdaptiveHeader() {
             {config.backUrl && (
               <Button variant="ghost" size="sm" asChild>
                 <Link href={config.backUrl}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {config.backLabel || "Back"}
+                  <ArrowRight className="h-4 w-4 me-2" />
+                  {config.backLabel || "חזרה"}
                 </Link>
               </Button>
             )}
@@ -223,25 +223,25 @@ export function AdaptiveHeader() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/polls" className="text-gray-700 hover:text-gray-900">
-              Polls
+              סקרים
             </Link>
             <SignedIn>
               {/* Dashboard - visible only to users who own/manage polls */}
               {userHasManagementRole && (
                 <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
-                  Dashboard
+                  לוח בקרה
                 </Link>
               )}
               {/* Create Poll - visible to System Admins, Poll Creators, Poll Managers */}
               {userCanCreatePoll && (
                 <Link href="/polls/create" className="text-gray-700 hover:text-gray-900">
-                  Create Poll
+                  יצירת סקר
                 </Link>
               )}
               {/* Admin Dashboard - visible only to System Admins */}
               {userIsSystemAdmin && (
                 <Link href="/admin/dashboard" className="text-gray-700 hover:text-gray-900">
-                  Admin Dashboard
+                  פאנל ניהול
                 </Link>
               )}
             </SignedIn>
@@ -254,10 +254,10 @@ export function AdaptiveHeader() {
             {config.actions}
             <SignedOut>
               <SignInButton mode="modal">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost">כניסה</Button>
               </SignInButton>
               <Button asChild>
-                <Link href="/signup">Sign Up</Link>
+                <Link href="/signup">הצטרפות</Link>
               </Button>
             </SignedOut>
             <SignedIn>
@@ -271,7 +271,7 @@ export function AdaptiveHeader() {
               >
                 <UserButton.MenuItems>
                   <UserButton.Action
-                    label="Sign out"
+                    label="יציאה"
                     labelIcon={<span>🚪</span>}
                     onClick={() => signOut({ redirectUrl: "/" })}
                   />

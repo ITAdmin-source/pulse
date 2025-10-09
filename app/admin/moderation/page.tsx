@@ -264,12 +264,12 @@ export default function ModerationQueuePage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search statements..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function ModerationQueuePage() {
                         onClick={handleBulkApprove}
                         disabled={isProcessing}
                       >
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-4 w-4 me-2" />
                         Approve Selected ({selectedStatements.length})
                       </Button>
                       <Button
@@ -299,7 +299,7 @@ export default function ModerationQueuePage() {
                         onClick={handleBulkReject}
                         disabled={isProcessing}
                       >
-                        <XCircle className="h-4 w-4 mr-2" />
+                        <XCircle className="h-4 w-4 me-2" />
                         Reject Selected ({selectedStatements.length})
                       </Button>
                     </div>
@@ -346,7 +346,7 @@ export default function ModerationQueuePage() {
                           onClick={() => handleApprove(statement.id)}
                           disabled={isProcessing}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <CheckCircle className="h-4 w-4 me-1" />
                           Approve
                         </Button>
                         <Button
@@ -355,7 +355,7 @@ export default function ModerationQueuePage() {
                           onClick={() => handleReject(statement.id)}
                           disabled={isProcessing}
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
+                          <XCircle className="h-4 w-4 me-1" />
                           Reject
                         </Button>
                       </div>

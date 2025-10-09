@@ -47,16 +47,16 @@ export function AddStatementModal({
       });
 
       if (result.success) {
-        toast.success("Statement added successfully");
+        toast.success("ההצהרה נוספה בהצלחה");
         setText(""); // Clear form
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(result.error || "Failed to add statement");
+        toast.error(result.error || "נכשל להוסיף הצהרה");
       }
     } catch (error) {
       console.error("Error adding statement:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("אירעה שגיאה לא צפויה");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,9 +66,9 @@ export function AddStatementModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Statement</DialogTitle>
+          <DialogTitle>הוספת הצהרה</DialogTitle>
           <DialogDescription>
-            Add a new statement to this poll. It will be approved automatically.
+            הוסף הצהרה חדשה לסקר זה. היא תאושר באופן אוטומטי.
           </DialogDescription>
         </DialogHeader>
 
@@ -78,22 +78,22 @@ export function AddStatementModal({
             onChange={(e) => setText(e.target.value)}
             rows={4}
             disabled={isSubmitting}
-            placeholder="Enter statement text..."
+            placeholder="הזן טקסט הצהרה..."
           />
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Cancel
+            ביטול
           </Button>
           <Button onClick={handleAdd} disabled={!text.trim() || isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                מוסיף...
               </>
             ) : (
-              "Add Statement"
+              "הוסף הצהרה"
             )}
           </Button>
         </DialogFooter>

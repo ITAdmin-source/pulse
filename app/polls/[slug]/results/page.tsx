@@ -101,7 +101,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
           <div className="text-center">
             <Button size="lg" asChild>
               <Link href="/polls">
-                Back to All Decks
+                חזרה לכל החפיסות
               </Link>
             </Button>
           </div>

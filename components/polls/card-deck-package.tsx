@@ -37,7 +37,7 @@ export function CardDeckPackage({
             <div className="text-center space-y-2">
               <div className="text-4xl opacity-70">✦</div>
               <div className="text-xs font-semibold text-gray-600 tracking-widest uppercase">
-                Poll Deck
+                חפיסת סקר
               </div>
             </div>
 
@@ -65,15 +65,15 @@ export function CardDeckPackage({
               {/* Instructions */}
               <div className="text-center space-y-2">
                 <p className="text-sm text-gray-700 font-medium leading-relaxed">
-                  Keep, throw, or skip each card
+                  שמור, זרוק, או דלג על כל כרטיס
                 </p>
                 {allowUserStatements && (
                   <p className="text-sm text-amber-700 font-semibold">
-                    Add a winning card
+                    הוסף כרטיס מנצח
                   </p>
                 )}
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Discover your insights
+                  גלה את התובנות שלך
                 </p>
               </div>
             </div>

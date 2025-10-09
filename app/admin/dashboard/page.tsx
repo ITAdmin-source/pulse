@@ -17,7 +17,7 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/polls">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Back to Polls
               </Link>
             </Button>

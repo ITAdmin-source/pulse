@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import { CalendarIcon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -21,7 +22,7 @@ interface DateTimePickerProps {
 export function DateTimePicker({
   date,
   setDate,
-  placeholder = "Pick a date and time",
+  placeholder = "בחר תאריך ושעה",
   disabled = false,
   minDate,
 }: DateTimePickerProps) {
@@ -78,14 +79,14 @@ export function DateTimePicker({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start text-start font-normal",
             !date && "text-muted-foreground"
           )}
           disabled={disabled}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <CalendarIcon className="me-2 h-4 w-4" />
           {date ? (
-            format(date, "PPP 'at' HH:mm")
+            format(date, "PPP 'בשעה' HH:mm", { locale: he })
           ) : (
             <span>{placeholder}</span>
           )}
@@ -107,8 +108,8 @@ export function DateTimePicker({
         <div className="p-3 space-y-3">
           <div className="space-y-2">
             <Label htmlFor="time" className="text-sm font-medium flex items-center">
-              <Clock className="mr-2 h-4 w-4" />
-              Time
+              <Clock className="me-2 h-4 w-4" />
+              שעה
             </Label>
             <Input
               id="time"
@@ -124,13 +125,13 @@ export function DateTimePicker({
               className="flex-1"
               onClick={handleClear}
             >
-              Clear
+              ניקוי
             </Button>
             <Button
               className="flex-1"
               onClick={() => setIsOpen(false)}
             >
-              Done
+              סיום
             </Button>
           </div>
         </div>

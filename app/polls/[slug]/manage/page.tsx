@@ -617,7 +617,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                   }
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 me-2" />
                 Edit
               </Button>
               {poll.status === "draft" && (
@@ -710,12 +710,12 @@ export default function ManagePage({ params }: ManagePageProps) {
                   <div className="space-y-2">
                     <Label>Search</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="Search statement text..."
                         value={statementSearch}
                         onChange={(e) => setStatementSearch(e.target.value)}
-                        className="pl-9"
+                        className="ps-9"
                       />
                     </div>
                   </div>
@@ -746,11 +746,11 @@ export default function ManagePage({ params }: ManagePageProps) {
                     {selectedStatements.length > 0 && (
                       <div className="flex gap-2">
                         <Button size="sm" variant="default" onClick={handleBulkApprove}>
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <CheckCircle className="h-4 w-4 me-2" />
                           Approve Selected ({selectedStatements.length})
                         </Button>
                         <Button size="sm" variant="destructive" onClick={handleBulkReject}>
-                          <XCircle className="h-4 w-4 mr-2" />
+                          <XCircle className="h-4 w-4 me-2" />
                           Reject Selected ({selectedStatements.length})
                         </Button>
                       </div>
@@ -785,11 +785,11 @@ export default function ManagePage({ params }: ManagePageProps) {
                         </p>
                         <div className="flex gap-2">
                           <Button size="sm" variant="default" onClick={() => handleApproveStatement(statement.id)}>
-                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <CheckCircle className="h-4 w-4 me-1" />
                             Approve
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => handleRejectStatement(statement.id)}>
-                            <XCircle className="h-4 w-4 mr-1" />
+                            <XCircle className="h-4 w-4 me-1" />
                             Reject
                           </Button>
                         </div>
@@ -818,7 +818,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                 <div className="flex items-center justify-between">
                   <CardTitle>Approved ({approvedStatements.length})</CardTitle>
                   <Button size="sm" variant="outline" onClick={() => setShowAddModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Statement
                   </Button>
                 </div>
@@ -855,7 +855,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                             setShowEditModal(true);
                           }}
                         >
-                          <Edit className="h-4 w-4 mr-1" />
+                          <Edit className="h-4 w-4 me-1" />
                           Edit
                         </Button>
                         <Button
@@ -863,7 +863,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                           variant="destructive"
                           onClick={() => handleDeleteStatement(statement.id)}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
+                          <Trash2 className="h-4 w-4 me-1" />
                           Delete
                         </Button>
                       </div>
@@ -1024,7 +1024,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                       <span className="text-sm font-medium">
                         {stats.voters} / {poll.votingGoal}
                         {stats.voters >= poll.votingGoal && (
-                          <span className="ml-2 text-green-600">✓ Reached!</span>
+                          <span className="ms-2 text-green-600">✓ Reached!</span>
                         )}
                       </span>
                     </div>
@@ -1259,12 +1259,12 @@ export default function ManagePage({ params }: ManagePageProps) {
                     >
                       {isAddingManager ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 me-2 animate-spin" />
                           Adding...
                         </>
                       ) : (
                         <>
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="h-4 w-4 me-2" />
                           Add as Manager
                         </>
                       )}

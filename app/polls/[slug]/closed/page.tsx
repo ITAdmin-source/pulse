@@ -27,9 +27,9 @@ export default async function ClosedPollPage({ params }: ClosedPollPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Poll Not Found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">סקר לא נמצא</h1>
           <Button asChild>
-            <Link href="/polls">Back to Polls</Link>
+            <Link href="/polls">חזרה לסקרים</Link>
           </Button>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default async function ClosedPollPage({ params }: ClosedPollPageProps) {
           {/* Back Button */}
           <div className="text-center">
             <Button size="lg" variant="ghost" asChild>
-              <Link href="/polls">Back to All Decks</Link>
+              <Link href="/polls">חזרה לכל החפיסות</Link>
             </Button>
           </div>
         </div>

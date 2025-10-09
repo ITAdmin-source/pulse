@@ -45,7 +45,7 @@ export function TransferOwnershipModal({
 
   const handleVerifyUser = async () => {
     if (!newOwnerUserId.trim()) {
-      toast.error("Please enter a user ID");
+      toast.error("אנא הזן מזהה משתמש");
       return;
     }
 
@@ -55,14 +55,14 @@ export function TransferOwnershipModal({
 
       if (result.success && result.data) {
         setVerifiedUser({ id: result.data.id, email: result.data.clerkUserId || undefined });
-        toast.success("User found and verified");
+        toast.success("המשתמש נמצא ואומת");
       } else {
-        toast.error("User not found. Please check the user ID.");
+        toast.error("המשתמש לא נמצא. אנא בדוק את מזהה המשתמש.");
         setVerifiedUser(null);
       }
     } catch (error) {
       console.error("Error verifying user:", error);
-      toast.error("Failed to verify user");
+      toast.error("נכשל לאמת את המשתמש");
       setVerifiedUser(null);
     } finally {
       setIsVerifying(false);
@@ -71,12 +71,12 @@ export function TransferOwnershipModal({
 
   const handleTransfer = async () => {
     if (!verifiedUser) {
-      toast.error("Please verify the new owner first");
+      toast.error("אנא אמת את הבעלים החדש תחילה");
       return;
     }
 
     if (confirmText !== "TRANSFER") {
-      toast.error("Please type TRANSFER to confirm");
+      toast.error("אנא הקלד TRANSFER לאישור");
       return;
     }
 
@@ -90,18 +90,18 @@ export function TransferOwnershipModal({
       );
 
       if (result.success) {
-        toast.success("Ownership transferred successfully");
+        toast.success("הבעלות הועברה בהצלחה");
         onOpenChange(false);
         resetForm();
         if (onSuccess) {
           onSuccess();
         }
       } else {
-        toast.error(result.error || "Failed to transfer ownership");
+        toast.error(result.error || "נכשל להעביר את הבעלות");
       }
     } catch (error) {
       console.error("Error transferring ownership:", error);
-      toast.error("Failed to transfer ownership");
+      toast.error("נכשל להעביר את הבעלות");
     } finally {
       setIsTransferring(false);
     }
@@ -127,14 +127,14 @@ export function TransferOwnershipModal({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <UserCog className="h-5 w-5 text-blue-600" />
-            <DialogTitle>Transfer Poll Ownership</DialogTitle>
+            <DialogTitle>העברת בעלות על הסקר</DialogTitle>
           </div>
           <DialogDescription className="space-y-2 pt-2">
-            <p>Transfer ownership of <span className="font-semibold">{pollQuestion}</span> to another user.</p>
+            <p>העבר בעלות על <span className="font-semibold">{pollQuestion}</span> למשתמש אחר.</p>
             <Alert className="bg-orange-50 border-orange-200">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-sm text-orange-800">
-                <strong>Warning:</strong> This action cannot be undone. The new owner will have full control over this poll.
+                <strong>אזהרה:</strong> פעולה זו לא ניתנת לביטול. הבעלים החדש יקבל שליטה מלאה על סקר זה.
               </AlertDescription>
             </Alert>
           </DialogDescription>
@@ -143,11 +143,11 @@ export function TransferOwnershipModal({
         <div className="space-y-4 py-4">
           {/* New Owner Input */}
           <div className="space-y-2">
-            <Label htmlFor="newOwnerId">New Owner User ID</Label>
+            <Label htmlFor="newOwnerId">מזהה משתמש של הבעלים החדש</Label>
             <div className="flex gap-2">
               <Input
                 id="newOwnerId"
-                placeholder="Enter user ID (e.g., user_xyz123)"
+                placeholder="הזן מזהה משתמש (לדוגמה, user_xyz123)"
                 value={newOwnerUserId}
                 onChange={(e) => {
                   setNewOwnerUserId(e.target.value);
@@ -163,16 +163,16 @@ export function TransferOwnershipModal({
               >
                 {isVerifying ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Verifying...
+                    <Loader2 className="h-4 w-4 animate-spin me-2" />
+                    מאמת...
                   </>
                 ) : (
-                  "Verify"
+                  "אמת"
                 )}
               </Button>
             </div>
             <p className="text-xs text-gray-500">
-              You can find the user ID in the database or from their profile
+              ניתן למצוא את מזהה המשתמש במסד הנתונים או מהפרופיל שלו
             </p>
           </div>
 
@@ -180,10 +180,10 @@ export function TransferOwnershipModal({
           {verifiedUser && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-900">
-                <strong>✓ User Verified</strong>
+                <strong>✓ משתמש אומת</strong>
               </p>
               <p className="text-xs text-green-700 mt-1">
-                User ID: {verifiedUser.id}
+                מזהה משתמש: {verifiedUser.id}
                 {verifiedUser.email && ` • ${verifiedUser.email}`}
               </p>
             </div>
@@ -198,7 +198,7 @@ export function TransferOwnershipModal({
               disabled={isTransferring}
             />
             <Label htmlFor="makeMeManager" className="text-sm cursor-pointer">
-              Make me a poll manager after transfer
+              הפוך אותי למנהל סקר לאחר ההעברה
             </Label>
           </div>
 
@@ -206,7 +206,7 @@ export function TransferOwnershipModal({
           {verifiedUser && (
             <div className="space-y-2 pt-4 border-t">
               <Label htmlFor="confirmText">
-                Type <span className="font-mono font-bold">TRANSFER</span> to confirm
+                הקלד <span className="font-mono font-bold">TRANSFER</span> לאישור
               </Label>
               <Input
                 id="confirmText"
@@ -226,7 +226,7 @@ export function TransferOwnershipModal({
             onClick={() => handleOpenChange(false)}
             disabled={isTransferring}
           >
-            Cancel
+            ביטול
           </Button>
           <Button
             variant="destructive"
@@ -235,11 +235,11 @@ export function TransferOwnershipModal({
           >
             {isTransferring ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Transferring...
+                <Loader2 className="h-4 w-4 animate-spin me-2" />
+                מעביר...
               </>
             ) : (
-              "Transfer Ownership"
+              "העבר בעלות"
             )}
           </Button>
         </DialogFooter>

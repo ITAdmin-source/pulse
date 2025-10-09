@@ -7,23 +7,23 @@ export const createUserSchema = z.object({
 }).refine(
   (data) => data.clerkUserId || data.sessionId,
   {
-    message: "Either clerkUserId or sessionId must be provided",
+    message: "חובה לספק מזהה Clerk או מזהה סשן",
     path: ["clerkUserId"],
   }
 );
 
 export const upgradeUserSchema = z.object({
-  sessionId: z.string().min(1, "Session ID is required"),
-  clerkUserId: z.string().min(1, "Clerk user ID is required"),
+  sessionId: z.string().min(1, "מזהה סשן נדרש"),
+  clerkUserId: z.string().min(1, "מזהה משתמש Clerk נדרש"),
 });
 
 export const userProfileSchema = z.object({
   userId: z.string().uuid(),
-  name: z.string().min(1, "Name is required").max(100, "Name too long"),
+  name: z.string().min(1, "שם נדרש").max(100, "שם ארוך מדי"),
   picture: z.string().url().optional(),
-  bio: z.string().max(500, "Bio too long").optional(),
+  bio: z.string().max(500, "ביוגרפיה ארוכה מדי").optional(),
   website: z.string().url().optional(),
-  twitter: z.string().max(50, "Twitter handle too long").optional(),
+  twitter: z.string().max(50, "שם משתמש טוויטר ארוך מדי").optional(),
   linkedin: z.string().url().optional(),
 });
 
@@ -48,7 +48,7 @@ export const userRoleSchema = z.object({
     return !!data.pollId;
   },
   {
-    message: "Poll ID is required for non-system admin roles",
+    message: "מזהה סקר נדרש עבור תפקידים שאינם מנהל מערכת",
     path: ["pollId"],
   }
 );

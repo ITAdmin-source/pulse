@@ -21,9 +21,9 @@ export function PollCard({
   };
 
   const statusLabels = {
-    draft: "Draft",
-    published: "Active",
-    closed: "Closed",
+    draft: "טיוטה",
+    published: "פעיל",
+    closed: "סגור",
   };
 
   return (
@@ -42,7 +42,7 @@ export function PollCard({
       <CardFooter>
         <Button asChild className="w-full">
           <Link href={status === "closed" ? `/polls/${slug}/closed` : `/polls/${slug}`}>
-            {status === "published" ? "Vote Now" : "View Results"}
+            {status === "published" ? "הצבע עכשיו" : "צפה בתוצאות"}
           </Link>
         </Button>
       </CardFooter>

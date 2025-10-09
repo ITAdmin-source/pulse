@@ -27,9 +27,9 @@ export function VoteResultOverlay({
   unsurePercent,
   totalVotes,
   onNext,
-  agreeLabel = "Agree",
-  disagreeLabel = "Disagree",
-  unsureLabel = "Unsure",
+  agreeLabel = "תמיכה",
+  disagreeLabel = "התנגדות",
+  unsureLabel = "לא בטוח",
 }: VoteResultOverlayProps) {
   const [animationPhase, setAnimationPhase] = useState<'entering' | 'visible'>('entering');
 
@@ -40,9 +40,9 @@ export function VoteResultOverlay({
   }, []);
 
   const getUserVoteLabel = () => {
-    if (userVote === 1) return `YOU ${agreeLabel.toUpperCase()}D`;
-    if (userVote === -1) return `YOU ${disagreeLabel.toUpperCase()}D`;
-    return `YOU PASSED`;
+    if (userVote === 1) return `הסכמת`;
+    if (userVote === -1) return `התנגדת`;
+    return `דילגת`;
   };
 
   const VoteIcon = userVote === 1 ? Check : userVote === -1 ? X : Minus;
@@ -165,7 +165,7 @@ export function VoteResultOverlay({
             {/* Total votes (at bottom) */}
             <div className="text-center">
               <p className="text-xs text-gray-600">
-                Based on {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+                מבוסס על {totalVotes} {totalVotes === 1 ? "הצבעה" : "הצבעות"}
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export function VoteResultOverlay({
           transition={{ duration: 0.3, delay: animationPhase === 'entering' ? 1.2 : 0 }}
         >
           <Button onClick={onNext} size="lg" className="shadow-md">
-            Next →
+            הבא ←
           </Button>
         </motion.div>
       )}

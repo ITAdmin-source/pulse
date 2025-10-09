@@ -1,32 +1,32 @@
 import { z } from "zod";
 
 export const createStatementSchema = z.object({
-  pollId: z.string().uuid("Invalid poll ID"),
+  pollId: z.string().uuid("מזהה סקר לא תקין"),
   text: z.string()
-    .min(1, "Statement text is required")
-    .max(140, "Statement too long (max 140 characters)"),
-  submittedBy: z.string().uuid("Invalid user ID").optional(),
+    .min(1, "טקסט ההצהרה נדרש")
+    .max(140, "הצהרה ארוכה מדי (מקסימום 140 תווים)"),
+  submittedBy: z.string().uuid("מזהה משתמש לא תקין").optional(),
 });
 
 export const updateStatementSchema = z.object({
-  id: z.string().uuid("Invalid statement ID"),
+  id: z.string().uuid("מזהה הצהרה לא תקין"),
   text: z.string()
-    .min(1, "Statement text is required")
-    .max(140, "Statement too long (max 140 characters)")
+    .min(1, "טקסט ההצהרה נדרש")
+    .max(140, "הצהרה ארוכה מדי (מקסימום 140 תווים)")
     .optional(),
   approved: z.boolean().optional(),
-  approvedBy: z.string().uuid("Invalid approver ID").optional(),
+  approvedBy: z.string().uuid("מזהה מאשר לא תקין").optional(),
   approvedAt: z.date().optional(),
 });
 
 export const approveStatementSchema = z.object({
-  id: z.string().uuid("Invalid statement ID"),
+  id: z.string().uuid("מזהה הצהרה לא תקין"),
   approved: z.boolean(),
-  approvedBy: z.string().uuid("Invalid approver ID"),
+  approvedBy: z.string().uuid("מזהה מאשר לא תקין"),
 });
 
 export const statementQuerySchema = z.object({
-  pollId: z.string().uuid("Invalid poll ID"),
+  pollId: z.string().uuid("מזהה סקר לא תקין"),
   approved: z.boolean().nullable().optional(),
   submittedBy: z.string().uuid().optional(),
   limit: z.number().int().positive().max(100).default(50),

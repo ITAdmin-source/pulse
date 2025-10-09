@@ -56,7 +56,7 @@ export function ResultsCard({
               {/* "Poll Results" Badge */}
               <div className="mb-3">
                 <span className="inline-block px-3 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider rounded-full border border-emerald-200">
-                  Poll Results
+                  תוצאות הסקר
                 </span>
               </div>
 

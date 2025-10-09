@@ -153,12 +153,12 @@ export default function AdminPollsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search by question or slug..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
               </div>
@@ -210,7 +210,7 @@ export default function AdminPollsPage() {
                     key={poll.id}
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                   >
-                    <div className="flex-grow pr-4">
+                    <div className="flex-grow pe-4">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant={getStatusBadgeVariant(poll.status)}>
                           {poll.status.toUpperCase()}
@@ -231,13 +231,13 @@ export default function AdminPollsPage() {
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/polls/${poll.slug}/manage`}>
-                          <Edit className="h-4 w-4 mr-1" />
+                          <Edit className="h-4 w-4 me-1" />
                           Manage
                         </Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/polls/${poll.slug}`} target="_blank">
-                          <ExternalLink className="h-4 w-4 mr-1" />
+                          <ExternalLink className="h-4 w-4 me-1" />
                           View
                         </Link>
                       </Button>
@@ -246,7 +246,7 @@ export default function AdminPollsPage() {
                         size="sm"
                         onClick={() => handleDeleteClick(poll)}
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <Trash2 className="h-4 w-4 me-1" />
                         Delete
                       </Button>
                     </div>
@@ -299,7 +299,7 @@ export default function AdminPollsPage() {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
                   Deleting...
                 </>
               ) : (

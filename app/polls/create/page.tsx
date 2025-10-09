@@ -48,7 +48,7 @@ export default function CreatePollPage() {
 
     // User must be authenticated to create polls
     if (!dbUser?.id) {
-      toast.error("Please sign in to create polls");
+      toast.error("אנא התחבר כדי ליצור סקרים");
       router.push("/login");
       return;
     }
@@ -59,7 +59,7 @@ export default function CreatePollPage() {
     );
 
     if (!hasPermission) {
-      toast.error("You need Poll Creator permissions. Contact a system administrator.");
+      toast.error("נדרשות הרשאות יצירת סקרים. פנה למנהל מערכת.");
       router.push("/unauthorized");
       return;
     }
@@ -115,7 +115,7 @@ export default function CreatePollPage() {
 
   const handleCreate = async () => {
     if (isUserLoading) {
-      toast.error("Please wait...");
+      toast.error("אנא המתן...");
       return;
     }
 
@@ -136,13 +136,13 @@ export default function CreatePollPage() {
         });
 
         if (!userResult.success || !userResult.data) {
-          toast.error("Failed to create user");
+          toast.error("יצירת המשתמש נכשלה");
           return;
         }
 
         userId = userResult.data.id;
       } else {
-        toast.error("User session not found");
+        toast.error("מפגש המשתמש לא נמצא");
         return;
       }
 
@@ -175,7 +175,7 @@ export default function CreatePollPage() {
       const pollResult = await createPollAction(pollData);
 
       if (!pollResult.success || !pollResult.data) {
-        toast.error(pollResult.error || "Failed to create poll");
+        toast.error(pollResult.error || "יצירת הסקר נכשלה");
         return;
       }
 
@@ -194,16 +194,16 @@ export default function CreatePollPage() {
       const failedStatements = statementResults.filter(r => !r.success);
 
       if (failedStatements.length > 0) {
-        toast.warning(`Poll created, but ${failedStatements.length} statements failed to save`);
+        toast.warning(`הסקר נוצר, אך ${failedStatements.length} הצהרות לא נשמרו`);
       } else {
-        toast.success("Poll created successfully!");
+        toast.success("הסקר נוצר בהצלחה!");
       }
 
       // Redirect to poll management page
       router.push(`/polls/${pollResult.data.slug}/manage`);
     } catch (error) {
       console.error("Error creating poll:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("אירעה שגיאה בלתי צפויה");
     } finally {
       setIsCreating(false);
     }
@@ -215,7 +215,7 @@ export default function CreatePollPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Checking permissions...</p>
+          <p className="text-gray-600">בודק הרשאות...</p>
         </div>
       </div>
     );
@@ -228,8 +228,8 @@ export default function CreatePollPage() {
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Step {currentStep} of {STEPS}</span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+            <span className="text-sm font-medium text-gray-700">שלב {currentStep} מתוך {STEPS}</span>
+            <span className="text-sm text-gray-600">{Math.round(progress)}% הושלם</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -238,18 +238,18 @@ export default function CreatePollPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {currentStep === 1 && "Basic Information"}
-              {currentStep === 2 && "Control Settings"}
-              {currentStep === 3 && "Button Labels"}
-              {currentStep === 4 && "Scheduling"}
-              {currentStep === 5 && "Initial Statements"}
+              {currentStep === 1 && "מידע בסיסי"}
+              {currentStep === 2 && "הגדרות בקרה"}
+              {currentStep === 3 && "תוויות כפתורים"}
+              {currentStep === 4 && "תזמון"}
+              {currentStep === 5 && "הצהרות ראשוניות"}
             </CardTitle>
             <CardDescription>
-              {currentStep === 1 && "Set up the main question and description for your poll"}
-              {currentStep === 2 && "Configure how participants can interact with your poll"}
-              {currentStep === 3 && "Customize the voting button labels (optional)"}
-              {currentStep === 4 && "Set when your poll should start and end (optional)"}
-              {currentStep === 5 && "Add at least 6 statements to get started"}
+              {currentStep === 1 && "הגדר את השאלה והתיאור הראשיים לסקר"}
+              {currentStep === 2 && "הגדר כיצד משתתפים יכולים לתקשר עם הסקר"}
+              {currentStep === 3 && "התאם את תוויות כפתורי ההצבעה"}
+              {currentStep === 4 && "הגדר מתי הסקר צריך להתחיל ולהסתיים"}
+              {currentStep === 5 && "הוסף לפחות 6 הצהרות כדי להתחיל"}
             </CardDescription>
           </CardHeader>
 
@@ -258,20 +258,20 @@ export default function CreatePollPage() {
             {currentStep === 1 && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="question">Poll Question *</Label>
+                  <Label htmlFor="question">שאלת הסקר *</Label>
                   <Input
                     id="question"
-                    placeholder="What should we do about climate change?"
+                    placeholder="מה כדאי לעשות בנושא שינויי האקלים?"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
+                  <Label htmlFor="description">תיאור (אופציונלי)</Label>
                   <Textarea
                     id="description"
-                    placeholder="Additional context or instructions for participants..."
+                    placeholder="הקשר או הנחיות נוספות למשתתפים..."
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -279,7 +279,7 @@ export default function CreatePollPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="emoji">Deck Emoji (optional)</Label>
+                  <Label htmlFor="emoji">אמוג&apos;י לחפיסה (אופציונלי)</Label>
                   <div className="flex gap-2 items-center">
                     <Input
                       id="emoji"
@@ -290,7 +290,7 @@ export default function CreatePollPage() {
                       className="text-4xl text-center w-24 h-16"
                     />
                     <div className="text-sm text-gray-500 flex-1">
-                      Enter an emoji to represent this poll deck (e.g., 🎴 📊 💭 🗳️)
+                      הזן אמוג&apos;י לייצג את חפיסת הסקר
                     </div>
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function CreatePollPage() {
                     onCheckedChange={(checked) => setAllowUserStatements(checked as boolean)}
                   />
                   <Label htmlFor="allowStatements" className="cursor-pointer">
-                    Allow user-submitted statements
+                    אפשר הצהרות ממשתמשים
                   </Label>
                 </div>
 
@@ -322,12 +322,12 @@ export default function CreatePollPage() {
                     htmlFor="autoApprove"
                     className={allowUserStatements ? "cursor-pointer" : "cursor-not-allowed text-gray-400"}
                   >
-                    Auto-approve user statements (requires above)
+                    אישור אוטומטי להצהרות
                   </Label>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="goal">Voting Goal (optional)</Label>
+                  <Label htmlFor="goal">יעד הצבעה (אופציונלי)</Label>
                   <Input
                     id="goal"
                     type="number"
@@ -335,7 +335,7 @@ export default function CreatePollPage() {
                     value={votingGoal}
                     onChange={(e) => setVotingGoal(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Target number of total votes</p>
+                  <p className="text-sm text-gray-500">מספר יעד של הצבעות כולל</p>
                 </div>
               </>
             )}
@@ -344,39 +344,39 @@ export default function CreatePollPage() {
             {currentStep === 3 && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="agreeLabel">Agree Button Label (max 10 chars)</Label>
+                  <Label htmlFor="agreeLabel">תווית כפתור תמיכה (עד 10 תווים)</Label>
                   <Input
                     id="agreeLabel"
-                    placeholder="Agree"
+                    placeholder="תמיכה"
                     maxLength={10}
                     value={agreeLabel}
                     onChange={(e) => setAgreeLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Displayed ON the card</p>
+                  <p className="text-sm text-gray-500">מוצג על הכרטיס</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="disagreeLabel">Disagree Button Label (max 10 chars)</Label>
+                  <Label htmlFor="disagreeLabel">תווית כפתור התנגדות (עד 10 תווים)</Label>
                   <Input
                     id="disagreeLabel"
-                    placeholder="Disagree"
+                    placeholder="התנגדות"
                     maxLength={10}
                     value={disagreeLabel}
                     onChange={(e) => setDisagreeLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Displayed ON the card</p>
+                  <p className="text-sm text-gray-500">מוצג על הכרטיס</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="passLabel">Pass/Unsure Label (max 10 chars)</Label>
+                  <Label htmlFor="passLabel">תווית דילוג/לא בטוח (עד 10 תווים)</Label>
                   <Input
                     id="passLabel"
-                    placeholder="Pass"
+                    placeholder="דילוג"
                     maxLength={10}
                     value={passLabel}
                     onChange={(e) => setPassLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Displayed BELOW the card</p>
+                  <p className="text-sm text-gray-500">מוצג מתחת לכרטיס</p>
                 </div>
               </>
             )}
@@ -385,25 +385,25 @@ export default function CreatePollPage() {
             {currentStep === 4 && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time (optional)</Label>
+                  <Label htmlFor="startTime">זמן התחלה (אופציונלי)</Label>
                   <Input
                     id="startTime"
                     type="datetime-local"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Leave blank for immediate start</p>
+                  <p className="text-sm text-gray-500">השאר ריק להתחלה מיידית</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">End Time (optional)</Label>
+                  <Label htmlFor="endTime">זמן סיום (אופציונלי)</Label>
                   <Input
                     id="endTime"
                     type="datetime-local"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">Leave blank for no end date</p>
+                  <p className="text-sm text-gray-500">השאר ריק ללא תאריך סיום</p>
                 </div>
               </>
             )}
@@ -416,12 +416,12 @@ export default function CreatePollPage() {
                     <div key={index} className="flex gap-2">
                       <div className="flex-grow space-y-1">
                         <Label htmlFor={`statement-${index}`}>
-                          Statement {index + 1} {index < 6 && "*"}
+                          הצהרה {index + 1} {index < 6 && "*"}
                         </Label>
                         <div className="flex gap-2">
                           <Textarea
                             id={`statement-${index}`}
-                            placeholder="Enter a statement..."
+                            placeholder="הזן הצהרה..."
                             rows={2}
                             value={statement}
                             onChange={(e) => updateStatement(index, e.target.value)}
@@ -442,18 +442,18 @@ export default function CreatePollPage() {
                   ))}
 
                   <Button type="button" variant="outline" onClick={addStatement} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Statement
+                    <Plus className="h-4 w-4 me-2" />
+                    הוספת הצהרה
                   </Button>
                 </div>
 
                 <div className="pt-4 border-t">
                   <p className="text-sm text-gray-600">
-                    Added: {statements.filter(s => s.trim().length > 0).length} statements
+                    נוספו: {statements.filter(s => s.trim().length > 0).length} הצהרות
                   </p>
                   {statements.filter(s => s.trim().length > 0).length < 6 && (
                     <p className="text-sm text-red-600 mt-1">
-                      Need at least 6 statements to create poll
+                      נדרשות לפחות 6 הצהרות ליצירת סקר
                     </p>
                   )}
                 </div>
@@ -469,23 +469,23 @@ export default function CreatePollPage() {
             onClick={handleBack}
             disabled={currentStep === 1}
           >
-            Back
+            חזרה
           </Button>
 
           {currentStep < STEPS ? (
             <Button onClick={handleNext} disabled={!canProceed()}>
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
+              הבא
+              <ArrowRight className="h-4 w-4 ms-2" />
             </Button>
           ) : (
             <Button onClick={handleCreate} disabled={!canProceed() || isCreating}>
               {isCreating ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                  יוצר...
                 </>
               ) : (
-                "Create Poll"
+                "יצירת סקר"
               )}
             </Button>
           )}

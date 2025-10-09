@@ -1,24 +1,101 @@
 # Pulse - Use Cases & User Workflows
 
-**Version:** 1.4
-**Date:** 2025-10-08
+**Version:** 1.5
+**Date:** 2025-10-09
 **Purpose:** Comprehensive documentation of all user workflows for UX/UI design
 
 **Changelog:**
+- **v1.5 (2025-10-09)**: Hebrew RTL conversion - Complete translation to Hebrew with gender-neutral language, RTL layout using CSS logical properties, Rubik font with Hebrew support, Clerk Hebrew localization
 - **v1.4 (2025-10-08)**: Card deck metaphor refinements - Continuation page achievement flow, Insights/Results as collectible cards, Closed poll dual-card display, Poll listing as deck browsing
 
 ---
 
 ## Table of Contents
 
-1. [User Personas & Roles](#user-personas--roles)
-2. [Core User Journeys](#core-user-journeys)
-3. [Poll Creator Workflows](#poll-creator-workflows)
-4. [Poll Management Workflows](#poll-management-workflows)
-5. [System Administrator Workflows](#system-administrator-workflows)
-6. [Interface Boundaries Summary](#interface-boundaries-summary)
-7. [Key Features & Business Logic](#key-features--business-logic)
-8. [Technical Constraints & Rules](#technical-constraints--rules)
+1. [Language & Localization](#language--localization)
+2. [User Personas & Roles](#user-personas--roles)
+3. [Core User Journeys](#core-user-journeys)
+4. [Poll Creator Workflows](#poll-creator-workflows)
+5. [Poll Management Workflows](#poll-management-workflows)
+6. [System Administrator Workflows](#system-administrator-workflows)
+7. [Interface Boundaries Summary](#interface-boundaries-summary)
+8. [Key Features & Business Logic](#key-features--business-logic)
+9. [Technical Constraints & Rules](#technical-constraints--rules)
+
+---
+
+## Language & Localization
+
+### Application Language
+**Pulse is a Hebrew-only application** with full RTL (right-to-left) support. There is no English fallback or bilingual interface.
+
+#### Language Implementation
+- **Primary Language:** Hebrew only (no English)
+- **Direction:** RTL (right-to-left) layout throughout
+- **Font:** Rubik with Hebrew + Latin subset support (Google Fonts)
+- **Translation Approach:** Gender-neutral Hebrew using infinitives and nouns
+- **Character Set:** Full Hebrew Unicode support
+
+#### Translation Philosophy
+**Gender-Neutral Language Strategy:**
+- All UI text uses gender-neutral forms to support all genders
+- Uses infinitive verb forms instead of gendered conjugations (e.g., "כניסה" instead of "התחבר/התחברי")
+- Uses noun forms where appropriate (e.g., "יצירת סקר", "צפייה בתובנות")
+- Avoids masculine/feminine pronouns where possible
+- Maintains professional, welcoming tone for all users
+
+**Examples:**
+- "Sign In" → "כניסה" (entrance/entering)
+- "Create Poll" → "יצירת סקר" (poll creation)
+- "View Insights" → "צפייה בתובנות" (viewing insights)
+- "Continue Voting" → "המשך מיון" (continue sorting)
+
+#### UI Localization Components
+1. **Clerk Authentication:** Hebrew localization (`heIL`) for all auth flows
+2. **Date/Time:** Hebrew locale (`he` from date-fns) for date formatting
+3. **Validation Messages:** All Zod error messages translated to Hebrew
+4. **Toast Notifications:** All user-facing messages in Hebrew
+5. **Form Labels:** All inputs, buttons, placeholders in Hebrew
+
+#### RTL Layout Implementation
+- **HTML Attribute:** `<html lang="he" dir="rtl">`
+- **CSS Strategy:** Tailwind CSS v4 logical properties throughout
+  - `ms-` (margin-inline-start) instead of `ml-` (margin-left)
+  - `me-` (margin-inline-end) instead of `mr-` (margin-right)
+  - `ps-` (padding-inline-start) instead of `pl-` (padding-left)
+  - `pe-` (padding-inline-end) instead of `pr-` (padding-right)
+  - `start-` (inset-inline-start) instead of `left-`
+  - `end-` (inset-inline-end) instead of `right-`
+  - `text-start` instead of `text-left`
+  - `text-end` instead of `text-right`
+- **Icons:** Directional icons reversed (ArrowLeft → ArrowRight for back buttons)
+- **Component Direction:** Radix UI components automatically respect `dir="rtl"` attribute
+
+#### Font Configuration
+- **Font Family:** Rubik (replaces Geist Sans/Mono)
+- **Subsets:** Hebrew + Latin (supports Hebrew UI with English usernames/technical terms)
+- **Font Variable:** `--font-rubik` in CSS
+- **Display:** Swap (for performance)
+- **Usage:** Applied via Tailwind's font-sans utility
+
+#### Translation Coverage
+All user-facing text translated, including:
+- Navigation labels and menu items
+- Button labels (voting, submission, navigation)
+- Form fields and placeholders
+- Validation and error messages
+- Modal titles and descriptions
+- Toast notification messages
+- Empty states and help text
+- Poll creation wizard steps
+- Analytics labels and descriptions
+- Admin interface labels
+
+#### Accessibility Considerations
+- Hebrew text rendering: proper diacritics support
+- Screen readers: Hebrew language attribute for proper pronunciation
+- Keyboard navigation: RTL-aware focus order
+- Form validation: Hebrew error messages announced correctly
 
 ---
 

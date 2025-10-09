@@ -116,7 +116,7 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between mb-2">
             {getStatusBadge(status)}
             {isOwner && (
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="outline" className="ms-2">
                 Owner
               </Badge>
             )}
@@ -161,13 +161,13 @@ export default function DashboardPage() {
         <CardFooter className="flex gap-2">
           <Button asChild className="flex-1">
             <Link href={`/polls/${poll.slug}/manage`}>
-              <Settings className="w-4 h-4 mr-2" />
+              <Settings className="w-4 h-4 me-2" />
               Manage
             </Link>
           </Button>
           <Button asChild variant="outline" className="flex-1">
             <Link href={`/polls/${poll.slug}`}>
-              <BarChart3 className="w-4 h-4 mr-2" />
+              <BarChart3 className="w-4 h-4 me-2" />
               View
             </Link>
           </Button>
@@ -191,7 +191,7 @@ export default function DashboardPage() {
           </div>
           <Button asChild size="lg">
             <Link href="/polls/create">
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-5 h-5 me-2" />
               Create Poll
             </Link>
           </Button>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
         {!isLoading && ownedPolls.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center mb-4">
-              <Users className="w-5 h-5 mr-2 text-gray-700" />
+              <Users className="w-5 h-5 me-2 text-gray-700" />
               <h2 className="text-2xl font-semibold text-gray-900">
                 My Polls ({ownedPolls.length})
               </h2>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
         {!isLoading && managedPolls.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center mb-4">
-              <Settings className="w-5 h-5 mr-2 text-gray-700" />
+              <Settings className="w-5 h-5 me-2 text-gray-700" />
               <h2 className="text-2xl font-semibold text-gray-900">
                 Managed Polls ({managedPolls.length})
               </h2>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
               </p>
               <Button asChild size="lg">
                 <Link href="/polls/create">
-                  <Plus className="w-5 h-5 mr-2" />
+                  <Plus className="w-5 h-5 me-2" />
                   Create Your First Poll
                 </Link>
               </Button>

@@ -1,25 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rubik } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { heIL } from "@clerk/localizations";
 import { UserProvider } from "@/contexts/user-context";
 import { HeaderProvider } from "@/contexts/header-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const rubik = Rubik({
+  variable: "--font-rubik",
+  subsets: ["hebrew", "latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Pulse - Democratic Polling Platform",
-  description: "Participatory polling platform for democratic engagement",
+  title: "פולס - פלטפורמת סקרים דמוקרטית",
+  description: "פלטפורמת סקרים משתתפת למעורבות דמוקרטית",
 };
 
 export default function RootLayout({
@@ -28,10 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+    <ClerkProvider localization={heIL}>
+      <html lang="he" dir="rtl" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${rubik.variable} antialiased`}
         >
           <Providers
             attribute="class"

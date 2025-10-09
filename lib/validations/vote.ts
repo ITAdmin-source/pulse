@@ -5,39 +5,39 @@ export const voteValueSchema = z.union([
   z.literal(0),
   z.literal(1),
 ], {
-  message: "Vote value must be -1 (disagree), 0 (neutral), or 1 (agree)",
+  message: "ערך ההצבעה חייב להיות -1 (לא מסכים), 0 (ניטרלי), או 1 (מסכים)",
 });
 
 export const createVoteSchema = z.object({
-  userId: z.string().uuid("Invalid user ID"),
-  statementId: z.string().uuid("Invalid statement ID"),
+  userId: z.string().uuid("מזהה משתמש לא תקין"),
+  statementId: z.string().uuid("מזהה הצהרה לא תקין"),
   value: voteValueSchema,
 });
 
 export const updateVoteSchema = z.object({
-  userId: z.string().uuid("Invalid user ID"),
-  statementId: z.string().uuid("Invalid statement ID"),
+  userId: z.string().uuid("מזהה משתמש לא תקין"),
+  statementId: z.string().uuid("מזהה הצהרה לא תקין"),
   value: voteValueSchema,
 });
 
 export const voteQuerySchema = z.object({
-  userId: z.string().uuid("Invalid user ID").optional(),
-  statementId: z.string().uuid("Invalid statement ID").optional(),
-  pollId: z.string().uuid("Invalid poll ID").optional(),
+  userId: z.string().uuid("מזהה משתמש לא תקין").optional(),
+  statementId: z.string().uuid("מזהה הצהרה לא תקין").optional(),
+  pollId: z.string().uuid("מזהה סקר לא תקין").optional(),
   value: voteValueSchema.optional(),
   limit: z.number().int().positive().max(1000).default(100),
   offset: z.number().int().min(0).default(0),
 });
 
 export const userVotingProgressSchema = z.object({
-  userId: z.string().uuid("Invalid user ID"),
-  pollId: z.string().uuid("Invalid poll ID"),
+  userId: z.string().uuid("מזהה משתמש לא תקין"),
+  pollId: z.string().uuid("מזהה סקר לא תקין"),
 });
 
 export const statementBatchSchema = z.object({
-  pollId: z.string().uuid("Invalid poll ID"),
-  userId: z.string().uuid("Invalid user ID"),
-  batchNumber: z.number().int().positive("Batch number must be positive"),
+  pollId: z.string().uuid("מזהה סקר לא תקין"),
+  userId: z.string().uuid("מזהה משתמש לא תקין"),
+  batchNumber: z.number().int().positive("מספר האצווה חייב להיות חיובי"),
 });
 
 export const votingProgressResponseSchema = z.object({

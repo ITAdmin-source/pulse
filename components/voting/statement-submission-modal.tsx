@@ -55,17 +55,17 @@ export function StatementSubmissionModal({
       if (result.success) {
         toast.success(
           autoApprove
-            ? "Your card has been added to the deck!"
-            : "Card submitted for review"
+            ? "הכרטיס שלך נוסף לחפיסה!"
+            : "הכרטיס נשלח לבדיקה"
         );
         setText(""); // Clear form
         onOpenChange(false);
       } else {
-        toast.error(result.error || "Failed to add card");
+        toast.error(result.error || "הוספת הכרטיס נכשלה");
       }
     } catch (error) {
       console.error("Error submitting card:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("אירעה שגיאה בלתי צפויה");
     } finally {
       setIsSubmitting(false);
     }
@@ -82,10 +82,10 @@ export function StatementSubmissionModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add a New Card</DialogTitle>
+          <DialogTitle>הוספת כרטיס חדש</DialogTitle>
           <DialogDescription>
-            Create a new card to add a missing perspective to this poll&apos;s deck.
-            {!autoApprove && " Your card will be reviewed before being added."}
+            צור כרטיס חדש כדי להוסיף נקודת מבט חסרה לחפיסת הסקר.
+            {!autoApprove && " הכרטיס שלך יבדק לפני ההוספה."}
           </DialogDescription>
         </DialogHeader>
 
@@ -93,11 +93,11 @@ export function StatementSubmissionModal({
           {/* Text Input */}
           <div className="space-y-2">
             <label htmlFor="card-text" className="text-sm font-medium">
-              What should your card say?
+              מה צריך להיות כתוב על הכרטיס?
             </label>
             <Textarea
               id="card-text"
-              placeholder="Write your statement here..."
+              placeholder="כתוב את ההצהרה כאן..."
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -106,11 +106,11 @@ export function StatementSubmissionModal({
             />
             <div className="flex items-center justify-between text-sm">
               <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-500"}>
-                {characterCount}/{MAX_CHARACTERS} characters
+                {characterCount}/{MAX_CHARACTERS} תווים
               </span>
               {isOverLimit && (
                 <span className="text-red-600 font-medium">
-                  {characterCount - MAX_CHARACTERS} over limit
+                  {characterCount - MAX_CHARACTERS} מעבר למגבלה
                 </span>
               )}
             </div>
@@ -119,7 +119,7 @@ export function StatementSubmissionModal({
           {/* Mini Card Preview */}
           {text.trim().length > 0 && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">Preview:</label>
+              <label className="text-sm font-medium text-gray-600">תצוגה מקדימה:</label>
               <div className="relative">
                 {/* Mini horizontal card preview */}
                 <div className="relative p-4 rounded-xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-sm">
@@ -142,7 +142,7 @@ export function StatementSubmissionModal({
             onClick={handleClose}
             disabled={isSubmitting}
           >
-            Cancel
+            ביטול
           </Button>
           <Button
             onClick={handleSubmit}
@@ -150,11 +150,11 @@ export function StatementSubmissionModal({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding Card...
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                מוסיף כרטיס...
               </>
             ) : (
-              "Add Card"
+              "הוספת כרטיס"
             )}
           </Button>
         </DialogFooter>

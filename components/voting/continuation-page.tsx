@@ -58,36 +58,36 @@ export function ContinuationPage({
 
             {/* Title */}
             <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
-              Deck Complete! 🎉
+              החפיסה הושלמה! 🎉
             </h2>
             <p className="text-center text-gray-600 text-sm mb-6">
-              You&apos;ve sorted all {statementsVoted} cards
+              מיינת את כל {statementsVoted} הכרטיסים
             </p>
 
             {/* Final Tally */}
             <div className="bg-white rounded-xl p-4 mb-6 border border-gray-200">
               <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
-                Final Tally
+                סיכום סופי
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-gray-700 text-sm font-medium">Keep</span>
+                    <span className="text-gray-700 text-sm font-medium">שמירה</span>
                   </div>
                   <span className="text-xl font-bold text-green-600">{agreeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingDown className="h-4 w-4 text-red-600" />
-                    <span className="text-gray-700 text-sm font-medium">Throw</span>
+                    <span className="text-gray-700 text-sm font-medium">השלכה</span>
                   </div>
                   <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Minus className="h-4 w-4 text-gray-600" />
-                    <span className="text-gray-700 text-sm font-medium">Unsure</span>
+                    <span className="text-gray-700 text-sm font-medium">לא בטוח</span>
                   </div>
                   <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
                 </div>
@@ -96,7 +96,7 @@ export function ContinuationPage({
 
             {/* Call to Action */}
             <Button onClick={onFinish} className="w-full h-12" size="lg">
-              See Your Insights
+              צפייה בתובנות
             </Button>
           </div>
         </motion.div>
@@ -129,36 +129,36 @@ export function ContinuationPage({
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
-            Progress Milestone!
+            אבן דרך!
           </h2>
           <p className="text-center text-gray-600 text-sm mb-6">
-            {statementsVoted} card{statementsVoted !== 1 ? "s" : ""} sorted
+            {statementsVoted} {statementsVoted === 1 ? "כרטיס מוין" : "כרטיסים מוינו"}
           </p>
 
           {/* Score Tally */}
           <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
             <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
-              Your Tally
+              הסיכום שלך
             </h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-700 text-sm font-medium">Keep</span>
+                  <span className="text-gray-700 text-sm font-medium">שמירה</span>
                 </div>
                 <span className="text-xl font-bold text-green-600">{agreeCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-gray-700 text-sm font-medium">Throw</span>
+                  <span className="text-gray-700 text-sm font-medium">השלכה</span>
                 </div>
                 <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Minus className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-700 text-sm font-medium">Unsure</span>
+                  <span className="text-gray-700 text-sm font-medium">לא בטוח</span>
                 </div>
                 <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
               </div>
@@ -167,7 +167,7 @@ export function ContinuationPage({
 
           {/* Status Message */}
           <div className="text-center text-xs text-gray-600 mb-4">
-            <p className="font-medium">More cards to explore</p>
+            <p className="font-medium">יש עוד כרטיסים לחקור</p>
           </div>
 
           {/* Error State */}
@@ -175,7 +175,7 @@ export function ContinuationPage({
             <div className="text-center space-y-2 mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
               <p className="text-xs text-red-600 font-medium">{error}</p>
               <Button onClick={onRetry} variant="outline" size="sm" className="w-full h-9">
-                Retry Loading Next Batch
+                נסה לטעון את הקבוצה הבאה
               </Button>
             </div>
           )}
@@ -183,7 +183,7 @@ export function ContinuationPage({
           {/* Action Buttons */}
           <div className="space-y-2">
             <Button onClick={onContinue} className="w-full h-11" size="lg" disabled={!!error}>
-              Continue Sorting
+              המשך מיון
             </Button>
             <Button
               onClick={onFinish}
@@ -191,9 +191,9 @@ export function ContinuationPage({
               className="w-full h-11"
               size="lg"
               disabled={!canFinish}
-              title={!canFinish ? `Sort ${remainingVotes} more cards to finish` : "Finish and see insights"}
+              title={!canFinish ? `מיין עוד ${remainingVotes} כדי לסיים` : "סיום וצפייה בתובנות"}
             >
-              {canFinish ? "Finish & See Insights" : `Sort ${remainingVotes} more to finish`}
+              {canFinish ? "סיום וצפייה בתובנות" : `מיין עוד ${remainingVotes} כדי לסיים`}
             </Button>
           </div>
         </div>

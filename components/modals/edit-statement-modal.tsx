@@ -49,15 +49,15 @@ export function EditStatementModal({
       const result = await updateStatementAction(statement.id, { text: text.trim() });
 
       if (result.success) {
-        toast.success("Statement updated successfully");
+        toast.success("ההצהרה עודכנה בהצלחה");
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(result.error || "Failed to update statement");
+        toast.error(result.error || "נכשל לעדכן את ההצהרה");
       }
     } catch (error) {
       console.error("Error updating statement:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("אירעה שגיאה לא צפויה");
     } finally {
       setIsSubmitting(false);
     }
@@ -67,9 +67,9 @@ export function EditStatementModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Statement</DialogTitle>
+          <DialogTitle>עריכת הצהרה</DialogTitle>
           <DialogDescription>
-            Make changes to the statement text. Existing votes will be preserved.
+            ערוך את טקסט ההצהרה. הצבעות קיימות יישמרו.
           </DialogDescription>
         </DialogHeader>
 
@@ -79,22 +79,22 @@ export function EditStatementModal({
             onChange={(e) => setText(e.target.value)}
             rows={4}
             disabled={isSubmitting}
-            placeholder="Enter statement text..."
+            placeholder="הזן טקסט הצהרה..."
           />
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Cancel
+            ביטול
           </Button>
           <Button onClick={handleSave} disabled={!text.trim() || isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                שומר...
               </>
             ) : (
-              "Save Changes"
+              "שמור שינויים"
             )}
           </Button>
         </DialogFooter>

@@ -245,7 +245,7 @@ export default function AdminUsersPage() {
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/admin/dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Back to Dashboard
               </Link>
             </Button>
@@ -266,12 +266,12 @@ export default function AdminUsersPage() {
           >
             {isSyncingAll ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
                 Syncing...
               </>
             ) : (
               <>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 me-2" />
                 Sync All Email Addresses from Clerk
               </>
             )}
@@ -285,12 +285,12 @@ export default function AdminUsersPage() {
               {/* Search */}
               <div className="md:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search by email or Clerk ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="ps-9"
                   />
                 </div>
               </div>
@@ -394,7 +394,7 @@ export default function AdminUsersPage() {
 
                       {/* Role Management Buttons */}
                       {user.type === 'authenticated' && (
-                        <div className="flex gap-2 ml-4">
+                        <div className="flex gap-2 ms-4">
                           {/* System Admin Toggle */}
                           {hasSystemAdmin ? (
                             <Button
@@ -407,7 +407,7 @@ export default function AdminUsersPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>
-                                  <UserX className="h-4 w-4 mr-2" />
+                                  <UserX className="h-4 w-4 me-2" />
                                   Revoke Admin
                                 </>
                               )}
@@ -423,7 +423,7 @@ export default function AdminUsersPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>
-                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  <UserCheck className="h-4 w-4 me-2" />
                                   Make Admin
                                 </>
                               )}
@@ -442,7 +442,7 @@ export default function AdminUsersPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>
-                                  <UserX className="h-4 w-4 mr-2" />
+                                  <UserX className="h-4 w-4 me-2" />
                                   Revoke Creator
                                 </>
                               )}
@@ -458,7 +458,7 @@ export default function AdminUsersPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>
-                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  <UserCheck className="h-4 w-4 me-2" />
                                   Make Creator
                                 </>
                               )}

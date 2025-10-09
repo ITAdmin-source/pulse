@@ -42,7 +42,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
           }`}
         >
           {/* Status Badge - Top Corner */}
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 end-4">
             <span
               className={`inline-block px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full ${
                 isActive
@@ -55,7 +55,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
           </div>
 
           {/* Large Emoji at top */}
-          <div className="absolute top-16 left-1/2 -translate-x-1/2">
+          <div className="absolute top-16 start-1/2 -translate-x-1/2">
             <div className="text-6xl">
               {displayEmoji}
             </div>
@@ -74,13 +74,13 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
 
           {/* Closed Ribbon (if closed) - Semi-transparent so question shows through */}
           {!isActive && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] bg-gray-600/80 text-white px-12 py-1.5 text-sm font-bold tracking-widest shadow-lg pointer-events-none">
+            <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] bg-gray-600/80 text-white px-12 py-1.5 text-sm font-bold tracking-widest shadow-lg pointer-events-none">
               CLOSED
             </div>
           )}
 
           {/* Decorative element at bottom */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xl opacity-40">
+          <div className="absolute bottom-4 start-1/2 -translate-x-1/2 text-2xl opacity-40">
             {isActive ? "✦" : "◆"}
           </div>
 

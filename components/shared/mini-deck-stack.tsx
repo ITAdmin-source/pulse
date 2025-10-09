@@ -66,7 +66,7 @@ export function MiniDeckStack({
 
           {/* Closed seal/ribbon if closed variant */}
           {isClosedVariant && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12">
+            <div className="absolute top-1/2 start-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12">
               <div className="bg-red-600 text-white px-8 py-2 font-bold text-lg tracking-wider shadow-lg">
                 CLOSED
               </div>

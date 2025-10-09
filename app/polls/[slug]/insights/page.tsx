@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
 import { getUserPollInsightAction, upsertUserPollInsightAction } from "@/actions/user-poll-insights-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
@@ -10,6 +8,7 @@ import { UserService } from "@/lib/services/user-service";
 import { AIService } from "@/lib/services/ai-service";
 import { InsightActions } from "@/components/polls/insight-actions";
 import { InsightCard } from "@/components/shared/insight-card";
+import { AnonymousInsightHandler } from "@/components/polls/anonymous-insight-handler";
 
 interface InsightsPageProps {
   params: Promise<{
@@ -27,9 +26,9 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Poll Not Found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">סקר לא נמצא</h1>
           <Button asChild>
-            <Link href="/polls">Back to Polls</Link>
+            <Link href="/polls">חזרה לסקרים</Link>
           </Button>
         </div>
       </div>
@@ -55,10 +54,10 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Session Not Found</h1>
-          <p className="text-gray-600 mb-4">Please start voting to generate insights.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">הפעלה לא נמצאה</h1>
+          <p className="text-gray-600 mb-4">אנא התחל להצביע כדי ליצור תובנות.</p>
           <Button asChild>
-            <Link href={`/polls/${slug}/vote`}>Start Voting</Link>
+            <Link href={`/polls/${slug}/vote`}>התחל הצבעה</Link>
           </Button>
         </div>
       </div>
@@ -82,17 +81,17 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-6 max-w-md px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Sort More Cards First
+            מיין עוד כרטיסים תחילה
           </h1>
           <p className="text-gray-600 leading-relaxed">
-            You need to sort {remainingVotes} more card{remainingVotes !== 1 ? 's' : ''} to unlock your personalized insights.
+            עליך למיין {remainingVotes} כרטיס{remainingVotes !== 1 ? 'ים' : ''} נוסף{remainingVotes !== 1 ? 'ים' : ''} כדי לפתוח את התובנות האישיות שלך.
           </p>
           <div className="flex flex-col gap-3">
             <Button size="lg" asChild>
-              <Link href={`/polls/${slug}/vote`}>Continue Deck</Link>
+              <Link href={`/polls/${slug}/vote`}>המשך חפיסה</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link href={`/polls/${slug}`}>Back to Deck</Link>
+              <Link href={`/polls/${slug}`}>חזרה לחפיסה</Link>
             </Button>
           </div>
         </div>
@@ -100,7 +99,20 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     );
   }
 
-  // Try to fetch existing insight
+  // For anonymous users, use client-side handler with localStorage
+  // For authenticated users, use server-side generation with DB storage
+  if (!clerkUserId) {
+    return (
+      <AnonymousInsightHandler
+        pollId={poll.id}
+        pollSlug={slug}
+        pollQuestion={poll.question}
+        isAuthenticated={false}
+      />
+    );
+  }
+
+  // Authenticated user flow - server-side with DB storage
   const insightResult = await getUserPollInsightAction(effectiveUserId, poll.id);
 
   let insight;
@@ -110,7 +122,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     // Generate insight using AI service
     try {
       const generated = await AIService.generatePersonalInsight(effectiveUserId, poll.id);
-      // Save to database
+      // Save to database for authenticated users
       const saveResult = await upsertUserPollInsightAction(effectiveUserId, poll.id, generated.title, generated.body);
       insight = saveResult.success && saveResult.data ? saveResult.data : generated;
     } catch (error) {
@@ -119,31 +131,31 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
           <div className="text-center space-y-6 max-w-md px-4">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Could Not Generate Insights
+              לא ניתן ליצור תובנות
             </h1>
             <p className="text-gray-600 leading-relaxed">
-              We encountered an error generating your personalized insights.
-              This might be due to insufficient votes or a temporary service issue.
+              נתקלנו בשגיאה ביצירת התובנות האישיות שלך.
+              ייתכן שזה נובע מהצבעות לא מספקות או בעיית שירות זמנית.
             </p>
             <div className="flex flex-col gap-3">
               <Button size="lg" asChild>
-                <Link href={`/polls/${slug}/vote`}>Continue Voting</Link>
+                <Link href={`/polls/${slug}/vote`}>המשך הצבעה</Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => window.location.reload()}
               >
-                Try Again
+                נסה שוב
               </Button>
               <Button variant="ghost" asChild>
                 <Link href={`/polls/${slug}/results`}>
-                  View Poll Results Instead
+                  צפה בתוצאות הסקר במקום
                 </Link>
               </Button>
             </div>
             <p className="text-sm text-gray-500 pt-2">
-              You can also access your insights later from your dashboard
+              אתה יכול גם לגשת לתובנות שלך מאוחר יותר מלוח הבקרה שלך
             </p>
           </div>
         </div>
@@ -155,15 +167,6 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-4 max-w-3xl">
-        {/* Compact Anonymous User Banner */}
-        {!clerkUserId && (
-          <div className="mb-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-            <p className="text-xs text-yellow-800">
-              Anonymous session • <Link href="/signup" className="underline font-semibold">Sign up</Link> to save your insights
-            </p>
-          </div>
-        )}
-
         <div className="space-y-4">
           {/* Insight Card */}
           <InsightCard
@@ -184,12 +187,12 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
             <Button size="lg" asChild className="w-full sm:w-auto">
               <Link href={`/polls/${slug}/results`}>
-                View All Results
+                צפה בכל התוצאות
               </Link>
             </Button>
             <Button variant="ghost" asChild className="w-full sm:w-auto">
               <Link href="/polls">
-                Back to All Decks
+                חזרה לכל החפיסות
               </Link>
             </Button>
           </div>

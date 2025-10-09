@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 export const createPollSchema = z.object({
-  question: z.string().min(1, "Question is required").max(500, "Question too long"),
-  description: z.string().max(2000, "Description too long").optional(),
+  question: z.string().min(1, "שאלה נדרשת").max(500, "שאלה ארוכה מדי"),
+  description: z.string().max(2000, "תיאור ארוך מדי").optional(),
   allowUserStatements: z.boolean().default(false),
   autoApproveStatements: z.boolean().default(false),
   startTime: z.date().optional(),
   endTime: z.date().optional(),
   votingGoal: z.number().int().positive().optional(),
-  supportButtonLabel: z.string().max(10, "Label too long").optional(),
-  opposeButtonLabel: z.string().max(10, "Label too long").optional(),
-  unsureButtonLabel: z.string().max(10, "Label too long").optional(),
+  supportButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
+  opposeButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
+  unsureButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
 }).refine(
   (data) => {
     if (data.startTime && data.endTime) {
@@ -19,7 +19,7 @@ export const createPollSchema = z.object({
     return true;
   },
   {
-    message: "End time must be after start time",
+    message: "זמן הסיום חייב להיות אחרי זמן ההתחלה",
     path: ["endTime"],
   }
 );

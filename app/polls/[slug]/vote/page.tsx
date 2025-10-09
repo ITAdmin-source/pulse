@@ -149,7 +149,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         // Fetch poll by slug
         const pollResult = await getPollBySlugAction(resolvedParams.slug);
         if (!pollResult.success || !pollResult.data) {
-          toast.error("Poll not found");
+          toast.error("סקר לא נמצא");
           router.push("/polls");
           return;
         }
@@ -158,7 +158,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
         // Check poll status - only published polls can be voted on
         if (fetchedPoll.status !== "published") {
-          toast.error("This poll is not currently active");
+          toast.error("סקר זה אינו פעיל כרגע");
           router.push(`/polls/${resolvedParams.slug}`);
           return;
         }
@@ -169,12 +169,12 @@ export default function VotingPage({ params }: VotingPageProps) {
           const minutesSinceClosed = (Date.now() - new Date(fetchedPoll.endTime).getTime()) / (1000 * 60);
           if (minutesSinceClosed <= 10) {
             toast.warning(
-              "This poll has closed, but you can finish voting on your current session. " +
-              "Your votes will still be counted in the results.",
+              "סקר זה נסגר, אך תוכל לסיים את ההצבעה בהפעלה הנוכחית. " +
+              "ההצבעות שלך עדיין ייספרו בתוצאות.",
               { duration: 6000 }
             );
           } else {
-            toast.error("This poll has closed");
+            toast.error("סקר זה נסגר");
             router.push(`/polls/${resolvedParams.slug}/closed`);
             return;
           }
@@ -236,10 +236,10 @@ export default function VotingPage({ params }: VotingPageProps) {
             } else {
               // No more unvoted statements - user has completed voting
               if (thresholdReached) {
-                toast.success("You've completed voting on this poll!");
+                toast.success("השלמת את ההצבעה בסקר זה!");
                 router.push(`/polls/${resolvedParams.slug}/insights`);
               } else {
-                toast.error("No statements available to vote on");
+                toast.error("אין הצהרות זמינות להצבעה");
                 router.push(`/polls/${resolvedParams.slug}`);
               }
               return;
@@ -298,7 +298,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       const { synced, failed, errors } = await OfflineVoteQueue.syncAll(userId);
 
       if (synced > 0) {
-        toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced successfully`);
+        toast.success(`${synced} הצבע${synced > 1 ? 'ות' : 'ה'} מצב לא מקוון סונכרנ${synced > 1 ? 'ו' : 'ה'} בהצלחה`);
 
         // Reload voting progress to update UI with synced votes
         if (poll && statementManager) {
@@ -317,7 +317,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       }
 
       if (failed > 0) {
-        toast.error(`Failed to sync ${failed} vote${failed > 1 ? 's' : ''}`);
+        toast.error(`נכשל לסנכרן ${failed} הצבע${failed > 1 ? 'ות' : 'ה'}`);
 
         // Retry failed syncs after 30 seconds
         setTimeout(() => {
@@ -335,12 +335,12 @@ export default function VotingPage({ params }: VotingPageProps) {
       if (!userId || typeof window === 'undefined') return;
       if (!OfflineVoteQueue.hasQueuedVotes()) return;
 
-      toast.info("Connection restored, syncing offline votes...");
+      toast.info("החיבור שוחזר, מסנכרן הצבעות לא מקוונות...");
 
       const { synced, failed } = await OfflineVoteQueue.syncAll(userId);
 
       if (synced > 0) {
-        toast.success(`${synced} offline vote${synced > 1 ? 's' : ''} synced`);
+        toast.success(`${synced} הצבע${synced > 1 ? 'ות' : 'ה'} סונכרנ${synced > 1 ? 'ו' : 'ה'}`);
 
         // Reload votes to update UI
         if (poll && statementManager) {
@@ -418,11 +418,11 @@ export default function VotingPage({ params }: VotingPageProps) {
                   className="gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add Card</span>
+                  <span className="hidden sm:inline">הוספת כרטיס</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add a new card to share a missing perspective</p>
+                <p>הוסף כרטיס חדש כדי לשתף נקודת מבט חסרה</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -434,15 +434,15 @@ export default function VotingPage({ params }: VotingPageProps) {
                 disabled={!progress.canFinish || isSavingVote}
                 onClick={handleFinish}
               >
-                Finish
+                סיום
               </Button>
             </TooltipTrigger>
             <TooltipContent>
               {progress.canFinish
-                ? "Complete voting and view your insights"
+                ? "השלם הצבעה וצפה בתובנות שלך"
                 : progress.threshold === progress.totalStatementsInPoll
-                ? `Vote on all ${progress.totalStatementsInPoll} statements to finish`
-                : `Complete the first 10 statements to finish`}
+                ? `הצבע על כל ${progress.totalStatementsInPoll} ההצהרות לסיום`
+                : `השלם את 10 ההצהרות הראשונות לסיום`}
             </TooltipContent>
           </Tooltip>
         </>
@@ -486,13 +486,13 @@ export default function VotingPage({ params }: VotingPageProps) {
     if (poll?.endTime && new Date(poll.endTime) < new Date()) {
       const minutesSinceClosed = (Date.now() - new Date(poll.endTime).getTime()) / (1000 * 60);
       if (minutesSinceClosed > 10) {
-        toast.error("This poll has closed. Your previous votes have been saved.");
+        toast.error("סקר זה נסגר. ההצבעות הקודמות שלך נשמרו.");
         router.push(`/polls/${poll.slug}/closed`);
         isVotingRef.current = false;
         return;
       } else {
         // Within grace period - allow vote but warn user
-        toast.warning("This poll has closed, but your vote will still count.", { duration: 3000 });
+        toast.warning("סקר זה נסגר, אך ההצבעה שלך עדיין תיספר.", { duration: 3000 });
       }
     }
 
@@ -511,7 +511,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         });
 
         if (!userResult.success || !userResult.data) {
-          toast.error("Failed to create user session");
+          toast.error("נכשל ליצור הפעלת משתמש");
           return;
         }
 
@@ -526,7 +526,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       const existingVote = await getVoteByUserAndStatementAction(effectiveUserId, votingState.currentStatement.id);
 
       if (existingVote.success && existingVote.data) {
-        toast.error("You've already voted on this statement. Votes are final and cannot be changed.");
+        toast.error("כבר הצבעת על הצהרה זו. ההצבעות סופיות ולא ניתנות לשינוי.");
         // Skip to next statement since vote already exists
         statementManager.advanceIndex();
         const nextStmt = statementManager.getNextStatement();
@@ -567,7 +567,7 @@ export default function VotingPage({ params }: VotingPageProps) {
           if (result.error?.includes("Statement not found")) {
             // Statement was deleted by admin - skip gracefully
             toast.error(
-              "This statement was removed by the poll owner. Skipping to next statement...",
+              "הצהרה זו הוסרה על ידי בעל הסקר. מדלג להצהרה הבאה...",
               { duration: 5000 }
             );
 
@@ -590,7 +590,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
             // Optimistically update UI
             statementManager.recordVote(votingState.currentStatement.id, value);
-            toast.warning("Vote saved offline - will sync when connection restored");
+            toast.warning("הצבעה נשמרה במצב לא מקוון - תסונכרן כשהחיבור ישוחזר");
 
             // Continue to results phase with offline indicator
             setVotingState({
@@ -601,7 +601,7 @@ export default function VotingPage({ params }: VotingPageProps) {
             });
           } else {
             // Other error - show retry option
-            const retry = confirm(`Failed to save vote: ${result.error || "Unknown error"}.\n\nWould you like to retry?`);
+            const retry = confirm(`נכשל לשמור הצבעה: ${result.error || "שגיאה לא ידועה"}.\n\nהאם תרצה לנסות שוב?`);
             if (retry) {
               isVotingRef.current = false; // Unlock before retry
               setIsSavingVote(false);
@@ -624,7 +624,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
         // Optimistically update UI
         statementManager.recordVote(votingState.currentStatement.id, value);
-        toast.warning("Connection lost - vote saved offline and will sync automatically");
+        toast.warning("החיבור אבד - הצבעה נשמרה במצב לא מקוון ותסונכרן אוטומטית");
 
         // Continue to results phase with offline indicator
         setVotingState({
@@ -636,14 +636,14 @@ export default function VotingPage({ params }: VotingPageProps) {
       }
     } catch (error) {
       console.error("Error saving vote:", error);
-      const retry = confirm("Network error saving vote. Would you like to retry?");
+      const retry = confirm("שגיאת רשת בשמירת הצבעה. האם תרצה לנסות שוב?");
       if (retry) {
         isVotingRef.current = false; // Unlock before retry
         setIsSavingVote(false);
         handleVote(value); // Recursive retry
         return;
       }
-      toast.error("Failed to save vote");
+      toast.error("נכשל לשמור הצבעה");
     } finally {
       isVotingRef.current = false; // Always unlock
       setIsSavingVote(false);
@@ -658,7 +658,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     if (poll?.endTime && new Date(poll.endTime) < new Date()) {
       const minutesSinceClosed = (Date.now() - new Date(poll.endTime).getTime()) / (1000 * 60);
       if (minutesSinceClosed > 10) {
-        toast.error("This poll has closed. Your votes have been saved.");
+        toast.error("סקר זה נסגר. ההצבעות שלך נשמרו.");
         router.push(`/polls/${poll.slug}/closed`);
         return;
       }
@@ -725,7 +725,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       }
     } catch (error) {
       console.error("Error loading next batch:", error);
-      setBatchLoadError("Failed to load next batch of statements. Please try again.");
+      setBatchLoadError("נכשל לטעון את הקבוצה הבאה של הצהרות. אנא נסה שוב.");
       // Stay in continuation phase to show error
     }
   };
@@ -745,16 +745,16 @@ export default function VotingPage({ params }: VotingPageProps) {
           setUserId(result.data.id);
         }
         setShowDemographicsModal(false);
-        toast.success("Thank you for sharing!");
+        toast.success("תודה על השיתוף!");
 
         // Now load statements after demographics is handled
         await loadInitialStatements(result.data.id);
       } else {
-        toast.error(result.error || "Failed to save demographics");
+        toast.error(result.error || "נכשל לשמור נתונים דמוגרפיים");
       }
     } catch (error) {
       console.error("Error submitting demographics:", error);
-      toast.error("Failed to save demographics");
+      toast.error("נכשל לשמור נתונים דמוגרפיים");
     }
   };
 
@@ -816,7 +816,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       }
     } catch (error) {
       console.error("Error loading initial statements:", error);
-      toast.error("Failed to load statements");
+      toast.error("נכשל לטעון הצהרות");
     } finally {
       setIsLoading(false);
     }
@@ -828,7 +828,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading poll...</p>
+          <p className="text-gray-600">טוען סקר...</p>
         </div>
       </div>
     );
@@ -839,9 +839,9 @@ export default function VotingPage({ params }: VotingPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
-          <p className="text-xl text-gray-900 mb-4">No statements available</p>
+          <p className="text-xl text-gray-900 mb-4">אין הצהרות זמינות</p>
           <Button asChild>
-            <Link href="/polls">Back to Polls</Link>
+            <Link href="/polls">חזרה לסקרים</Link>
           </Button>
         </div>
       </div>
@@ -873,8 +873,8 @@ export default function VotingPage({ params }: VotingPageProps) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-          <h1 className="text-3xl font-bold">Generating Your Insights...</h1>
-          <p className="text-gray-600">Please wait while we analyze your responses</p>
+          <h1 className="text-3xl font-bold">מייצר את התובנות שלך...</h1>
+          <p className="text-gray-600">אנא המתן בעוד אנו מנתחים את התשובות שלך</p>
         </div>
       </div>
     );
@@ -914,7 +914,7 @@ export default function VotingPage({ params }: VotingPageProps) {
               // Transitioning between states
               <div className="text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                <p className="text-gray-600">Loading...</p>
+                <p className="text-gray-600">טוען...</p>
               </div>
             )}
           </AnimatePresence>

@@ -9,18 +9,18 @@ export default function UnauthorizedPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <ShieldX className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <CardTitle className="text-xl">Access Denied</CardTitle>
+          <CardTitle className="text-xl">גישה נדחתה</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground">
-            You don&apos;t have permission to access this page.
+            אין לך הרשאה לגשת לדף זה.
           </p>
           <div className="space-y-2">
             <Button asChild className="w-full">
-              <Link href="/">Go Home</Link>
+              <Link href="/">חזור לדף הבית</Link>
             </Button>
             <Button variant="outline" asChild className="w-full">
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">התחבר</Link>
             </Button>
           </div>
         </CardContent>
