@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, X, Plus, Loader2 } from "lucide-react";
@@ -352,7 +351,7 @@ export default function CreatePollPage() {
                     value={agreeLabel}
                     onChange={(e) => setAgreeLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">מוצג על הכרטיס</p>
+                  <p className="text-sm text-gray-500">מוצג על הקלף</p>
                 </div>
 
                 <div className="space-y-2">
@@ -364,7 +363,7 @@ export default function CreatePollPage() {
                     value={disagreeLabel}
                     onChange={(e) => setDisagreeLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">מוצג על הכרטיס</p>
+                  <p className="text-sm text-gray-500">מוצג על הקלף</p>
                 </div>
 
                 <div className="space-y-2">
@@ -376,7 +375,7 @@ export default function CreatePollPage() {
                     value={passLabel}
                     onChange={(e) => setPassLabel(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500">מוצג מתחת לכרטיס</p>
+                  <p className="text-sm text-gray-500">מוצג מתחת לקלף</p>
                 </div>
               </>
             )}

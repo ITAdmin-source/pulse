@@ -2,8 +2,6 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { getPollBySlugAction } from "@/actions/polls-actions";
-import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
-import { getVotesByUserIdAction } from "@/actions/votes-actions";
 import { getUserPollInsightAction } from "@/actions/user-poll-insights-actions";
 import { getPollResultsSummaryAction } from "@/actions/poll-results-actions";
 import { getSessionIdAction } from "@/actions/users-actions";

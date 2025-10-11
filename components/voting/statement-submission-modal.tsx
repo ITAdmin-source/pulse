@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createStatementAction } from "@/actions/statements-actions";
 import { toast } from "sonner";
 
@@ -55,13 +55,13 @@ export function StatementSubmissionModal({
       if (result.success) {
         toast.success(
           autoApprove
-            ? "הכרטיס שלך נוסף לחפיסה!"
-            : "הכרטיס נשלח לבדיקה"
+            ? "הקלף שלך נוסף לחפיסה!"
+            : "הקלף נשלח לבדיקה"
         );
         setText(""); // Clear form
         onOpenChange(false);
       } else {
-        toast.error(result.error || "הוספת הכרטיס נכשלה");
+        toast.error(result.error || "הוספת הקלף נכשלה");
       }
     } catch (error) {
       console.error("Error submitting card:", error);
@@ -82,10 +82,10 @@ export function StatementSubmissionModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>הוספת כרטיס חדש</DialogTitle>
+          <DialogTitle>הוספת קלף חדש</DialogTitle>
           <DialogDescription>
-            צור כרטיס חדש כדי להוסיף נקודת מבט חסרה לחפיסת הסקר.
-            {!autoApprove && " הכרטיס שלך יבדק לפני ההוספה."}
+            צור קלף חדש כדי להוסיף נקודת מבט חסרה לחפיסת הסקר.
+            {!autoApprove && " הקלף שלך יבדק לפני ההוספה."}
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +93,7 @@ export function StatementSubmissionModal({
           {/* Text Input */}
           <div className="space-y-2">
             <label htmlFor="card-text" className="text-sm font-medium">
-              מה צריך להיות כתוב על הכרטיס?
+              מה צריך להיות כתוב על הקלף?
             </label>
             <Textarea
               id="card-text"
@@ -103,6 +103,7 @@ export function StatementSubmissionModal({
               onChange={(e) => setText(e.target.value)}
               disabled={isSubmitting}
               className={isOverLimit ? "border-red-500 focus-visible:ring-red-500" : ""}
+              dir="auto"
             />
             <div className="flex items-center justify-between text-sm">
               <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-500"}>
@@ -125,7 +126,7 @@ export function StatementSubmissionModal({
                 <div className="relative p-4 rounded-xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="text-xl opacity-60 flex-shrink-0">✦</div>
-                    <p className="text-sm font-medium text-gray-800 leading-relaxed line-clamp-2 flex-1 text-center">
+                    <p className="text-sm font-medium text-gray-800 leading-relaxed line-clamp-2 flex-1 text-center" dir="auto">
                       {text}
                     </p>
                     <div className="text-xl opacity-60 flex-shrink-0">✦</div>
@@ -151,10 +152,10 @@ export function StatementSubmissionModal({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 me-2 animate-spin" />
-                מוסיף כרטיס...
+                מוסיף קלף...
               </>
             ) : (
-              "הוספת כרטיס"
+              "הוספת קלף"
             )}
           </Button>
         </DialogFooter>

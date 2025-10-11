@@ -1,10 +1,11 @@
 # Pulse - Use Cases & User Workflows
 
-**Version:** 1.5
-**Date:** 2025-10-09
+**Version:** 1.6
+**Date:** 2025-10-10
 **Purpose:** Comprehensive documentation of all user workflows for UX/UI design
 
 **Changelog:**
+- **v1.6 (2025-10-10)**: Card deck terminology finalized - Updated all "vote/voting/voter" references to "choose/choosing/player" terminology with Hebrew mapping (לשמור/לזרוק/לדלג)
 - **v1.5 (2025-10-09)**: Hebrew RTL conversion - Complete translation to Hebrew with gender-neutral language, RTL layout using CSS logical properties, Rubik font with Hebrew support, Clerk Hebrew localization
 - **v1.4 (2025-10-08)**: Card deck metaphor refinements - Continuation page achievement flow, Insights/Results as collectible cards, Closed poll dual-card display, Poll listing as deck browsing
 
@@ -48,7 +49,7 @@
 - "Sign In" → "כניסה" (entrance/entering)
 - "Create Poll" → "יצירת סקר" (poll creation)
 - "View Insights" → "צפייה בתובנות" (viewing insights)
-- "Continue Voting" → "המשך מיון" (continue sorting)
+- "Continue Choosing" → "המשך לבחור" (continue choosing)
 
 #### UI Localization Components
 1. **Clerk Authentication:** Hebrew localization (`heIL`) for all auth flows
@@ -78,10 +79,26 @@
 - **Display:** Swap (for performance)
 - **Usage:** Applied via Tailwind's font-sans utility
 
+#### Card Deck Terminology
+
+**Primary UI Language: Hebrew with RTL support**
+
+| Concept | English | Hebrew |
+|---------|---------|--------|
+| Poll | Deck | חפיסה |
+| Statement | Card | קלף |
+| Choose | Choose | בחר |
+| Player | Player | שחקן |
+| Keep (agree) | Keep | לשמור |
+| Throw (disagree) | Throw | לזרוק |
+| Pass (unsure) | Pass | לדלג |
+| Card Choosing Interface | Card Choosing Interface | ממשק בחירת קלפים |
+| Choice Results | Choice Results | תוצאות בחירה |
+
 #### Translation Coverage
 All user-facing text translated, including:
 - Navigation labels and menu items
-- Button labels (voting, submission, navigation)
+- Button labels (choosing cards, submission, navigation)
 - Form fields and placeholders
 - Validation and error messages
 - Modal titles and descriptions
@@ -104,20 +121,20 @@ All user-facing text translated, including:
 ### 1. Anonymous Visitor
 - **Identity:** No account, no session tracking
 - **Access:** Can browse published polls (read-only)
-- **Limitations:** Cannot vote or submit statements
+- **Limitations:** Cannot choose cards or submit statements
 
-### 2. Anonymous Participant
+### 2. Anonymous Player
 - **Identity:** Tracked via browser session (session_id)
-- **Lifecycle:** Created in database only when they take their first action (vote or submit statement)
-- **Access:** Can vote and submit statements on published polls
-- **Data:** Voting history and submitted statements tied to session
-- **Demographics:** Optional - can provide age group, gender, ethnicity, political party without authenticating
+- **Lifecycle:** Created in database only when they take their first action (choose a card or submit statement)
+- **Access:** Can choose cards and submit statements on published polls
+- **Data:** Card choosing history and submitted statements tied to session
+- **Demographics:** Mandatory - must provide age group, gender, ethnicity, political party before choosing cards (all 4 fields required). Only shown if user doesn't already have demographics.
 - **Upgrade Path:** Can authenticate later to preserve their participation data
 
-### 3. Authenticated User
+### 3. Authenticated Player
 - **Identity:** Signed in via Clerk (clerk_user_id)
 - **Profile:** Name, picture, social links (cached from Clerk)
-- **Demographics:** Optional age group, gender, ethnicity, political party
+- **Demographics:** Mandatory age group, gender, ethnicity, political party before choosing cards (all 4 fields required). Only shown if user doesn't already have demographics.
 - **Access:** Full participation rights, persistent identity
 - **Benefits:** Access to personal insights, demographics tracking, profile management
 - **Poll Creation:** Cannot create polls unless assigned Poll Creator role
@@ -128,7 +145,7 @@ All user-facing text translated, including:
 - **Becomes Owner:** Automatically becomes owner of polls they create
 - **Scope:** Can create multiple polls, owns each one created
 - **Permissions:** When creating a poll, gains all Owner permissions for that specific poll
-- **Voting:** Can vote on any poll (including their own) using standard card-based interface
+- **Choosing Cards:** Can choose cards on any poll (including their own) using standard card-based interface
 
 ### 5. Poll Owner (Per-Poll Role)
 - **Role:** Automatically assigned when user creates a poll, or transferred from previous owner
@@ -141,7 +158,7 @@ All user-facing text translated, including:
   - Transfer ownership
   - Delete poll
 - **Scope:** Per-poll (can own multiple polls)
-- **Voting:** Votes using standard card-based interface (separate from management)
+- **Choosing Cards:** Chooses cards using standard card-based interface (separate from management)
 - **Management Interface:** Accesses poll-specific admin panel at `/polls/[slug]/manage`
 
 ### 6. Poll Manager (Per-Poll Role)
@@ -153,7 +170,7 @@ All user-facing text translated, including:
   - View analytics and statistics
   - Manage poll-specific user roles (assign other managers)
 - **Scope:** Per-poll (can manage multiple polls)
-- **Voting:** Votes using standard card-based interface (separate from management)
+- **Choosing Cards:** Chooses cards using standard card-based interface (separate from management)
 - **Management Interface:** Accesses poll-specific admin panel at `/polls/[slug]/manage`
 
 ### 7. System Administrator
@@ -167,7 +184,7 @@ All user-facing text translated, including:
   - Delete any poll
   - Access system-wide admin features (minimal cross-poll tools)
 - **Scope:** System-wide
-- **Voting:** Votes using standard card-based interface (separate from management)
+- **Choosing Cards:** Chooses cards using standard card-based interface (separate from management)
 - **Management Interface:** Can access poll-specific admin panel for any poll at `/polls/[slug]/manage`, plus system admin dashboard at `/admin/dashboard`
 
 ---
@@ -186,13 +203,16 @@ All user-facing text translated, including:
    - System generates browser session (no DB record yet)
    - UI displays "Start Voting" or similar CTA
 
-2. **Demographics Collection (Optional)**
+2. **Demographics Collection (Mandatory)**
    - **Shown BEFORE the first statement card appears**
-   - Completely optional - can skip or dismiss
-   - Options: age group, gender, ethnicity, political party
+   - **Required - blocks voting until completed**
+   - **All fields mandatory:** age group, gender, ethnicity, political party (all 4 required)
+   - **Messaging:** "We want to get to know a bit about you before you start playing, so that we can come up with better insights"
    - Available to both anonymous and authenticated users
    - **One-time only:** Cannot be changed after initial submission
    - **Not requested again if user upgrades** from anonymous to authenticated
+   - **Not shown if user already has demographics** (from previous poll or this poll)
+   - **Non-dismissible modal:** No skip button, no X button to close
    - **User Creation Timing:** User record is created when demographics are saved OR on first vote (whichever comes first)
    - Stored with user record once created
 
@@ -2127,33 +2147,33 @@ Draft ←→ Published → Closed
 
 ### Feature 7: Demographics & Profiling
 
-#### Optional User Data
-- **Age Group:** Predefined ranges
-- **Gender:** Predefined options
-- **Ethnicity:** Predefined categories
-- **Political Party:** Predefined affiliations
+#### Required User Data
+- **Age Group:** Predefined ranges (required)
+- **Gender:** Predefined options (required)
+- **Ethnicity:** Predefined categories (required)
+- **Political Party:** Predefined affiliations (required)
 
 #### Availability
-- **Anonymous Participants:** Can provide demographics without authenticating
-- **Authenticated Users:** Can provide or update demographics in profile
+- **Anonymous Participants:** Must provide demographics before voting (all 4 fields required)
+- **Authenticated Users:** Must provide demographics before voting (all 4 fields required)
 - **Collection Timing:**
-  - Can be prompted before/during first voting session
-  - Can be added later from profile/settings
-  - Can be skipped entirely
+  - Prompted before first statement card appears
+  - Shown via non-dismissible modal (no skip, no X button)
+  - Only shown if user doesn't already have demographics from previous poll or session
+  - Blocks voting until completed
+  - Cannot be changed after initial submission
 
 #### Purpose
 - Enable demographic analysis of voting patterns
 - Identify group alignments
 - Inform poll creators about audience
-- Enhance insights generation
+- Enhance insights generation (critical for quality insights)
 - Improve personalization (without requiring authentication)
 
 #### Privacy & Control
-- Entirely optional for all user types
+- Required for all user types before voting
 - No authentication required to provide demographics
-- User controls what to share
-- Can update anytime
-- Not required for participation
+- Cannot be updated after submission (one-time only)
 - Stored with user record (anonymous or authenticated)
 
 #### Potential Features (Not Yet Implemented)

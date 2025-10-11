@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Check, X, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +26,9 @@ export function VoteResultOverlay({
   unsurePercent,
   totalVotes,
   onNext,
-  agreeLabel = "תמיכה",
-  disagreeLabel = "התנגדות",
-  unsureLabel = "לא בטוח",
+  agreeLabel = "לשמור",
+  disagreeLabel = "לזרוק",
+  unsureLabel = "לדלג",
 }: VoteResultOverlayProps) {
   const [animationPhase, setAnimationPhase] = useState<'entering' | 'visible'>('entering');
 
@@ -39,9 +38,62 @@ export function VoteResultOverlay({
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Auto-advance after 2 seconds of showing results
+    if (animationPhase === 'visible' && onNext) {
+      const autoAdvanceTimer = setTimeout(() => {
+        onNext();
+      }, 2000); // 2 seconds to view results, then auto-advance
+
+      return () => clearTimeout(autoAdvanceTimer);
+    }
+  }, [animationPhase, onNext]);
+
+  // RTL-correct exit animations based on vote choice
+  const getExitAnimation = () => {
+    if (userVote === 1) {
+      // לשמור (Keep) - slide RIGHT and up (positive direction in RTL)
+      return {
+        x: 400,
+        y: -100,
+        rotate: 15,
+        opacity: 0
+      };
+    }
+
+    if (userVote === -1) {
+      // לזרוק (Throw) - slide LEFT and down (thrown away, negative)
+      return {
+        x: -400,
+        y: 150,
+        rotate: -25,
+        opacity: 0
+      };
+    }
+
+    // userVote === 0
+    // לדלג (Pass) - slide straight down (neutral, set aside)
+    return {
+      x: 0,
+      y: 400,
+      rotate: 0,
+      opacity: 0
+    };
+  };
+
+  const getExitTransition = () => {
+    if (userVote === 1) {
+      return { duration: 0.5 }; // Keep (smooth exit)
+    }
+    if (userVote === -1) {
+      return { duration: 0.4 }; // Throw (faster exit)
+    }
+    return { duration: 0.45 }; // Pass (moderate exit)
+  };
+
   const getUserVoteLabel = () => {
-    if (userVote === 1) return `הסכמת`;
-    if (userVote === -1) return `התנגדת`;
+    if (userVote === 1) return `שמרת`;
+    if (userVote === -1) return `זרקת`;
     return `דילגת`;
   };
 
@@ -49,20 +101,24 @@ export function VoteResultOverlay({
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-xs mx-auto px-4">
-      {/* Card container with flip animation */}
+      {/* Card container with flip animation - auto-advances after 2s */}
       <motion.div
-        className="relative w-full cursor-pointer"
+        className="relative w-full"
         style={{ perspective: '1000px' }}
         initial={{ x: 0, opacity: 1 }}
-        exit={{ x: -400, opacity: 0 }}
-        transition={{ duration: 0.4, ease: "easeInOut" }}
-        onClick={onNext}
+        exit={getExitAnimation()}
+        transition={getExitTransition()}
       >
         <motion.div
           className="relative w-full aspect-[2/3] shadow-lg rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50"
           initial={{ rotateY: 0 }}
           animate={{ rotateY: 180 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
+          transition={{
+            type: "spring",
+            stiffness: 120,
+            damping: 18,
+            mass: 1
+          }}
           style={{
             transformStyle: 'preserve-3d',
           }}
@@ -77,7 +133,7 @@ export function VoteResultOverlay({
           >
             {/* Statement text (smaller, at top) */}
             <div className="text-center">
-              <p className="text-sm text-gray-700 leading-tight line-clamp-3 mb-3">
+              <p className="text-sm text-gray-700 leading-tight line-clamp-3 mb-3" dir="auto">
                 {statement}
               </p>
             </div>
@@ -123,7 +179,12 @@ export function VoteResultOverlay({
                       className="bg-green-600 h-full"
                       initial={{ width: "0%" }}
                       animate={animationPhase === 'visible' ? { width: `${agreePercent}%` } : {}}
-                      transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15,
+                        delay: 0.3
+                      }}
                     />
                   </div>
                 </div>
@@ -139,7 +200,12 @@ export function VoteResultOverlay({
                       className="bg-red-600 h-full"
                       initial={{ width: "0%" }}
                       animate={animationPhase === 'visible' ? { width: `${disagreePercent}%` } : {}}
-                      transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15,
+                        delay: 0.5
+                      }}
                     />
                   </div>
                 </div>
@@ -155,7 +221,12 @@ export function VoteResultOverlay({
                       className="bg-gray-600 h-full"
                       initial={{ width: "0%" }}
                       animate={animationPhase === 'visible' ? { width: `${unsurePercent}%` } : {}}
-                      transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15,
+                        delay: 0.7
+                      }}
                     />
                   </div>
                 </div>
@@ -165,26 +236,15 @@ export function VoteResultOverlay({
             {/* Total votes (at bottom) */}
             <div className="text-center">
               <p className="text-xs text-gray-600">
-                מבוסס על {totalVotes} {totalVotes === 1 ? "הצבעה" : "הצבעות"}
+                מבוסס על {totalVotes} {totalVotes === 1 ? "בחירה" : "בחירות"}
               </p>
             </div>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Next Button */}
-      {onNext && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, delay: animationPhase === 'entering' ? 1.2 : 0 }}
-        >
-          <Button onClick={onNext} size="lg" className="shadow-md">
-            הבא ←
-          </Button>
-        </motion.div>
-      )}
+      {/* Auto-advance after 2 seconds - pure flow experience */}
+      {/* Results visible briefly, then automatically proceeds to next card */}
     </div>
   );
 }

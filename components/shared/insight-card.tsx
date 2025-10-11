@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -9,14 +10,17 @@ interface InsightCardProps {
   pollQuestion: string;
 }
 
-export function InsightCard({ title, body, pollQuestion }: InsightCardProps) {
-  // Extract emoji from title (assumes format "🌟 Title Text")
-  const emojiMatch = title.match(/^(\p{Emoji})\s+(.+)$/u);
+export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(
+  function InsightCard({ title, body, pollQuestion }, ref) {
+  // Extract emoji from title (format: "🌟 Title Text")
+  // Robust regex that captures any emoji (including complex multi-codepoint ones like 🚦)
+  // Uses Unicode property escapes for proper emoji detection
+  const emojiMatch = title.match(/^([\p{Emoji}\u{FE0F}\u{200D}]+)\s*(.+)$/u);
   const emoji = emojiMatch ? emojiMatch[1] : "✨";
   const titleText = emojiMatch ? emojiMatch[2] : title;
 
   return (
-    <div className="w-full max-w-xs mx-auto">
+    <div ref={ref} className="w-full max-w-xs mx-auto">
       {/* Insight Card - Premium styling with same aspect as voting cards */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0, rotateY: -10 }}
@@ -83,7 +87,7 @@ export function InsightCard({ title, body, pollQuestion }: InsightCardProps) {
 
               {/* Body - Scrollable */}
               <div className="flex-1 overflow-y-auto px-2 max-h-[180px]">
-                <p className="text-xs md:text-sm text-gray-800 leading-relaxed whitespace-pre-line text-center">
+                <p className="text-xs md:text-sm text-gray-800 leading-relaxed whitespace-pre-line text-justify" dir="rtl">
                   {body}
                 </p>
               </div>
@@ -115,4 +119,4 @@ export function InsightCard({ title, body, pollQuestion }: InsightCardProps) {
       </motion.div>
     </div>
   );
-}
+});

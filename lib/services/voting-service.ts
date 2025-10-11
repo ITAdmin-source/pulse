@@ -1,4 +1,4 @@
-import { eq, and, count, isNull, notInArray } from "drizzle-orm";
+import { eq, and, count, notInArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
@@ -126,7 +126,7 @@ export class VotingService {
     return vote;
   }
 
-  static async updateVote(data: z.infer<typeof updateVoteSchema>): Promise<Vote> {
+  static async updateVote(_data: z.infer<typeof updateVoteSchema>): Promise<Vote> {
     // Votes are immutable - updates are not allowed
     throw new Error(
       "Vote updates are not allowed - votes are final and irreversible"

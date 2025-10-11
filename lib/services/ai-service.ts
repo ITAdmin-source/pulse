@@ -12,6 +12,7 @@
 import { getVotesByUserId } from "@/db/queries/votes-queries";
 import { getPollById } from "@/db/queries/polls-queries";
 import { getApprovedStatementsByPollId } from "@/db/queries/statements-queries";
+import { getUserDemographicsById } from "@/db/queries/user-demographics-queries";
 import type { Vote } from "@/db/schema/votes";
 import type { Poll } from "@/db/schema/polls";
 import type { Statement } from "@/db/schema/statements";
@@ -67,6 +68,8 @@ export class AIService {
     userId: string,
     pollId: string
   ): Promise<{ title: string; body: string }> {
+    console.log("[AIService] ===== STARTING INSIGHT GENERATION =====");
+    console.log("[AIService] userId:", userId, "pollId:", pollId);
     try {
       // Fetch poll and statements first
       const poll = await getPollById(pollId);
@@ -99,6 +102,29 @@ export class AIService {
         };
       });
 
+      // Fetch user demographics (including gender) if available
+      const demographics = await getUserDemographicsById(userId);
+      console.log("[AIService] User demographics:", demographics);
+      let genderLabel: string | undefined;
+
+      if (demographics?.genderId) {
+        // Import db and genders schema to fetch gender label
+        const { db } = await import("@/db/db");
+        const { genders } = await import("@/db/schema/genders");
+        const { eq } = await import("drizzle-orm");
+
+        const genderResult = await db
+          .select()
+          .from(genders)
+          .where(eq(genders.id, demographics.genderId))
+          .limit(1);
+
+        genderLabel = genderResult[0]?.label;
+        console.log("[AIService] Gender lookup - genderId:", demographics.genderId, "label:", genderLabel);
+      } else {
+        console.log("[AIService] No gender data found for user");
+      }
+
       // Build request for AI
       const insightRequest: InsightGenerationRequest = {
         userId,
@@ -107,7 +133,10 @@ export class AIService {
         pollDescription: poll.description,
         statements: statementsWithVotes,
         voteStatistics: stats,
+        demographics: genderLabel ? { gender: genderLabel } : undefined,
       };
+
+      console.log("[AIService] Insight request demographics:", insightRequest.demographics);
 
       // Try to generate with OpenAI GPT-5 mini
       try {
@@ -197,7 +226,7 @@ export class AIService {
    * Generate insight title based on voting pattern
    * Includes contextual emoji for visual distinction and personality
    */
-  private static generateInsightTitle(stats: VoteStatistics, poll: Poll): string {
+  private static generateInsightTitle(stats: VoteStatistics): string {
     const { agreePercent, disagreePercent, unsurePercent } = stats;
 
     // Strong agreement pattern
@@ -284,8 +313,6 @@ export class AIService {
   ): Promise<PollStatistics> {
     // Import here to avoid circular dependencies
     const { db } = await import("@/db/db");
-    const { votes } = await import("@/db/schema/votes");
-    const { sql, eq, and } = await import("drizzle-orm");
 
     // Get all votes for this poll's statements
     const statementIds = statements.map(s => s.id);

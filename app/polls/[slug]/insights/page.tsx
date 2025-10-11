@@ -6,9 +6,8 @@ import { getUserPollInsightAction, upsertUserPollInsightAction } from "@/actions
 import { getSessionIdAction } from "@/actions/users-actions";
 import { UserService } from "@/lib/services/user-service";
 import { AIService } from "@/lib/services/ai-service";
-import { InsightActions } from "@/components/polls/insight-actions";
-import { InsightCard } from "@/components/shared/insight-card";
 import { AnonymousInsightHandler } from "@/components/polls/anonymous-insight-handler";
+import { InsightPageClient } from "./insight-page-client";
 
 interface InsightsPageProps {
   params: Promise<{
@@ -81,10 +80,10 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center space-y-6 max-w-md px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            מיין עוד כרטיסים תחילה
+            בחר עוד קלפים תחילה
           </h1>
           <p className="text-gray-600 leading-relaxed">
-            עליך למיין {remainingVotes} כרטיס{remainingVotes !== 1 ? 'ים' : ''} נוסף{remainingVotes !== 1 ? 'ים' : ''} כדי לפתוח את התובנות האישיות שלך.
+            עליך לבחור {remainingVotes} קלף{remainingVotes !== 1 ? 'ים' : ''} נוסף{remainingVotes !== 1 ? 'ים' : ''} כדי לפתוח את התובנות האישיות שלך.
           </p>
           <div className="flex flex-col gap-3">
             <Button size="lg" asChild>
@@ -164,40 +163,11 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-4 max-w-3xl">
-        <div className="space-y-4">
-          {/* Insight Card */}
-          <InsightCard
-            title={insight.title}
-            body={insight.body}
-            pollQuestion={poll.question}
-          />
-
-          {/* Action Buttons - Inline row */}
-          <InsightActions
-            pollTitle={poll.question}
-            insightTitle={insight.title}
-            insightBody={insight.body}
-            userId={clerkUserId || undefined}
-          />
-
-          {/* Navigation Buttons - Single row */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
-            <Button size="lg" asChild className="w-full sm:w-auto">
-              <Link href={`/polls/${slug}/results`}>
-                צפה בכל התוצאות
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild className="w-full sm:w-auto">
-              <Link href="/polls">
-                חזרה לכל החפיסות
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </main>
-    </div>
+    <InsightPageClient
+      insight={insight}
+      pollQuestion={poll.question}
+      pollSlug={slug}
+      userId={clerkUserId || undefined}
+    />
   );
 }

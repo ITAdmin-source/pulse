@@ -72,7 +72,6 @@ export default function VotingPage({ params }: VotingPageProps) {
   // Core app state
   const [poll, setPoll] = useState<Poll | null>(null);
   const [statementManager, setStatementManager] = useState<StatementManager | null>(null);
-  const [totalStatementsInPoll, setTotalStatementsInPoll] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -135,6 +134,7 @@ export default function VotingPage({ params }: VotingPageProps) {
           setIsPreloading(false);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [votingState.phase, votingState.currentStatement, statementManager, poll, userId]);
 
   // Load poll data and statements
@@ -169,8 +169,8 @@ export default function VotingPage({ params }: VotingPageProps) {
           const minutesSinceClosed = (Date.now() - new Date(fetchedPoll.endTime).getTime()) / (1000 * 60);
           if (minutesSinceClosed <= 10) {
             toast.warning(
-              "סקר זה נסגר, אך תוכל לסיים את ההצבעה בהפעלה הנוכחית. " +
-              "ההצבעות שלך עדיין ייספרו בתוצאות.",
+              "סקר זה נסגר, אך תוכל לסיים את בחירת הקלפים בהפעלה הנוכחית. " +
+              "הבחירות שלך עדיין ייספרו בתוצאות.",
               { duration: 6000 }
             );
           } else {
@@ -196,8 +196,6 @@ export default function VotingPage({ params }: VotingPageProps) {
           const progressResult = await getVotingProgressAction(fetchedPoll.id, dbUser.id);
           if (progressResult.success && progressResult.data) {
             const { totalVoted, totalStatements, currentBatch, thresholdReached } = progressResult.data;
-
-            setTotalStatementsInPoll(totalStatements);
 
             // Only show demographics modal if user has NO demographics AND no votes
             if (totalVoted === 0) {
@@ -236,10 +234,10 @@ export default function VotingPage({ params }: VotingPageProps) {
             } else {
               // No more unvoted statements - user has completed voting
               if (thresholdReached) {
-                toast.success("השלמת את ההצבעה בסקר זה!");
+                toast.success("השלמת את בחירת הקלפים בסקר זה!");
                 router.push(`/polls/${resolvedParams.slug}/insights`);
               } else {
-                toast.error("אין הצהרות זמינות להצבעה");
+                toast.error("אין קלפים זמינים לבחירה");
                 router.push(`/polls/${resolvedParams.slug}`);
               }
               return;
@@ -266,7 +264,6 @@ export default function VotingPage({ params }: VotingPageProps) {
             );
 
             setStatementManager(manager);
-            setTotalStatementsInPoll(statementsResult.data.length);
 
             // Set initial voting state for new users
             setVotingState({
@@ -287,6 +284,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     if (!isUserLoading) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, router, dbUser, contextSessionId, isUserLoading]);
 
   // Sync offline votes when user ID is available
@@ -295,7 +293,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       if (!userId || typeof window === 'undefined') return;
       if (!OfflineVoteQueue.hasQueuedVotes()) return;
 
-      const { synced, failed, errors } = await OfflineVoteQueue.syncAll(userId);
+      const { synced, failed } = await OfflineVoteQueue.syncAll(userId);
 
       if (synced > 0) {
         toast.success(`${synced} הצבע${synced > 1 ? 'ות' : 'ה'} מצב לא מקוון סונכרנ${synced > 1 ? 'ו' : 'ה'} בהצלחה`);
@@ -327,6 +325,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     };
 
     syncOfflineVotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, poll, statementManager]);
 
   // Listen for online/offline events to sync immediately when connection restored
@@ -337,7 +336,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
       toast.info("החיבור שוחזר, מסנכרן הצבעות לא מקוונות...");
 
-      const { synced, failed } = await OfflineVoteQueue.syncAll(userId);
+      const { synced } = await OfflineVoteQueue.syncAll(userId);
 
       if (synced > 0) {
         toast.success(`${synced} הצבע${synced > 1 ? 'ות' : 'ה'} סונכרנ${synced > 1 ? 'ו' : 'ה'}`);
@@ -357,6 +356,7 @@ export default function VotingPage({ params }: VotingPageProps) {
 
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, poll, statementManager]);
 
   // Get progress from StatementManager
@@ -391,6 +391,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     if (poll?.slug) {
       router.push(`/polls/${poll.slug}/insights`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canFinish, statementManager, poll, router]);
 
   // Configure header with poll context
@@ -418,11 +419,11 @@ export default function VotingPage({ params }: VotingPageProps) {
                   className="gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">הוספת כרטיס</span>
+                  <span className="hidden sm:inline">הוספת קלף</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>הוסף כרטיס חדש כדי לשתף נקודת מבט חסרה</p>
+                <p>הוסף קלף חדש כדי לשתף נקודת מבט חסרה</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -696,6 +697,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statementManager]);
 
   const handleContinue = async () => {
@@ -758,26 +760,9 @@ export default function VotingPage({ params }: VotingPageProps) {
     }
   };
 
-  const handleDemographicsSkip = async () => {
-    setShowDemographicsModal(false);
-
-    // Create user if needed, then load statements
-    let effectiveUserId = userId;
-    if (!effectiveUserId) {
-      const userResult = await ensureUserExistsAction({
-        clerkUserId: dbUser?.clerkUserId || undefined,
-        sessionId: sessionId || undefined,
-      });
-      if (userResult.success && userResult.data) {
-        effectiveUserId = userResult.data.id;
-        setUserId(effectiveUserId);
-      }
-    }
-
-    if (effectiveUserId && poll) {
-      await loadInitialStatements(effectiveUserId);
-    }
-  };
+  // REMOVED: handleDemographicsSkip
+  // Demographics are now mandatory - users cannot skip
+  // All 4 fields (age group, gender, ethnicity, political party) are required
 
   // Helper function to load initial statements (called after demographics modal)
   const loadInitialStatements = async (effectiveUserId: string) => {
@@ -885,14 +870,14 @@ export default function VotingPage({ params }: VotingPageProps) {
       {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
         <div className="w-full max-w-md space-y-6">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard
                 key={`statement-${votingState.currentStatement.id}`}
                 statement={votingState.currentStatement.text}
-                agreeLabel={poll?.supportButtonLabel || "Agree"}
-                disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
-                passLabel={poll?.unsureButtonLabel || "Pass"}
+                agreeLabel={poll?.supportButtonLabel || "לשמור"}
+                disagreeLabel={poll?.opposeButtonLabel || "לזרוק"}
+                passLabel={poll?.unsureButtonLabel || "לדלג"}
                 onVote={handleVote}
                 disabled={isSavingVote}
               />
@@ -905,9 +890,9 @@ export default function VotingPage({ params }: VotingPageProps) {
                 disagreePercent={votingState.voteDistribution.disagreePercent}
                 unsurePercent={votingState.voteDistribution.unsurePercent}
                 totalVotes={votingState.voteDistribution.totalVotes}
-                agreeLabel={poll?.supportButtonLabel || "Agree"}
-                disagreeLabel={poll?.opposeButtonLabel || "Disagree"}
-                unsureLabel={poll?.unsureButtonLabel || "Unsure"}
+                agreeLabel={poll?.supportButtonLabel || "לשמור"}
+                disagreeLabel={poll?.opposeButtonLabel || "לזרוק"}
+                unsureLabel={poll?.unsureButtonLabel || "לדלג"}
                 onNext={handleManualNext}
               />
             ) : (
@@ -921,18 +906,10 @@ export default function VotingPage({ params }: VotingPageProps) {
         </div>
       </main>
 
-      {/* Demographics Modal */}
+      {/* Demographics Modal - Mandatory, non-dismissible */}
       <DemographicsModal
         open={showDemographicsModal}
-        onOpenChange={(open) => {
-          if (!open) {
-            // When modal is closed via X button, treat it as skip
-            handleDemographicsSkip();
-          }
-          setShowDemographicsModal(open);
-        }}
         onSubmit={handleDemographicsSubmit}
-        onSkip={handleDemographicsSkip}
       />
 
       {/* Statement Submission Modal */}

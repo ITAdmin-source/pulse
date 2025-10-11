@@ -37,7 +37,10 @@ export function AnonymousInsightHandler({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isCancelled = false; // Prevent duplicate API calls
+
     async function loadInsight() {
+      if (isCancelled) return;
       try {
         // For anonymous users, check localStorage first
         if (!isAuthenticated) {
@@ -94,6 +97,7 @@ export function AnonymousInsightHandler({
 
         setIsLoading(false);
       } catch (err) {
+        if (isCancelled) return; // Don't update state if cancelled
         console.error("[AnonymousInsight] Error:", err);
         setError(err instanceof Error ? err.message : "Failed to load insight");
         setIsLoading(false);
@@ -101,16 +105,27 @@ export function AnonymousInsightHandler({
     }
 
     loadInsight();
+
+    // Cleanup function to prevent duplicate calls
+    return () => {
+      isCancelled = true;
+    };
   }, [pollId, pollQuestion, isAuthenticated]);
 
-  // Loading state
+  // Loading state - calm and simple for fast response
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-md px-4">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-          <h2 className="text-xl font-semibold text-gray-900">מנתח את התשובות שלך...</h2>
-          <p className="text-sm text-gray-600">Analyzing your responses...</p>
+
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            מייצר תובנות אישיות
+          </h1>
+
+          <p className="text-gray-600 leading-relaxed">
+            מנתח את דפוס ההצבעה שלך...
+          </p>
         </div>
       </div>
     );
@@ -145,27 +160,13 @@ export function AnonymousInsightHandler({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <main className="container mx-auto px-4 py-4 max-w-3xl">
-        {/* Anonymous User Banner */}
-        {!isAuthenticated && (
-          <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-            <p className="text-sm text-yellow-800">
-              <strong>משתמש אנונימי</strong> • התובנות שלך נשמרות זמנית
-            </p>
-            <p className="text-xs text-yellow-700 mt-1">
-              <Link href="/signup" className="underline font-semibold">
-                הרשם
-              </Link>{" "}
-              כדי לשמור את התובנות שלך לצמיתות
-            </p>
-            <p className="text-xs text-gray-600 mt-1">
-              Anonymous session • <Link href="/signup" className="underline font-semibold">Sign up</Link> to save your insights permanently
-            </p>
-          </div>
-        )}
-
         <div className="space-y-4">
           {/* Insight Card */}
-          <InsightCard title={insight.title} body={insight.body} pollQuestion={pollQuestion} />
+          <InsightCard
+            title={insight.title}
+            body={insight.body}
+            pollQuestion={pollQuestion}
+          />
 
           {/* Action Buttons */}
           <InsightActions
@@ -173,15 +174,13 @@ export function AnonymousInsightHandler({
             insightTitle={insight.title}
             insightBody={insight.body}
             userId={userId}
+            pollSlug={pollSlug}
           />
 
-          {/* Navigation Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
-            <Button size="lg" asChild className="w-full sm:w-auto">
-              <Link href={`/polls/${pollSlug}/results`}>צפה בכל התוצאות / View All Results</Link>
-            </Button>
-            <Button variant="ghost" asChild className="w-full sm:w-auto">
-              <Link href="/polls">חזרה לכל הסקרים / Back to All Polls</Link>
+          {/* Navigation Button */}
+          <div className="flex justify-center">
+            <Button size="lg" asChild>
+              <Link href={`/polls/${pollSlug}/results`}>צפה בתוצאות</Link>
             </Button>
           </div>
         </div>

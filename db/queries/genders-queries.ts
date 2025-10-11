@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db } from "../db";
 import { genders, type Gender, type NewGender } from "../schema/genders";
 
@@ -16,7 +16,7 @@ export async function getAllGenders(): Promise<Gender[]> {
   return await db
     .select()
     .from(genders)
-    .orderBy(desc(genders.id));
+    .orderBy(asc(genders.id));
 }
 
 export async function createGender(data: NewGender): Promise<Gender> {

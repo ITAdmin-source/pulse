@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { UserService } from "@/lib/services/user-service";
 import { getSessionId } from "@/lib/utils/session";
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth();
 

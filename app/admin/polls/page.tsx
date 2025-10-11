@@ -47,6 +47,7 @@ export default function AdminPollsPage() {
 
   useEffect(() => {
     filterPolls();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [polls, searchQuery, statusFilter]);
 
   const loadPolls = async () => {

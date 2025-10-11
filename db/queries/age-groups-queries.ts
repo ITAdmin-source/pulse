@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db } from "../db";
 import { ageGroups, type AgeGroup, type NewAgeGroup } from "../schema/age-groups";
 
@@ -16,7 +16,7 @@ export async function getAllAgeGroups(): Promise<AgeGroup[]> {
   return await db
     .select()
     .from(ageGroups)
-    .orderBy(desc(ageGroups.id));
+    .orderBy(asc(ageGroups.id));
 }
 
 export async function createAgeGroup(data: NewAgeGroup): Promise<AgeGroup> {

@@ -39,7 +39,11 @@ export function ContinuationPage({
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.4 }}
+          transition={{
+            type: "spring",
+            stiffness: 260,
+            damping: 20
+          }}
           className="max-w-md w-full"
         >
           {/* Celebration Card */}
@@ -61,7 +65,7 @@ export function ContinuationPage({
               החפיסה הושלמה! 🎉
             </h2>
             <p className="text-center text-gray-600 text-sm mb-6">
-              מיינת את כל {statementsVoted} הכרטיסים
+              בחרת את כל {statementsVoted} הקלפים
             </p>
 
             {/* Final Tally */}
@@ -73,21 +77,21 @@ export function ContinuationPage({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-gray-700 text-sm font-medium">שמירה</span>
+                    <span className="text-gray-700 text-sm font-medium">לשמור</span>
                   </div>
                   <span className="text-xl font-bold text-green-600">{agreeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingDown className="h-4 w-4 text-red-600" />
-                    <span className="text-gray-700 text-sm font-medium">השלכה</span>
+                    <span className="text-gray-700 text-sm font-medium">לזרוק</span>
                   </div>
                   <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Minus className="h-4 w-4 text-gray-600" />
-                    <span className="text-gray-700 text-sm font-medium">לא בטוח</span>
+                    <span className="text-gray-700 text-sm font-medium">לדלג</span>
                   </div>
                   <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
                 </div>
@@ -110,7 +114,11 @@ export function ContinuationPage({
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4 }}
+        transition={{
+          type: "spring",
+          stiffness: 260,
+          damping: 20
+        }}
         className="max-w-md w-full"
       >
         {/* Progress Card - Same amber theme as voting cards */}
@@ -132,7 +140,7 @@ export function ContinuationPage({
             אבן דרך!
           </h2>
           <p className="text-center text-gray-600 text-sm mb-6">
-            {statementsVoted} {statementsVoted === 1 ? "כרטיס מוין" : "כרטיסים מוינו"}
+            {statementsVoted} {statementsVoted === 1 ? "קלף נבחר" : "קלפים נבחרו"}
           </p>
 
           {/* Score Tally */}
@@ -144,21 +152,21 @@ export function ContinuationPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-700 text-sm font-medium">שמירה</span>
+                  <span className="text-gray-700 text-sm font-medium">לשמור</span>
                 </div>
                 <span className="text-xl font-bold text-green-600">{agreeCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-gray-700 text-sm font-medium">השלכה</span>
+                  <span className="text-gray-700 text-sm font-medium">לזרוק</span>
                 </div>
                 <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Minus className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-700 text-sm font-medium">לא בטוח</span>
+                  <span className="text-gray-700 text-sm font-medium">לדלג</span>
                 </div>
                 <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
               </div>
@@ -167,7 +175,7 @@ export function ContinuationPage({
 
           {/* Status Message */}
           <div className="text-center text-xs text-gray-600 mb-4">
-            <p className="font-medium">יש עוד כרטיסים לחקור</p>
+            <p className="font-medium">יש עוד קלפים לבחור</p>
           </div>
 
           {/* Error State */}
@@ -183,7 +191,7 @@ export function ContinuationPage({
           {/* Action Buttons */}
           <div className="space-y-2">
             <Button onClick={onContinue} className="w-full h-11" size="lg" disabled={!!error}>
-              המשך מיון
+              המשך לבחור
             </Button>
             <Button
               onClick={onFinish}
@@ -191,9 +199,9 @@ export function ContinuationPage({
               className="w-full h-11"
               size="lg"
               disabled={!canFinish}
-              title={!canFinish ? `מיין עוד ${remainingVotes} כדי לסיים` : "סיום וצפייה בתובנות"}
+              title={!canFinish ? `בחר עוד ${remainingVotes} כדי לסיים` : "סיום וצפייה בתובנות"}
             >
-              {canFinish ? "סיום וצפייה בתובנות" : `מיין עוד ${remainingVotes} כדי לסיים`}
+              {canFinish ? "סיום וצפייה בתובנות" : `בחר עוד ${remainingVotes} כדי לסיים`}
             </Button>
           </div>
         </div>

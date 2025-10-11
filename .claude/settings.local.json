@@ -21,7 +21,8 @@
       "Bash(curl:*)",
       "Bash(nslookup:*)",
       "Bash(ping:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": [

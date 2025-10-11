@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getPollBySlugAction } from "@/actions/polls-actions";
-import { getPollResultsSummaryAction } from "@/actions/poll-results-actions";
-import { ResultsCard } from "@/components/shared/results-card";
+import { getPollResultsSummaryAction, getPollResultsAction } from "@/actions/poll-results-actions";
+import { ResultsDashboard } from "@/components/shared/results-dashboard";
+import { DemographicAnalyticsDashboard } from "@/components/analytics/demographic-analytics-dashboard";
 
 interface ResultsPageProps {
   params: Promise<{
@@ -20,11 +21,14 @@ async function getPollResults(slug: string) {
 
   const poll = pollResult.data;
 
-  // Fetch poll results summary
-  const summaryResult = await getPollResultsSummaryAction(poll.id);
+  // Fetch both summary and detailed results
+  const [summaryResult, detailedResults] = await Promise.all([
+    getPollResultsSummaryAction(poll.id),
+    getPollResultsAction(poll.id),
+  ]);
 
-  if (!summaryResult.success || !summaryResult.data) {
-    // Fallback summary if generation fails
+  if (!summaryResult.success || !summaryResult.data || !detailedResults.success || !detailedResults.data) {
+    // Fallback if generation fails
     return {
       pollSlug: slug,
       pollQuestion: poll.question,
@@ -32,6 +36,7 @@ async function getPollResults(slug: string) {
       participantCount: 0,
       voteCount: 0,
       generatedAt: new Date().toISOString(),
+      statements: [],
     };
   }
 
@@ -42,13 +47,14 @@ async function getPollResults(slug: string) {
     participantCount: summaryResult.data.participantCount,
     voteCount: summaryResult.data.voteCount,
     generatedAt: summaryResult.data.generatedAt.toISOString(),
+    statements: detailedResults.data.statements,
   };
 }
 
 // Fallback for development/demo
-async function getPollResultsFallback(slug: string) {
+async function getPollResultsFallback(_slug: string) {
   return {
-    pollSlug: slug,
+    pollSlug: _slug,
     pollQuestion: "What are the most important climate action priorities?",
     summaryText: `## Overall Poll Sentiment
 
@@ -83,22 +89,37 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   const { slug } = await params;
   const results = await getPollResults(slug);
 
+  // Get poll data for demographic analytics
+  const pollResult = await getPollBySlugAction(slug);
+  const poll = pollResult.success ? pollResult.data : null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-4 max-w-3xl">
-        <div className="space-y-4">
-          {/* Results Card */}
-          <ResultsCard
+      <main className="container mx-auto px-4 py-6 max-w-5xl">
+        <div className="space-y-6">
+          {/* Results Dashboard */}
+          <ResultsDashboard
             pollQuestion={results.pollQuestion}
-            summaryText={results.summaryText}
             participantCount={results.participantCount}
             voteCount={results.voteCount}
+            statements={results.statements}
+            summaryText={results.summaryText}
             generatedAt={results.generatedAt}
           />
 
+          {/* Demographic Analytics */}
+          {poll && (
+            <DemographicAnalyticsDashboard
+              pollId={poll.id}
+              privacyThreshold={5}
+              title="ניתוח דמוגרפי"
+              description="התפלגות בחירות לפי קבוצות דמוגרפיות"
+            />
+          )}
+
           {/* Back Button */}
-          <div className="text-center">
+          <div className="text-center pb-8">
             <Button size="lg" asChild>
               <Link href="/polls">
                 חזרה לכל החפיסות

@@ -92,6 +92,7 @@ export default function AdminUsersPage() {
     if (dbUser && isSystemAdmin(userRoles)) {
       loadUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchQuery, userTypeFilter, roleFilter, dbUser, userRoles]);
 
   const handleAssignSystemAdmin = async (userId: string) => {

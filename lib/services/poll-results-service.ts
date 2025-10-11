@@ -1,9 +1,20 @@
 import { eq, inArray, and } from "drizzle-orm";
 import { db } from "@/db/db";
 import { polls, statements, votes, pollResultsSummaries } from "@/db/schema";
-import type { PollResultsSummary } from "@/db/schema";
 import { VoteValue, calculateVoteDistribution } from "@/lib/utils/voting";
 import { AIService } from "./ai-service";
+import {
+  getVoteBreakdownByAgeGroup,
+  getVoteBreakdownByGender,
+  getVoteBreakdownByEthnicity,
+  getVoteBreakdownByPoliticalParty,
+  getPollVoteBreakdownByAgeGroup,
+  getPollVoteBreakdownByGender,
+  getPollVoteBreakdownByEthnicity,
+  getPollVoteBreakdownByPoliticalParty,
+  getPollParticipantsByDemographic,
+  type DemographicVoteBreakdown,
+} from "@/db/queries/demographic-analytics-queries";
 
 export class PollResultsService {
   /**
@@ -157,20 +168,83 @@ export class PollResultsService {
   }
 
   /**
-   * Get vote distribution by demographics (future feature)
-   * Placeholder for demographic breakdown functionality
+   * Get vote distribution by demographics for a specific statement
+   * Returns vote breakdown by age group, gender, ethnicity, and political party
+   *
+   * @param statementId - ID of the statement to analyze
+   * @param privacyThreshold - Minimum number of votes per category to include (default: 5)
    */
-  static async getDemographicBreakdown(pollId: string, statementId: string): Promise<{
-    byAgeGroup: Record<string, { agree: number; disagree: number; neutral: number }>;
-    byGender: Record<string, { agree: number; disagree: number; neutral: number }>;
-    byEthnicity: Record<string, { agree: number; disagree: number; neutral: number }>;
-    byPoliticalParty: Record<string, { agree: number; disagree: number; neutral: number }>;
+  static async getDemographicBreakdown(
+    statementId: string,
+    privacyThreshold: number = 5
+  ): Promise<{
+    byAgeGroup: DemographicVoteBreakdown[];
+    byGender: DemographicVoteBreakdown[];
+    byEthnicity: DemographicVoteBreakdown[];
+    byPoliticalParty: DemographicVoteBreakdown[];
   }> {
-    // TODO: Implement demographic breakdown
-    // This will require joining votes with user_demographics table
-    // and grouping by demographic categories
+    // Fetch all demographic breakdowns in parallel
+    const [byAgeGroup, byGender, byEthnicity, byPoliticalParty] = await Promise.all([
+      getVoteBreakdownByAgeGroup(statementId),
+      getVoteBreakdownByGender(statementId),
+      getVoteBreakdownByEthnicity(statementId),
+      getVoteBreakdownByPoliticalParty(statementId),
+    ]);
 
-    throw new Error("Demographic breakdown feature not yet implemented");
+    // Apply privacy threshold - filter out categories with too few votes
+    const filterByThreshold = (data: DemographicVoteBreakdown[]) =>
+      data.filter(item => item.totalVotes >= privacyThreshold);
+
+    return {
+      byAgeGroup: filterByThreshold(byAgeGroup),
+      byGender: filterByThreshold(byGender),
+      byEthnicity: filterByThreshold(byEthnicity),
+      byPoliticalParty: filterByThreshold(byPoliticalParty),
+    };
+  }
+
+  /**
+   * Get aggregate vote distribution by demographics for an entire poll
+   * Returns aggregate vote breakdown across all statements in the poll
+   *
+   * @param pollId - ID of the poll to analyze
+   * @param privacyThreshold - Minimum number of votes per category to include (default: 5)
+   */
+  static async getPollDemographicBreakdown(
+    pollId: string,
+    privacyThreshold: number = 5
+  ): Promise<{
+    byAgeGroup: DemographicVoteBreakdown[];
+    byGender: DemographicVoteBreakdown[];
+    byEthnicity: DemographicVoteBreakdown[];
+    byPoliticalParty: DemographicVoteBreakdown[];
+    participants: {
+      byAgeGroup: Array<{ categoryId: number; categoryLabel: string; count: number }>;
+      byGender: Array<{ categoryId: number; categoryLabel: string; count: number }>;
+      byEthnicity: Array<{ categoryId: number; categoryLabel: string; count: number }>;
+      byPoliticalParty: Array<{ categoryId: number; categoryLabel: string; count: number }>;
+    };
+  }> {
+    // Fetch all demographic breakdowns and participant counts in parallel
+    const [byAgeGroup, byGender, byEthnicity, byPoliticalParty, participants] = await Promise.all([
+      getPollVoteBreakdownByAgeGroup(pollId),
+      getPollVoteBreakdownByGender(pollId),
+      getPollVoteBreakdownByEthnicity(pollId),
+      getPollVoteBreakdownByPoliticalParty(pollId),
+      getPollParticipantsByDemographic(pollId),
+    ]);
+
+    // Apply privacy threshold - filter out categories with too few votes
+    const filterByThreshold = (data: DemographicVoteBreakdown[]) =>
+      data.filter(item => item.totalVotes >= privacyThreshold);
+
+    return {
+      byAgeGroup: filterByThreshold(byAgeGroup),
+      byGender: filterByThreshold(byGender),
+      byEthnicity: filterByThreshold(byEthnicity),
+      byPoliticalParty: filterByThreshold(byPoliticalParty),
+      participants,
+    };
   }
 
   /**

@@ -69,6 +69,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
 
   useEffect(() => {
     loadDetailedStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
   useEffect(() => {

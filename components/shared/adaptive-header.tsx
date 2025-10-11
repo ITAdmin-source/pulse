@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
@@ -10,14 +10,13 @@ import { MobileNav } from "./mobile-nav";
 import { useHeader, type HeaderVariant } from "@/contexts/header-context";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { canCreatePoll, isSystemAdmin, hasAnyManagementRole } from "@/lib/utils/permissions";
-import { cn } from "@/lib/utils";
 
 export function AdaptiveHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut } = useClerk();
   const { config } = useHeader();
   const pathname = usePathname();
-  const { user: dbUser, userRoles } = useCurrentUser();
+  const { userRoles } = useCurrentUser();
 
   // Check user permissions
   const userCanCreatePoll = userRoles.length > 0 && canCreatePoll(userRoles);

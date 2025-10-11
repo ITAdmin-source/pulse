@@ -20,16 +20,14 @@ import { getPoliticalPartiesAction } from "@/actions/political-parties-actions";
 
 interface DemographicsModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
   onSubmit: (demographics: DemographicsData) => Promise<void>;
-  onSkip: () => void;
 }
 
 export interface DemographicsData {
-  ageGroupId?: number;
-  genderId?: number;
-  ethnicityId?: number;
-  politicalPartyId?: number;
+  ageGroupId: number;
+  genderId: number;
+  ethnicityId: number;
+  politicalPartyId: number;
 }
 
 interface AgeGroup {
@@ -52,7 +50,7 @@ interface PoliticalParty {
   label: string;
 }
 
-export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: DemographicsModalProps) {
+export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
   const [ageGroupId, setAgeGroupId] = useState<string>();
   const [genderId, setGenderId] = useState<string>();
   const [ethnicityId, setEthnicityId] = useState<string>();
@@ -102,14 +100,20 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
     }
   }, [open]);
 
+  // Check if all fields are filled
+  const isFormComplete = ageGroupId && genderId && ethnicityId && politicalPartyId;
+
   const handleSubmit = async () => {
+    // Ensure all fields are filled before submitting
+    if (!isFormComplete) return;
+
     setIsSubmitting(true);
     try {
       await onSubmit({
-        ageGroupId: ageGroupId ? parseInt(ageGroupId) : undefined,
-        genderId: genderId ? parseInt(genderId) : undefined,
-        ethnicityId: ethnicityId ? parseInt(ethnicityId) : undefined,
-        politicalPartyId: politicalPartyId ? parseInt(politicalPartyId) : undefined,
+        ageGroupId: parseInt(ageGroupId!),
+        genderId: parseInt(genderId!),
+        ethnicityId: parseInt(ethnicityId!),
+        politicalPartyId: parseInt(politicalPartyId!),
       });
     } catch (error) {
       console.error("Error submitting demographics:", error);
@@ -119,12 +123,17 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} modal>
+      <DialogContent
+        className="sm:max-w-md"
+        showCloseButton={false}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>עזור לנו להבין אותך</DialogTitle>
+          <DialogTitle>בוא נכיר אותך</DialogTitle>
           <DialogDescription>
-            כל השדות אופציונליים ועוזרים לנו לספק תובנות טובות יותר.
+          לפני שנתחיל, תוכל/י לענות על 4 שאלות כדי שנדע עם מי יש לנו הכבוד.
           </DialogDescription>
         </DialogHeader>
 
@@ -135,10 +144,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
         ) : (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="age">קבוצת גיל (אופציונלי)</Label>
-              <Select value={ageGroupId} onValueChange={setAgeGroupId}>
+              <Label htmlFor="age">קבוצת גיל <span className="text-red-500">*</span></Label>
+              <Select value={ageGroupId} onValueChange={setAgeGroupId} required>
                 <SelectTrigger id="age">
-                  <SelectValue placeholder="בחר קבוצת גיל" />
+                  <SelectValue placeholder="בחירת קבוצת גיל" />
                 </SelectTrigger>
                 <SelectContent>
                   {ageGroups.map((group) => (
@@ -151,10 +160,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gender">מגדר (אופציונלי)</Label>
-              <Select value={genderId} onValueChange={setGenderId}>
+              <Label htmlFor="gender">מגדר <span className="text-red-500">*</span></Label>
+              <Select value={genderId} onValueChange={setGenderId} required>
                 <SelectTrigger id="gender">
-                  <SelectValue placeholder="בחר מגדר" />
+                  <SelectValue placeholder="בחירת מגדר" />
                 </SelectTrigger>
                 <SelectContent>
                   {genders.map((gender) => (
@@ -167,10 +176,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ethnicity">מוצא אתני (אופציונלי)</Label>
-              <Select value={ethnicityId} onValueChange={setEthnicityId}>
+              <Label htmlFor="ethnicity">מגזר <span className="text-red-500">*</span></Label>
+              <Select value={ethnicityId} onValueChange={setEthnicityId} required>
                 <SelectTrigger id="ethnicity">
-                  <SelectValue placeholder="בחר מוצא אתני" />
+                  <SelectValue placeholder="בחירת מגזר" />
                 </SelectTrigger>
                 <SelectContent>
                   {ethnicities.map((ethnicity) => (
@@ -183,10 +192,10 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="party">מפלגה פוליטית (אופציונלי)</Label>
-              <Select value={politicalPartyId} onValueChange={setPoliticalPartyId}>
+              <Label htmlFor="party">נטייה פוליטית <span className="text-red-500">*</span></Label>
+              <Select value={politicalPartyId} onValueChange={setPoliticalPartyId} required>
                 <SelectTrigger id="party">
-                  <SelectValue placeholder="בחר מפלגה פוליטית" />
+                  <SelectValue placeholder="בחירת נטייה פוליטית" />
                 </SelectTrigger>
                 <SelectContent>
                   {politicalParties.map((party) => (
@@ -200,19 +209,11 @@ export function DemographicsModal({ open, onOpenChange, onSubmit, onSkip }: Demo
           </div>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button
-            variant="ghost"
-            onClick={onSkip}
-            className="w-full sm:w-auto"
-            disabled={isSubmitting}
-          >
-            דלג
-          </Button>
+        <DialogFooter>
           <Button
             onClick={handleSubmit}
-            className="w-full sm:w-auto"
-            disabled={isSubmitting}
+            className="w-full"
+            disabled={!isFormComplete || isSubmitting}
           >
             {isSubmitting ? "שומר..." : "המשך"}
           </Button>

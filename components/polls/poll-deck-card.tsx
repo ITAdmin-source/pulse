@@ -18,28 +18,55 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
     <Link href={`/polls/${slug}`}>
       <motion.div
         className="relative cursor-pointer"
-        whileHover={{ scale: 1.05, y: -5 }}
-        transition={{ duration: 0.2 }}
+        initial="rest"
+        whileHover="hover"
+        animate="rest"
+        variants={{}}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        style={{ perspective: "1000px" }}
       >
-        {/* Card deck depth effect - 3 stacked layers */}
-        <div
-          className={`absolute inset-0 rounded-3xl shadow-sm transform translate-y-3 translate-x-2 opacity-30 pointer-events-none -z-10 ${
-            isActive ? "bg-amber-100" : "bg-gray-300"
-          }`}
+        {/* Back cards in deck - 3 WHITE CARDS with realistic stacking and fan-out on hover */}
+        <motion.div
+          className="absolute inset-0 bg-white rounded-3xl shadow-md border border-gray-200 pointer-events-none z-0"
+          style={{ transformStyle: "preserve-3d" }}
+          variants={{
+            rest: { translateY: 12, translateX: 8, rotate: 2 },
+            hover: { translateY: 16, translateX: 12, rotate: 4 }
+          }}
         />
-        <div
-          className={`absolute inset-0 rounded-3xl shadow-sm transform translate-y-1.5 translate-x-1 opacity-60 pointer-events-none -z-10 ${
-            isActive ? "bg-amber-100" : "bg-gray-300"
-          }`}
+        <motion.div
+          className="absolute inset-0 bg-white rounded-3xl shadow-md border border-gray-200 pointer-events-none z-0"
+          style={{ transformStyle: "preserve-3d" }}
+          variants={{
+            rest: { translateY: 8, translateX: 4, rotate: 1 },
+            hover: { translateY: 10, translateX: 6, rotate: 2 }
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 bg-white rounded-3xl shadow-md border border-gray-200 pointer-events-none z-0"
+          style={{ transformStyle: "preserve-3d" }}
+          variants={{
+            rest: { translateY: 4, translateX: 2, rotate: 0.5 },
+            hover: { translateY: 5, translateX: 3, rotate: 1 }
+          }}
         />
 
         {/* Main Card */}
-        <div
-          className={`relative w-full aspect-[2/3] rounded-3xl shadow-lg border-0 transition-all duration-300 hover:shadow-xl overflow-hidden ${
+        <motion.div
+          className={`relative w-full aspect-[2/3] rounded-3xl shadow-2xl border-0 z-10 ${
             isActive
               ? "bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50"
               : "bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"
           }`}
+          style={{ willChange: "transform" }}
+          variants={{
+            rest: { scale: 1, y: 0 },
+            hover: {
+              scale: 1.08,
+              y: -10,
+              boxShadow: "0 20px 40px rgba(0,0,0,0.25)"
+            }
+          }}
         >
           {/* Status Badge - Top Corner */}
           <div className="absolute top-4 end-4">
@@ -50,7 +77,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
                   : "bg-gray-300 text-gray-700 border border-gray-400"
               }`}
             >
-              {isActive ? "Active" : "Closed"}
+              {isActive ? "פעיל" : "סגור"}
             </span>
           </div>
 
@@ -67,6 +94,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
               className={`text-center text-base md:text-lg font-bold leading-tight line-clamp-5 ${
                 isActive ? "text-gray-900" : "text-gray-600"
               }`}
+              dir="auto"
             >
               {question}
             </p>
@@ -75,7 +103,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
           {/* Closed Ribbon (if closed) - Semi-transparent so question shows through */}
           {!isActive && (
             <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] bg-gray-600/80 text-white px-12 py-1.5 text-sm font-bold tracking-widest shadow-lg pointer-events-none">
-              CLOSED
+              סגור
             </div>
           )}
 
@@ -91,7 +119,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
               backgroundSize: '24px 24px'
             }} />
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     </Link>
   );

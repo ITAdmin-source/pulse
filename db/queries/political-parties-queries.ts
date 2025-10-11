@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db } from "../db";
 import { politicalParties, type PoliticalParty, type NewPoliticalParty } from "../schema/political-parties";
 
@@ -16,7 +16,7 @@ export async function getAllPoliticalParties(): Promise<PoliticalParty[]> {
   return await db
     .select()
     .from(politicalParties)
-    .orderBy(desc(politicalParties.id));
+    .orderBy(asc(politicalParties.id));
 }
 
 export async function createPoliticalParty(data: NewPoliticalParty): Promise<PoliticalParty> {

@@ -13,7 +13,7 @@ export function StatementCounter({
 }: StatementCounterProps) {
   return (
     <p className={className}>
-      הצהרה {currentStatement} מתוך {totalInBatch}
+      קלף {currentStatement} מתוך {totalInBatch}
     </p>
   );
 }

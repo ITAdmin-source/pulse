@@ -1,10 +1,11 @@
 # Pulse - UX/UI Specification Document
 
-**Version:** 1.3
-**Date:** 2025-10-09
+**Version:** 1.4
+**Date:** 2025-10-10
 **Purpose:** Complete frontend specification for designers and developers
 
 **Changelog:**
+- **v1.4 (2025-10-10)**: Card deck terminology finalized - Updated all button labels and terminology to Hebrew infinitives (לשמור/לזרוק/לדלג), replaced "vote/voting" with "choose/choosing" conceptually
 - **v1.3 (2025-10-09)**: Hebrew RTL makeover - Complete Hebrew translation with gender-neutral forms, RTL layout using CSS logical properties, Rubik font, Clerk Hebrew localization, all UI components translated
 - **v1.2 (2025-10-08)**: Card deck metaphor refinements - InsightCard/ResultsCard redesigns, Continuation page achievement metaphor, Closed poll dual-card layout, Poll listing deck cards with emoji
 - **v1.1 (2025-10-02)**: Implemented AdaptiveHeader system - unified context-aware navigation with 5 variants, removed duplicate headers across all pages
@@ -54,11 +55,22 @@ All text uses gender-neutral forms to be inclusive of all genders:
 Sign In → כניסה
 Sign Up → הצטרפות
 Create Poll → יצירת סקר
-Continue Voting → המשך מיון
+Continue Choosing → המשך לבחור
 View Insights → צפייה בתובנות
 Back → חזרה
 Next → הבא
 Finish → סיום
+```
+
+**Card Deck Terminology:**
+```
+Keep (agree) → לשמור
+Throw (disagree) → לזרוק
+Pass (unsure) → לדלג
+Choose → בחר
+Player → שחקן
+Card Choosing Interface → ממשק בחירת קלפים
+Choice Results → תוצאות בחירה
 ```
 
 #### RTL Layout Principles
@@ -113,11 +125,11 @@ Finish → סיום
 
 #### UI Component Examples with Hebrew
 
-**Voting Interface:**
-- Statement card: "שמירה" (Keep) / "השלכה" (Throw)
-- Pass button: "דילוג" (Skip)
+**Card Choosing Interface:**
+- Statement card: "לשמור" (To Keep) / "לזרוק" (To Throw)
+- Pass button: "לדלג" (To Pass)
 - Finish button: "סיום" (Finish)
-- Add card button: "הוספת כרטיס" (Add Card)
+- Add card button: "הוספת קלף" (Add Card)
 
 **Poll Entry Page:**
 - "פתיחת חפיסה" (Open Deck)
@@ -221,7 +233,7 @@ All user-facing elements translated:
 - **Inspiration:** Card deck with Stories progress bar
   - Each statement is a card in the deck
   - Each poll is a complete card deck (shown as deck package on listing page)
-  - Voting is like sorting cards (Keep/Throw/Unsure metaphor)
+  - Choosing cards is like sorting (Keep/Throw/Pass metaphor)
   - Adding statements is like adding cards to the deck
   - Progress bar shows position in the deck (Instagram Stories style)
   - Personal insights and poll results are collectible cards
@@ -510,7 +522,8 @@ All user-facing elements translated:
 
 ##### State A (New User)
 - Click "Start Voting" → Navigate to `/polls/[slug]/vote`
-- Show demographics modal (if first time)
+- Show mandatory demographics modal (if user doesn't already have demographics)
+- Demographics modal blocks access to statements until all 4 fields completed
 
 ##### State B (In Progress)
 - Click "Continue Voting" → Navigate to `/polls/[slug]/vote`
@@ -616,45 +629,60 @@ All user-facing elements translated:
 
 ## Voting Interface
 
-### 5. Demographics Modal (Optional)
-**Displayed before first statement card**
+### 5. Demographics Modal (Mandatory)
+**Displayed before first statement card - Blocks voting until completed**
+
+#### Purpose & Messaging
+**Title:** "Let's get to know you"
+**Description:** "We want to get to know a bit about you before you start playing, so that we can come up with better insights"
 
 #### Layout
 ```
 ┌─────────────────────────┐
-│  Help us understand you │
+│ Let's get to know you   │
+│  (NO X BUTTON)          │
 │                         │
-│  Age Group (optional)   │
+│  We want to get to know │
+│  a bit about you before │
+│  you start playing, so  │
+│  that we can come up    │
+│  with better insights   │
+│                         │
+│  Age Group *            │
 │  [Select ▼]             │
 │                         │
-│  Gender (optional)      │
+│  Gender *               │
 │  [Select ▼]             │
 │                         │
-│  Ethnicity (optional)   │
+│  Ethnicity *            │
 │  [Select ▼]             │
 │                         │
-│  Political Party (opt)  │
+│  Political Party *      │
 │  [Select ▼]             │
 │                         │
-│  [Skip]      [Continue] │
-│                         │
-│                         │
-│                         │
+│       [Continue]        │
+│  (Disabled until all    │
+│   4 fields filled)      │
 └─────────────────────────┘
 ```
 
 #### Components Needed
-- **Demographics Modal**
-  - 4 dropdown selects (Age, Gender, Ethnicity, Political Party)
-  - Skip button (text link)
-  - Continue button (primary)
-  - Close/dismiss X (top right)
+- **Demographics Modal (Non-Dismissible)**
+  - 4 dropdown selects (Age, Gender, Ethnicity, Political Party) - ALL REQUIRED (marked with *)
+  - Continue button (primary, disabled until all fields filled)
+  - NO Skip button
+  - NO Close/dismiss X button
+  - Modal overlay prevents clicking outside
+  - Cannot be dismissed with Escape key
+  - Purpose messaging explaining why demographics are needed
 
 #### Interactions
-- All fields optional
-- Skip → Close modal, create user (if not exists), proceed to voting
-- Continue → Save demographics, create user (if not exists), close modal, proceed to voting
-- Cannot be shown again to same user
+- **All 4 fields mandatory** - Cannot proceed without completing all
+- Continue button disabled (grayed out) until all 4 fields selected
+- **Only shown if user doesn't already have demographics** (from previous poll or this poll)
+- Continue → Save demographics, create user (if not exists), close modal, proceed to first statement card
+- Cannot be shown again to same user (one-time only)
+- Cannot be changed after submission
 - **User Creation Timing:** User is created when demographics are saved OR on first vote (whichever comes first)
 
 ---

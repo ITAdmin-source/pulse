@@ -5,11 +5,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Pulse** is a participatory polling platform inspired by Pol.is that enables democratic engagement through:
-- **Statement-based voting** - Users vote agree/disagree/neutral on statements within polls
-- **User-generated content** - Participants can submit new statements (when enabled)
-- **Personal insights** - AI-generated insights based on individual voting patterns
+- **Card-based choosing** - Users choose cards (Keep/Throw/Pass) from a deck within polls
+- **User-generated content** - Participants can submit new cards (when enabled)
+- **Personal insights** - AI-generated insights based on individual card choices
 - **Flexible participation** - Anonymous (browser session) or authenticated (Clerk) users
 - **Database-managed RBAC** - Fine-grained permissions independent of Clerk roles
+
+### Card Deck Terminology
+
+**Primary UI Language: Hebrew with RTL support**
+
+The application uses a physical card deck metaphor throughout. While the database layer uses technical terms like "statement," "vote," and "poll," the user-facing interface uses card terminology:
+
+| Database/Code (Technical) | User Interface (English) | User Interface (Hebrew) |
+|---------------------------|--------------------------|------------------------|
+| Poll | Deck | חפיסה |
+| Statement | Card | קלף |
+| Vote | Choose | בחר |
+| Voter | Player | שחקן |
+| Agree (vote value: 1) | Keep | לשמור |
+| Disagree (vote value: -1) | Throw | לזרוק |
+| Unsure/Pass (vote value: 0) | Pass | לדלג |
+| Voting Interface | Card Choosing Interface | ממשק בחירת קלפים |
+| Statement Submission | Add Card | הוסף קלף |
+| Vote Distribution | Choice Results | תוצאות בחירה |
+| Personal Insights | Personal Card | קלף אישי |
+| Poll Results | Deck Summary | סיכום חפיסה |
+
+**Implementation Notes:**
+- Database schema uses "votes," "statements," "polls" (unchanged for stability)
+- Service layer and actions use technical terminology internally
+- UI components, page text, and user-facing messages use Hebrew card terminology
+- All UI text defaults to Hebrew with `dir="auto"` for proper RTL rendering
+- Button labels: לשמור (Keep) / לזרוק (Throw) / לדלג (Pass)
 
 ### Additional Documentation
 
@@ -66,11 +94,11 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 ### Key Tables & Relationships
 
 **Core Polling System:**
-- `polls` - Main poll entities with lifecycle (draft→published→closed), control settings, and voting requirements
-- `statements` - Poll statements with approval workflow (null=pending, true=approved, false=rejected then deleted)
-- `votes` - User votes on statements with unique constraint per (user_id, statement_id), votes are immutable (no updates)
+- `polls` - Main poll entities (decks in UI) with lifecycle (draft→published→closed), control settings, and choosing requirements
+- `statements` - Poll statements (cards in UI) with approval workflow (null=pending, true=approved, false=rejected then deleted)
+- `votes` - User choices on statements (database term) with unique constraint per (user_id, statement_id), choices are immutable (no updates)
 - `user_poll_insights` - AI-generated insights per user/poll (only latest version kept)
-- `poll_results_summaries` - Cached AI-generated poll summaries with participant/vote counts (24-hour cache)
+- `poll_results_summaries` - Cached AI-generated poll summaries with participant/choice counts (24-hour cache)
 
 **User System:**
 - `users` - Core user data supporting both anonymous (session_id) and authenticated (clerk_user_id) users
@@ -233,7 +261,7 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - **Stories-style progress bar** - Shows position in the deck (Instagram Stories style)
 - **User creation timing** - User record created on demographics save OR first vote (whichever first)
 - **Statement batching** - Shows 10 statements at a time with continuation page for larger polls
-- **Demographics** - One-time optional prompt before first card, never re-requested
+- **Demographics** - Mandatory one-time prompt before first card (all 4 fields required), never re-requested, only shown if user doesn't already have demographics
 - **Closed poll access** - Both voters and non-voters can view results; only voters see personal insights
 
 ## Technology Stack

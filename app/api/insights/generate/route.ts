@@ -113,6 +113,29 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Fetch user demographics (including gender) if available
+    const { getUserDemographicsById } = await import("@/db/queries/user-demographics-queries");
+    const demographics = await getUserDemographicsById(effectiveUserId);
+    console.log("[API] User demographics:", demographics);
+
+    let genderLabel: string | undefined;
+    if (demographics?.genderId) {
+      const { db } = await import("@/db/db");
+      const { genders } = await import("@/db/schema/genders");
+      const { eq } = await import("drizzle-orm");
+
+      const genderResult = await db
+        .select()
+        .from(genders)
+        .where(eq(genders.id, demographics.genderId))
+        .limit(1);
+
+      genderLabel = genderResult[0]?.label;
+      console.log("[API] Gender lookup - genderId:", demographics.genderId, "label:", genderLabel);
+    } else {
+      console.log("[API] No gender data found for user");
+    }
+
     // Build request
     const insightRequest: InsightGenerationRequest = {
       userId: effectiveUserId,
@@ -121,7 +144,10 @@ export async function POST(request: NextRequest) {
       pollDescription: poll.description,
       statements: statementsWithVotes,
       voteStatistics,
+      demographics: genderLabel ? { gender: genderLabel } : undefined,
     };
+
+    console.log("[API] Insight request demographics:", insightRequest.demographics);
 
     // Generate insight using OpenAI
     let result;
