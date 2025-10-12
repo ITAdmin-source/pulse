@@ -3,14 +3,11 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { getStatementBatchAction } from "@/actions/votes-actions";
 
 interface ContinuationPageProps {
   statementsVoted: number;
-  agreeCount: number;
-  disagreeCount: number;
-  unsureCount: number;
   minStatementsRequired: number;
   hasMoreStatements: boolean;
   onContinue: () => void;
@@ -24,9 +21,6 @@ interface ContinuationPageProps {
 
 export function ContinuationPage({
   statementsVoted,
-  agreeCount,
-  disagreeCount,
-  unsureCount,
   minStatementsRequired,
   hasMoreStatements,
   onContinue,
@@ -75,56 +69,26 @@ export function ContinuationPage({
           className="max-w-md w-full"
         >
           {/* Celebration Card */}
-          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-6">
+          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-8">
             {/* Trophy Icon */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-6">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-full p-4 shadow-lg"
               >
-                <Trophy className="h-10 w-10 text-white" />
+                <Trophy className="h-12 w-12 text-white" />
               </motion.div>
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
+            <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
               החפיסה הושלמה! 🎉
             </h2>
-            <p className="text-center text-gray-600 text-sm mb-6">
+            <p className="text-center text-gray-600 mb-8">
               בחרת את כל {statementsVoted} הקלפים
             </p>
-
-            {/* Final Tally */}
-            <div className="bg-white rounded-xl p-4 mb-6 border border-gray-200">
-              <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
-                סיכום סופי
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-gray-700 text-sm font-medium">לשמור</span>
-                  </div>
-                  <span className="text-xl font-bold text-green-600">{agreeCount}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-red-600" />
-                    <span className="text-gray-700 text-sm font-medium">לזרוק</span>
-                  </div>
-                  <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Minus className="h-4 w-4 text-gray-600" />
-                    <span className="text-gray-700 text-sm font-medium">לדלג</span>
-                  </div>
-                  <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
-                </div>
-              </div>
-            </div>
 
             {/* Call to Action */}
             <Button onClick={onFinish} className="w-full h-12" size="lg">
@@ -149,66 +113,36 @@ export function ContinuationPage({
         }}
         className="max-w-md w-full"
       >
-        {/* Progress Card - Same amber theme as voting cards */}
-        <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-6">
+        {/* Progress Card */}
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-8">
           {/* Milestone Badge */}
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-6">
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-full p-4 shadow-lg"
             >
-              <Trophy className="h-10 w-10 text-white" />
+              <Trophy className="h-12 w-12 text-white" />
             </motion.div>
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-1">
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
             אבן דרך!
           </h2>
-          <p className="text-center text-gray-600 text-sm mb-6">
+          <p className="text-center text-gray-600 mb-6">
             {statementsVoted} {statementsVoted === 1 ? "קלף נבחר" : "קלפים נבחרו"}
           </p>
 
-          {/* Score Tally */}
-          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-            <h3 className="text-xs font-semibold text-gray-700 text-center mb-3 uppercase tracking-wide">
-              הסיכום שלך
-            </h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-700 text-sm font-medium">לשמור</span>
-                </div>
-                <span className="text-xl font-bold text-green-600">{agreeCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-gray-700 text-sm font-medium">לזרוק</span>
-                </div>
-                <span className="text-xl font-bold text-red-600">{disagreeCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Minus className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-700 text-sm font-medium">לדלג</span>
-                </div>
-                <span className="text-xl font-bold text-gray-600">{unsureCount}</span>
-              </div>
-            </div>
-          </div>
-
           {/* Status Message */}
-          <div className="text-center text-xs text-gray-600 mb-4">
+          <div className="text-center text-sm text-gray-600 mb-6">
             <p className="font-medium">יש עוד קלפים לבחור</p>
           </div>
 
           {/* Error State */}
           {error && onRetry && (
-            <div className="text-center space-y-2 mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
+            <div className="text-center space-y-2 mb-6 p-3 bg-red-50 rounded-lg border border-red-200">
               <p className="text-xs text-red-600 font-medium">{error}</p>
               <Button onClick={onRetry} variant="outline" size="sm" className="w-full h-9">
                 נסה לטעון את הקבוצה הבאה

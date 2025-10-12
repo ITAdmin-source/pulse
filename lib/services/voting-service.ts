@@ -2,7 +2,7 @@ import { eq, and, count, notInArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
-import { createVoteSchema, updateVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/lib/validations/vote";
+import { createVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/lib/validations/vote";
 import { VoteValue, calculateVoteDistribution, getMinimumVotingThreshold } from "@/lib/utils/voting";
 import { PollService } from "./poll-service";
 import { UserService } from "./user-service";
@@ -126,7 +126,7 @@ export class VotingService {
     return vote;
   }
 
-  static async updateVote(_data: z.infer<typeof updateVoteSchema>): Promise<Vote> {
+  static async updateVote(): Promise<Vote> {
     // Votes are immutable - updates are not allowed
     throw new Error(
       "Vote updates are not allowed - votes are final and irreversible"

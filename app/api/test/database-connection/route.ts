@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/db/db";
 import { users } from "@/db/schema";
 import { UserService } from "@/lib/services/user-service";
 import { sql } from "drizzle-orm";
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     console.log("=== DATABASE CONNECTION TEST ===");
 

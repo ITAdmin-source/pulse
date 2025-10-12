@@ -1036,10 +1036,10 @@ export default function VotingPage({ params }: VotingPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="fixed inset-0 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 pt-[var(--header-height,74px)]">
       {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
-        <div className="w-full max-w-md space-y-6">
+      <main className="h-full overflow-hidden flex items-start justify-center px-4 py-4">
+        <div className="w-full max-w-md">
           <AnimatePresence mode="popLayout">
             {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard

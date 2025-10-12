@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,7 +9,6 @@ import { HeatmapDashboard } from "@/components/analytics/heatmap-dashboard";
 import { getAllPollsForAdminAction } from "@/actions/admin-actions";
 import { ArrowLeft, BarChart3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface Poll {
   id: string;
@@ -19,16 +18,11 @@ interface Poll {
 }
 
 export default function AdminAnalyticsPage() {
-  const { user } = useCurrentUser();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [selectedPollId, setSelectedPollId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPolls();
-  }, []);
-
-  const loadPolls = async () => {
+  const loadPolls = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getAllPollsForAdminAction();
@@ -49,7 +43,11 @@ export default function AdminAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedPollId]);
+
+  useEffect(() => {
+    loadPolls();
+  }, [loadPolls]);
 
   const selectedPoll = polls.find(p => p.id === selectedPollId);
 
