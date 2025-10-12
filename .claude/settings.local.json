@@ -22,7 +22,8 @@
       "Bash(nslookup:*)",
       "Bash(ping:*)",
       "Bash(node:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tsx:*)"
     ],
     "deny": [],
     "ask": [

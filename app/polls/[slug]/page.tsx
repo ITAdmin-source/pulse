@@ -4,12 +4,13 @@ import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
-import { getVotingProgressAction } from "@/actions/votes-actions";
+import { getVotingProgressAction, getStatementBatchAction } from "@/actions/votes-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
 import { getUserRolesByUserIdAction } from "@/actions/user-roles-actions";
 import { UserService } from "@/lib/services/user-service";
 import { ClickableCardDeck } from "@/components/polls/clickable-card-deck";
 import { canManagePoll as checkCanManagePoll } from "@/lib/utils/permissions";
+import { PrefetchStatements } from "@/components/polls/prefetch-statements";
 
 interface PollEntryPageProps {
   params: Promise<{
@@ -117,6 +118,11 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Prefetch first batch of statements in background for faster voting page load */}
+      {dbUser && (isNewUser || isInProgress) && (
+        <PrefetchStatements pollId={poll.id} userId={dbUser.id} batchNumber={1} />
+      )}
+
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-72px)]">
         <div className="max-w-2xl w-full space-y-8">

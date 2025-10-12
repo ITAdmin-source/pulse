@@ -403,6 +403,7 @@ export class VotingService {
 
   /**
    * Get user's voting progress including batching information
+   * OPTIMIZED: Single query instead of 3 separate queries
    */
   static async getVotingProgress(
     pollId: string,
@@ -414,22 +415,42 @@ export class VotingService {
     hasMoreStatements: boolean;
     thresholdReached: boolean;
   }> {
-    // Get user's voting progress
-    const progress = await this.getUserVotingProgress({ pollId, userId });
+    // Single optimized query that gets all needed data
+    const result = await db
+      .select({
+        totalStatements: count(statements.id),
+        votedStatements: count(votes.id),
+      })
+      .from(statements)
+      .leftJoin(
+        votes,
+        and(
+          eq(votes.statementId, statements.id),
+          eq(votes.userId, userId)
+        )
+      )
+      .where(and(
+        eq(statements.pollId, pollId),
+        eq(statements.approved, true)
+      ));
 
-    // Calculate current batch (1-indexed)
-    const currentBatch = Math.ceil(progress.votedStatements / 10) || 1;
+    const totalStatements = result[0]?.totalStatements || 0;
+    const votedStatements = result[0]?.votedStatements || 0;
+
+    // Calculate threshold and progress
+    const threshold = getMinimumVotingThreshold(totalStatements);
+    const thresholdReached = votedStatements >= threshold;
+    const currentBatch = Math.ceil(votedStatements / 10) || 1;
 
     // Check if there are more unvoted statements
-    const nextBatch = await this.getStatementBatch(pollId, userId, currentBatch + 1);
-    const hasMoreStatements = nextBatch.length > 0;
+    const hasMoreStatements = votedStatements < totalStatements;
 
     return {
-      totalVoted: progress.votedStatements,
-      totalStatements: progress.totalApprovedStatements,
+      totalVoted: votedStatements,
+      totalStatements,
       currentBatch,
       hasMoreStatements,
-      thresholdReached: progress.hasReachedThreshold,
+      thresholdReached,
     };
   }
 }

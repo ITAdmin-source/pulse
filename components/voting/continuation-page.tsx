@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { getStatementBatchAction } from "@/actions/votes-actions";
 
 interface ContinuationPageProps {
   statementsVoted: number;
@@ -15,6 +17,9 @@ interface ContinuationPageProps {
   onFinish: () => void;
   error?: string | null;
   onRetry?: () => void;
+  pollId?: string;
+  userId?: string;
+  currentBatch?: number;
 }
 
 export function ContinuationPage({
@@ -28,9 +33,32 @@ export function ContinuationPage({
   onFinish,
   error,
   onRetry,
+  pollId,
+  userId,
+  currentBatch,
 }: ContinuationPageProps) {
   const canFinish = statementsVoted >= minStatementsRequired;
   const remainingVotes = minStatementsRequired - statementsVoted;
+
+  // Prefetch next batch in background when continuation page loads
+  useEffect(() => {
+    if (hasMoreStatements && pollId && userId && currentBatch) {
+      const prefetchNextBatch = async () => {
+        try {
+          const nextBatchNumber = currentBatch + 1;
+          await getStatementBatchAction(pollId, userId, nextBatchNumber);
+          // Data is now cached and will load instantly when user clicks "continue"
+        } catch (error) {
+          // Silent fail - prefetch is optimization, not critical
+          console.debug("Prefetch next batch failed:", error);
+        }
+      };
+
+      // Small delay to avoid blocking animation
+      const timer = setTimeout(prefetchNextBatch, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [hasMoreStatements, pollId, userId, currentBatch]);
 
   // Scenario 1: No more statements - Deck Complete (Celebration)
   if (!hasMoreStatements) {

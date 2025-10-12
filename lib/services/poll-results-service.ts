@@ -14,6 +14,9 @@ import {
   getPollVoteBreakdownByPoliticalParty,
   getPollParticipantsByDemographic,
   type DemographicVoteBreakdown,
+  getHeatmapDataForAttribute,
+  type DemographicAttribute,
+  type HeatmapStatementData,
 } from "@/db/queries/demographic-analytics-queries";
 
 export class PollResultsService {
@@ -313,5 +316,62 @@ export class PollResultsService {
     await db
       .delete(pollResultsSummaries)
       .where(eq(pollResultsSummaries.pollId, pollId));
+  }
+
+  /**
+   * HEATMAP METHODS
+   */
+
+  // Simple in-memory cache for heatmap data (5-minute TTL)
+  private static heatmapCache = new Map<string, { data: HeatmapStatementData[]; timestamp: number }>();
+  private static readonly HEATMAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Get heatmap data for a poll by demographic attribute
+   * Results are cached for 5 minutes
+   */
+  static async getHeatmapData(
+    pollId: string,
+    attribute: DemographicAttribute,
+    privacyThreshold: number = 3
+  ): Promise<HeatmapStatementData[]> {
+    const cacheKey = `${pollId}:${attribute}:${privacyThreshold}`;
+
+    // Check cache
+    const cached = this.heatmapCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.HEATMAP_CACHE_TTL) {
+      return cached.data;
+    }
+
+    // Fetch fresh data
+    const data = await getHeatmapDataForAttribute(pollId, attribute, privacyThreshold);
+
+    // Store in cache
+    this.heatmapCache.set(cacheKey, { data, timestamp: Date.now() });
+
+    return data;
+  }
+
+  /**
+   * Invalidate heatmap cache for a specific poll
+   * Call this when new votes are submitted
+   */
+  static invalidateHeatmapCache(pollId: string): void {
+    // Remove all cache entries for this poll
+    const keysToDelete: string[] = [];
+    for (const key of this.heatmapCache.keys()) {
+      if (key.startsWith(`${pollId}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => this.heatmapCache.delete(key));
+  }
+
+  /**
+   * Clear entire heatmap cache
+   * Useful for testing or manual cache refresh
+   */
+  static clearHeatmapCache(): void {
+    this.heatmapCache.clear();
   }
 }

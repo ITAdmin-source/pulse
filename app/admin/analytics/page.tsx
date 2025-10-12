@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DemographicAnalyticsDashboard } from "@/components/analytics/demographic-analytics-dashboard";
+import { HeatmapDashboard } from "@/components/analytics/heatmap-dashboard";
 import { getAllPollsForAdminAction } from "@/actions/admin-actions";
 import { ArrowLeft, BarChart3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -133,15 +133,14 @@ export default function AdminAnalyticsPage() {
             </CardContent>
           </Card>
 
-          {/* Demographic Analytics Dashboard */}
-          {selectedPollId && user && (
-            <DemographicAnalyticsDashboard
+          {/* Demographic Heatmap Dashboard */}
+          {selectedPollId && (
+            <HeatmapDashboard
               pollId={selectedPollId}
-              userId={user.id}
-              showExport={true}
-              privacyThreshold={3}
-              title="Detailed Demographic Analytics"
-              description="In-depth demographic breakdown with export capabilities (Admin View)"
+              title="מפת חום דמוגרפית - תצוגת מנהל"
+              description="התפלגות הסכמה מפורטת להצהרות לפי קבוצות דמוגרפיות"
+              defaultAttribute="gender"
+              autoRefreshInterval={30000}
             />
           )}
 

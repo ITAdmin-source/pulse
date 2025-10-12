@@ -12,7 +12,6 @@ import { useHeader } from "@/contexts/header-context";
 import {
   StatementCard,
   ProgressBar,
-  VoteResultOverlay,
   ContinuationPage,
   StatementSubmissionModal,
 } from "@/components/voting";
@@ -41,6 +40,15 @@ interface Statement {
   };
 }
 
+// Cache for vote distributions (optimistic updates)
+const voteDistributionCache = new Map<string, {
+  agreeCount: number;
+  disagreeCount: number;
+  unsureCount: number;
+  totalVotes: number;
+  timestamp: number;
+}>();
+
 interface VotingPageProps {
   params: Promise<{
     slug: string;
@@ -48,6 +56,62 @@ interface VotingPageProps {
 }
 
 const BATCH_SIZE = 10;
+
+/**
+ * Calculate optimistic vote distribution by adding user's vote to cached stats
+ * This avoids expensive DB query for instant feedback
+ */
+function calculateOptimisticDistribution(
+  statementId: string,
+  userVote: 1 | 0 | -1
+): {
+  agreeCount: number;
+  disagreeCount: number;
+  unsureCount: number;
+  totalVotes: number;
+  agreePercent: number;
+  disagreePercent: number;
+  unsurePercent: number;
+} {
+  // Get cached stats or start from zero
+  const cached = voteDistributionCache.get(statementId);
+  const baseStats = cached || {
+    agreeCount: 0,
+    disagreeCount: 0,
+    unsureCount: 0,
+    totalVotes: 0,
+  };
+
+  // Add user's vote optimistically
+  const agreeCount = baseStats.agreeCount + (userVote === 1 ? 1 : 0);
+  const disagreeCount = baseStats.disagreeCount + (userVote === -1 ? 1 : 0);
+  const unsureCount = baseStats.unsureCount + (userVote === 0 ? 1 : 0);
+  const totalVotes = baseStats.totalVotes + 1;
+
+  // Calculate percentages
+  const agreePercent = totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 0;
+  const disagreePercent = totalVotes > 0 ? Math.round((disagreeCount / totalVotes) * 100) : 0;
+  const unsurePercent = totalVotes > 0 ? Math.round((unsureCount / totalVotes) * 100) : 0;
+
+  // Update cache with new stats
+  voteDistributionCache.set(statementId, {
+    agreeCount,
+    disagreeCount,
+    unsureCount,
+    totalVotes,
+    timestamp: Date.now(),
+  });
+
+  return {
+    agreeCount,
+    disagreeCount,
+    unsureCount,
+    totalVotes,
+    agreePercent,
+    disagreePercent,
+    unsurePercent,
+  };
+}
 
 interface Poll {
   id: string;
@@ -89,12 +153,15 @@ export default function VotingPage({ params }: VotingPageProps) {
   // Initialization flag - prevents loadData from re-running during voting
   const hasInitializedRef = useRef(false);
 
-  // Voting state machine - single source of truth for voting flow
-  type VotingPhase = 'viewing' | 'results' | 'continuation' | 'finished';
+  // Voting state machine - simplified (no separate results phase)
+  type VotingPhase = 'viewing' | 'continuation' | 'finished';
   const [votingState, _setVotingState] = useState<{
     phase: VotingPhase;
     currentStatement: Statement | null;
-    votedStatement?: Statement;
+    // Current statement's results (shown inline on card after vote)
+    showResults?: boolean;
+    shouldExit?: boolean; // Control exit animation timing
+    userVote?: -1 | 0 | 1;
     voteDistribution?: {
       agreeCount: number;
       disagreeCount: number;
@@ -107,6 +174,8 @@ export default function VotingPage({ params }: VotingPageProps) {
   }>({
     phase: 'viewing',
     currentStatement: null,
+    showResults: false,
+    shouldExit: false,
   });
 
   // Wrapped setState for clean state management
@@ -114,6 +183,32 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   // Auto-advance disabled - users must click "Next" button on results overlay
   // This provides better UX control and avoids timing issues
+
+  // Prefetch vote distribution when statement appears (for optimistic updates)
+  useEffect(() => {
+    if (votingState.phase === 'viewing' && votingState.currentStatement) {
+      const statementId = votingState.currentStatement.id;
+
+      // Check if already cached
+      if (!voteDistributionCache.has(statementId)) {
+        // Prefetch in background while user reads the card
+        // By the time they vote (~2-4 seconds), distribution will be cached
+        getStatementVoteDistributionAction(statementId).then((result) => {
+          if (result.success && result.data) {
+            voteDistributionCache.set(statementId, {
+              agreeCount: result.data.agreeCount,
+              disagreeCount: result.data.disagreeCount,
+              unsureCount: result.data.unsureCount,
+              totalVotes: result.data.totalVotes,
+              timestamp: Date.now(),
+            });
+          }
+        }).catch(() => {
+          // Silent fail - cache will start from zero if needed
+        });
+      }
+    }
+  }, [votingState.phase, votingState.currentStatement]);
 
   // Preload next batch when user reaches 8th statement of current batch
   useEffect(() => {
@@ -230,6 +325,7 @@ export default function VotingPage({ params }: VotingPageProps) {
               setVotingState({
                 phase: 'viewing',
                 currentStatement: firstStatement,
+                showResults: false,
               });
             } else {
               // No more unvoted statements - user has completed voting
@@ -269,6 +365,7 @@ export default function VotingPage({ params }: VotingPageProps) {
             setVotingState({
               phase: 'viewing',
               currentStatement: manager.getNextStatement(),
+              showResults: false,
             });
           }
         }
@@ -452,13 +549,13 @@ export default function VotingPage({ params }: VotingPageProps) {
         <ProgressBar
           totalSegments={progress.statementsInCurrentBatch}
           currentSegment={progress.positionInBatch}
-          showingResults={votingState.phase === 'results'}
+          showingResults={votingState.showResults || false}
         />
       ),
     });
 
     return () => resetConfig();
-  }, [poll, statementManager, isSavingVote, votingState.phase, setConfig, resetConfig, handleFinish]);
+  }, [poll, statementManager, isSavingVote, votingState.phase, votingState.showResults, setConfig, resetConfig, handleFinish]);
 
   const handleVote = async (value: 1 | 0 | -1) => {
     // Check ref-based lock FIRST and set immediately (atomic operation)
@@ -551,18 +648,56 @@ export default function VotingPage({ params }: VotingPageProps) {
           // Update StatementManager
           statementManager.recordVote(votingState.currentStatement.id, value);
 
-          // Fetch actual vote distribution for this statement
-          const distributionResult = await getStatementVoteDistributionAction(votingState.currentStatement.id);
+          // Use optimistic distribution calculation (instant, no DB query)
+          const optimisticDistribution = calculateOptimisticDistribution(
+            votingState.currentStatement.id,
+            value
+          );
 
-          // Transition to results phase
+          // Capture statement ID for async callback
+          const statementIdForCache = votingState.currentStatement.id;
+
+          // Show inline results on current card (no phase transition)
           setVotingState({
-            phase: 'results',
+            phase: 'viewing',
             currentStatement: votingState.currentStatement,
-            votedStatement: votingState.currentStatement,
-            voteDistribution: distributionResult.success && distributionResult.data
-              ? distributionResult.data
-              : undefined,
+            showResults: true,
+            userVote: value,
+            voteDistribution: optimisticDistribution,
           });
+
+          // Background fetch actual distribution to update cache for next user
+          // (fire-and-forget, doesn't block UI)
+          getStatementVoteDistributionAction(statementIdForCache).then(
+            (distributionResult) => {
+              if (distributionResult.success && distributionResult.data) {
+                // Update cache with real data for next time
+                voteDistributionCache.set(statementIdForCache, {
+                  agreeCount: distributionResult.data.agreeCount,
+                  disagreeCount: distributionResult.data.disagreeCount,
+                  unsureCount: distributionResult.data.unsureCount,
+                  totalVotes: distributionResult.data.totalVotes,
+                  timestamp: Date.now(),
+                });
+              }
+            }
+          ).catch(() => {
+            // Silent fail - cache update is not critical
+          });
+
+          // Show results for 2.5 seconds, then trigger exit animation (500ms), then advance
+          setTimeout(() => {
+            // Trigger exit animation
+            setVotingState(prev => ({
+              ...prev,
+              shouldExit: true,
+            }));
+          }, 2500);
+
+          // Advance to next card after exit animation completes
+          setTimeout(() => {
+            handleManualNext();
+          }, 3000);
         } else {
           // Server returned error - check error type
           if (result.error?.includes("Statement not found")) {
@@ -593,13 +728,27 @@ export default function VotingPage({ params }: VotingPageProps) {
             statementManager.recordVote(votingState.currentStatement.id, value);
             toast.warning("הצבעה נשמרה במצב לא מקוון - תסונכרן כשהחיבור ישוחזר");
 
-            // Continue to results phase with offline indicator
+            // Show inline results with offline indicator
             setVotingState({
-              phase: 'results',
+              phase: 'viewing',
               currentStatement: votingState.currentStatement,
-              votedStatement: votingState.currentStatement,
+              showResults: true,
+              userVote: value,
               voteDistribution: undefined, // No distribution available offline
             });
+
+            // Show results for 2.5 seconds, then trigger exit animation (500ms), then advance
+            setTimeout(() => {
+              setVotingState(prev => ({
+                ...prev,
+                shouldExit: true,
+              }));
+            }, 2500);
+
+            // Advance to next card after exit animation completes
+            setTimeout(() => {
+              handleManualNext();
+            }, 3000);
           } else {
             // Other error - show retry option
             const retry = confirm(`נכשל לשמור הצבעה: ${result.error || "שגיאה לא ידועה"}.\n\nהאם תרצה לנסות שוב?`);
@@ -627,13 +776,27 @@ export default function VotingPage({ params }: VotingPageProps) {
         statementManager.recordVote(votingState.currentStatement.id, value);
         toast.warning("החיבור אבד - הצבעה נשמרה במצב לא מקוון ותסונכרן אוטומטית");
 
-        // Continue to results phase with offline indicator
+        // Show inline results with offline indicator
         setVotingState({
-          phase: 'results',
+          phase: 'viewing',
           currentStatement: votingState.currentStatement,
-          votedStatement: votingState.currentStatement,
+          showResults: true,
+          userVote: value,
           voteDistribution: undefined, // No distribution available offline
         });
+
+        // Show results for 2.5 seconds, then trigger exit animation (500ms), then advance
+        setTimeout(() => {
+          setVotingState(prev => ({
+            ...prev,
+            shouldExit: true,
+          }));
+        }, 2500);
+
+        // Advance to next card after exit animation completes
+        setTimeout(() => {
+          handleManualNext();
+        }, 3000);
       }
     } catch (error) {
       console.error("Error saving vote:", error);
@@ -688,12 +851,14 @@ export default function VotingPage({ params }: VotingPageProps) {
         setVotingState({
           phase: 'viewing',
           currentStatement: nextStmt,
+          showResults: false,
         });
       } else {
         // No next statement but batch not complete - go to continuation
         setVotingState({
           phase: 'continuation',
           currentStatement: null,
+          showResults: false,
         });
       }
     }
@@ -720,6 +885,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         setVotingState({
           phase: 'viewing',
           currentStatement: nextStmt,
+          showResults: false,
         });
       } else {
         // No more statements - finish voting
@@ -796,6 +962,7 @@ export default function VotingPage({ params }: VotingPageProps) {
           setVotingState({
             phase: 'viewing',
             currentStatement: manager.getNextStatement(),
+            showResults: false,
           });
         }
       }
@@ -849,6 +1016,9 @@ export default function VotingPage({ params }: VotingPageProps) {
         onFinish={handleFinish}
         error={batchLoadError}
         onRetry={batchLoadError ? handleContinue : undefined}
+        pollId={poll?.id}
+        userId={userId || undefined}
+        currentBatch={statementManager?.getCurrentBatch()}
       />
     );
   }
@@ -880,20 +1050,12 @@ export default function VotingPage({ params }: VotingPageProps) {
                 passLabel={poll?.unsureButtonLabel || "לדלג"}
                 onVote={handleVote}
                 disabled={isSavingVote}
-              />
-            ) : votingState.phase === 'results' && votingState.votedStatement && votingState.voteDistribution ? (
-              <VoteResultOverlay
-                key={`results-${votingState.votedStatement.id}`}
-                statement={votingState.votedStatement.text}
-                userVote={statementManager?.getUserVote(votingState.votedStatement.id) || 0}
-                agreePercent={votingState.voteDistribution.agreePercent}
-                disagreePercent={votingState.voteDistribution.disagreePercent}
-                unsurePercent={votingState.voteDistribution.unsurePercent}
-                totalVotes={votingState.voteDistribution.totalVotes}
-                agreeLabel={poll?.supportButtonLabel || "לשמור"}
-                disagreeLabel={poll?.opposeButtonLabel || "לזרוק"}
-                unsureLabel={poll?.unsureButtonLabel || "לדלג"}
-                onNext={handleManualNext}
+                showResults={votingState.showResults}
+                shouldExit={votingState.shouldExit}
+                userVote={votingState.userVote}
+                agreePercent={votingState.voteDistribution?.agreePercent}
+                disagreePercent={votingState.voteDistribution?.disagreePercent}
+                unsurePercent={votingState.voteDistribution?.unsurePercent}
               />
             ) : (
               // Transitioning between states

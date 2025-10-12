@@ -789,72 +789,86 @@ All user-facing elements translated:
 └─────────────────────────┘
 ```
 
-**Card Flip Animation:**
-- 600ms 3D rotation on Y-axis (0° → 180°)
-- Front side (statement) hidden after 90°
-- Back side (results) appears from 90° → 180°
-- Same amber gradient background as statement card
-- Results animate in after flip completes:
-  - Vote indicator scales + fades in (300ms)
-  - Bars fill sequentially with staggered delays (500ms each, 200ms stagger)
-- Next button fades in after animations (1.2s delay)
-- No auto-advance - user must click Next
+**Inline Results Animation:**
+- Statement card remains in place (no flip)
+- Vote buttons fade out (200ms)
+- Tri-colored results bar appears at bottom of card
+- Bar segments animate width from 0% with staggered delays
+- Results display for 3 seconds total
+- Exit animation triggers at 2.5 seconds based on user's vote direction
+- Auto-advance to next card at 3 seconds
 
 #### States
 
 ##### Pre-Vote State (Clean Card)
 - Statement card visible
-- Agree/Disagree buttons enabled
-- Pass/Unsure button enabled
+- Keep/Throw buttons enabled (on card)
+- Pass button enabled (below card)
 - No vote distribution shown
 - Progress bar shows current position
 
-##### Post-Vote State (Results Display)
-- Statement card flips to reveal results (3D card flip animation)
-- Results appear on back of card (same amber gradient)
-- User's vote highlighted with icon
-- Vote distribution appears with staggered animations:
-  - Percentages (X% agree, Y% disagree, Z% neutral)
-  - Horizontal bars (animated fill, 500ms each with 200ms stagger)
-  - Total vote count
-  - User's vote indicator
-- Next button fades in below card
-- **Manual advance only** - no auto-advance
-- **Result card is also clickable** - tapping card advances to next (discoverable interaction)
+##### Post-Vote State (Inline Results Display)
+- Statement card remains in place (no flip)
+- Vote buttons disappear (200ms fade out)
+- **Tri-colored results bar appears** at bottom of card:
+  - Single unified bar with three colored segments:
+    - **Green segment** (Keep/לשמור votes)
+    - **Red segment** (Throw/לזרוק votes)
+    - **Gray segment** (Pass/לדלג votes)
+  - Each segment animates width from 0% with staggered delays:
+    - Green: 100ms delay
+    - Red: 200ms delay
+    - Gray: 300ms delay
+  - Percentages ≥15% shown inside segments (white text)
+  - Percentages <15% shown in labels below bar
+  - User's vote segment shows icon (✓ for Keep, ✗ for Throw, − for Pass)
+- **Automatic timing:**
+  - Results display for 3 seconds total
+  - At 2.5 seconds: Exit animation triggers
+  - At 3.0 seconds: Next card loads
+- **No manual Next button** - fully automated flow
 
-##### Transition State (Card-to-Card Animation)
-**Slide Away + Slide In Animation:**
-- **Results card exit:**
-  - Slides left (x: -400px) with fade out
-  - Duration: 400ms
-  - Easing: ease-in-out
+##### Transition State (Exit Animation + Card Entry)
+**Vote-Based Exit Animation (500ms):**
+- **Keep vote exit:**
+  - Card slides RIGHT and up (x: 400px, y: -100px)
+  - Slight rotation (15°, positive direction in RTL)
+  - Opacity fades to 0
+  - Duration: 500ms
+- **Throw vote exit:**
+  - Card slides LEFT and down (x: -400px, y: 150px)
+  - Rotation (−25°, thrown away motion)
+  - Opacity fades to 0
+  - Duration: 400ms (faster, more abrupt)
+- **Pass vote exit:**
+  - Card slides straight DOWN (y: 400px)
+  - No rotation (neutral motion)
+  - Opacity fades to 0
+  - Duration: 450ms
 - **Next statement card enter:**
-  - Slides in from right (x: 400px)
-  - Scale effect: 0.95 → 1.0 for depth
-  - Duration: 400ms
-  - Easing: ease-in-out
-- **Buttons fade separately:**
-  - Vote buttons fade out/in (not sliding)
-  - Pass button fades out/in (not sliding)
-  - Next button fades out/in (not sliding)
-  - Duration: 300ms
-  - Keeps UI stable while cards transition
-- **Progress bar updates** after animation completes
+  - Slides in from deck position behind (x: 50px, y: 60px, rotate: 5°, scale: 0.9)
+  - Animates to center position (x: 0, y: 0, rotate: 0, scale: 1.0)
+  - Spring animation with brief delay (200ms)
+  - Duration: 600ms
+  - Vote buttons appear 800ms after card settles
+- **Progress bar updates** as new card appears
 - Clean slate for next statement
 
 #### Interactions
 
 1. **Voting Flow**
-   - Tap Agree/Disagree/Pass → Vote recorded
-   - Card flips (600ms 3D rotation)
-   - Results animate in (staggered)
-   - Next button appears
-   - User clicks Next OR taps result card → Next card slides in
+   - Tap Keep/Throw/Pass → Vote recorded
+   - Vote buttons fade out (200ms)
+   - Inline results bar appears and animates (staggered segment growth)
+   - Results display for 3 seconds
+   - Exit animation triggers at 2.5s based on vote direction
+   - Next card auto-loads at 3.0s
 
-2. **Manual Advancement**
-   - "Next →" button below results (required - no auto-advance)
-   - OR tap anywhere on result card to advance (discoverable)
-   - Triggers slide-away animation
+2. **Automatic Advancement**
+   - No manual "Next" button required
+   - 3-second display time for results
+   - Exit animation reinforces user's choice visually
+   - Seamless flow to next statement
 
 3. **No Back Navigation**
    - No back button
@@ -880,7 +894,7 @@ All user-facing elements translated:
 6. **Statement Batching (10 statements at a time)**
    - When poll has more than 10 approved statements
    - User sees first 10 statements as a batch
-   - After voting on 10th statement, continuation page appears
+   - After voting on 10th statement (results shown for 3s, then auto-advance), continuation page appears
    - User chooses: Continue voting OR Finish now (enabled after first batch complete)
    - If Continue → Load next batch of up to 10 statements
    - If Finish → End voting session, generate insights
@@ -1167,84 +1181,166 @@ All user-facing elements translated:
 
 ---
 
-### 9. Poll Results Summary Page
+### 9. Poll Results Page with Demographic Heatmap
 **Route:** `/polls/[slug]/results`
 **Accessible to all users (voters and non-voters)**
 
-**Design Philosophy:** Clean, card-focused layout matching insights page structure. Results presented as collectible summary card.
+**Design Philosophy:** Clean, focused layout with poll statistics at top and interactive demographic analysis below. Inspired by Pol.is heatmap visualization.
 
 #### Layout
 ```
-┌─────────────────────────┐
-│                         │
-│   ┌─────────────────┐   │
-│   │  Poll Results   │   │ ← Badge at top
-│   │                 │   │   Emerald/teal gradient
-│   │  👥 234  🗳️ 1.5K│   │   with animated shimmer
-│   │                 │   │ ← Participant/vote stats
-│   │ The poll shows  │   │
-│   │ strong consensus│   │ ← AI-generated summary
-│   │ on core issues, │   │   (scrollable)
-│   │ with notable    │   │
-│   │ divergence on...│   │
-│   │                 │   │
-│   │ Most agreed:    │   │
-│   │ "Statement..."  │   │
-│   │                 │   │
-│   │ Most divisive:  │   │
-│   │ "Statement..."  │   │
-│   │                 │   │
-│   │ ─────────────── │   │ ← Metadata section
-│   │ Poll Question   │   │   (bottom of card)
-│   │ Jan 8, 2025     │   │
-│   └─────────────────┘   │
-│                         │
-│  [Back to All Decks]    │ ← Single centered button
-│                         │
-└─────────────────────────┘
+┌─────────────────────────────────────────┐
+│                                         │
+│   ┌─────────────────────────────────┐   │
+│   │     Poll Stats Card             │   │
+│   │                                 │   │
+│   │  What is your opinion on        │   │ ← Poll question (large)
+│   │  city transportation?           │   │
+│   │                                 │   │
+│   │  👥 110 players  🗳️ 1,320 votes│   │ ← Stats with icons
+│   │                                 │   │
+│   └─────────────────────────────────┘   │
+│                                         │
+│   ┌─────────────────────────────────┐   │
+│   │  Demographic Heatmap Dashboard  │   │
+│   │                                 │   │
+│   │  Controls:                      │   │
+│   │  [Gender ▼] [Sort ▼] [Filter]  │   │
+│   │                                 │   │
+│   │  ╔═══════════════════════════╗  │   │
+│   │  ║ Statement    │ Man │Woman║  │   │ ← Desktop: Table
+│   │  ║──────────────┼─────┼─────║  │   │
+│   │  ║ Statement 1  │+65% │+80% ║  │   │ ← Color-coded cells
+│   │  ║              │(45) │(50) ║  │   │   with vote counts
+│   │  ║──────────────┼─────┼─────║  │   │
+│   │  ║ Statement 2  │-40% │+20% ║  │   │
+│   │  ║              │(42) │(48) ║  │   │
+│   │  ╚═══════════════════════════╝  │   │
+│   │                                 │   │
+│   │  OR                             │   │
+│   │                                 │   │
+│   │  ┌───────────────────────────┐  │   │ ← Mobile: Cards
+│   │  │ Statement 1 [Consensus]   │  │   │
+│   │  │ Man: +65% (45) │ Woman: +80% (50)│
+│   │  └───────────────────────────┘  │   │
+│   │                                 │   │
+│   └─────────────────────────────────┘   │
+│                                         │
+└─────────────────────────────────────────┘
 ```
 
 #### Components Needed
-- **ResultsCard Component** (`components/shared/results-card.tsx`)
-  - **2:3 aspect ratio** (same as insights/voting cards - max-w-xs)
-  - **Emerald/teal animated gradient background:**
-    - Colors cycle: #d1fae5 → #dbeafe → #d1fae5
-    - Duration: 8 seconds, infinite loop
-    - Smooth transitions
-  - **"Poll Results" badge:**
-    - Small uppercase label (px-3 py-0.5)
-    - Emerald color scheme (bg-emerald-100 text-emerald-700)
-  - **Statistics display:**
-    - Icons: Users (👥 participants), Vote (🗳️ votes)
-    - Inline flex with gap
-    - Icon + number pairs
-    - Color: emerald-600
-  - **Summary text:**
-    - AI-generated poll summary
-    - Scrollable section (max-h-[220px], overflow-y-auto)
-    - Text size: text-xs md:text-sm
-    - Includes key findings, most agreed/disagreed/divisive statements
-  - **Bottom metadata section:**
-    - Border top (border-t border-emerald-200/50)
-    - Poll question (line-clamp-2)
-    - Generated date (en-US format to prevent hydration errors)
-    - Both text-xs text-gray-500/400
+
+**PollStatsCard Component** (`components/shared/poll-stats-card.tsx`)
+- Clean card with emerald-to-teal gradient background
+- Poll question (large, centered, text-3xl font-bold)
+- Statistics row with icons:
+  - Users icon + participant count
+  - Vote icon + total vote count
+  - Inline flex layout with gap-8
+- Padding: p-8
+- Rounded corners: rounded-2xl
+- Shadow: shadow-lg
+
+**HeatmapDashboard Component** (`components/analytics/heatmap-dashboard.tsx`)
+- Main container for entire heatmap feature
+- Manages state: selected attribute, sort order, filters
+- Handles data fetching with auto-refresh (30s interval)
+- Responsive switching between table and card layouts
+- Props:
+  - `pollId` (required)
+  - `defaultAttribute` (default: 'gender')
+  - `autoRefreshInterval` (default: 30000ms)
+  - `title` (optional)
+
+**HeatmapControls Component** (`components/analytics/heatmap-controls.tsx`)
+- Demographic attribute selector (Gender, Age Group, Ethnicity, Political Party)
+- Sort buttons (By Type, Alphabetical)
+- Classification filter chips (Consensus, Partial, Split, Divisive)
+- Compact horizontal layout
+- Hebrew labels (RTL-aware)
+
+**HeatmapTable Component** (`components/analytics/heatmap-table.tsx`)
+- Desktop/tablet view (min-width: 640px)
+- Sticky header row with demographic group labels
+- Sticky first column (statement text)
+- Statement classification badge in last column
+- Each cell uses HeatmapCell component
+- Responsive text sizing
+- Full-width table with horizontal scroll if needed
+
+**HeatmapCards Component** (`components/analytics/heatmap-cards.tsx`)
+- Mobile view (max-width: 640px)
+- One card per statement
+- Card header: statement text + classification badge
+- Grid of demographic groups (2 columns)
+- Each group shows label + colored cell
+- Stacked card layout with spacing
+
+**HeatmapCell Component** (`components/analytics/heatmap-cell.tsx`)
+- Individual cell visualization
+- 5-color scale background:
+  - Dark green (#10b981): +80% to +100%
+  - Light green (#34d399): +60% to +79%
+  - Yellow (#fbbf24): -59% to +59%
+  - Light red (#f87171): -79% to -60%
+  - Dark red (#ef4444): -100% to -80%
+- Agreement percentage (bold, large)
+- Vote count in parentheses (smaller)
+- Pass indicator (•) if >30% pass votes
+- Hover tooltip with detailed breakdown:
+  - Agrees: X (Y%)
+  - Disagrees: X (Y%)
+  - Passes: X (Y%)
+  - Total: X votes
+- Privacy threshold: "—" if <3 votes
+- Opacity varies with agreement strength
+
+#### Color Scale Details
+```
+Agreement %     Color           Background      Text
+─────────────────────────────────────────────────────
++80 to +100    Dark Green      #10b981         white
++60 to +79     Light Green     #34d399         white
+-59 to +59     Yellow          #fbbf24         gray-900
+-79 to -60     Light Red       #f87171         white
+-100 to -80    Dark Red        #ef4444         white
+```
+
+#### Statement Classification
+- **Consensus** (green badge): Most groups >80% agreement
+- **Partial Consensus** (amber badge): Many groups 60-79% agreement
+- **Split** (orange badge): Mixed opinions across groups
+- **Divisive** (red badge): Strong disagreement patterns
 
 #### States
-- **Loading** - "Generating results summary" spinner
-- **Success** - Show ResultsCard
-- **Error** - "Results summary is being generated. Please check back later." fallback
-- **Cache** - AI summaries cached for 24 hours, show cached version if available
+- **Loading** - Skeleton screens matching layout
+- **Success** - Show stats card + heatmap
+- **Error** - Error message with retry button
+- **Empty** - "No demographic data available yet"
+- **Cached** - Data served from 5-minute in-memory cache
 
 #### Interactions
-- **Back to All Decks** → Navigate to `/polls`
-- **Card itself** - Static display, no interactions
+- **Select attribute** → Fetch new heatmap data
+- **Sort** → Reorder statements client-side
+- **Filter by type** → Show/hide statements by classification
+- **Hover cell** → Show detailed tooltip
+- **Auto-refresh** → Poll for new data every 30s
+- **Responsive** → Automatically switch between table/cards
 
 #### Visual Details
-- **Page background:** Blue-indigo gradient (from-blue-50 to-indigo-100)
-- **Container:** max-w-3xl, px-4 py-4
-- **Spacing:** space-y-4 between elements
-- **Clean layout:** Just card + back button, no clutter
+- **Page background:** White/light gray
+- **Container:** max-w-6xl (wider for table), px-4 py-6
+- **Spacing:** space-y-6 between stats and heatmap
+- **Cards:** Clean white with subtle shadows
+- **Responsive breakpoint:** 640px (sm) for table/card switch
+
+#### Performance
+- Single optimized query with PostgreSQL GROUP BY
+- Database-level aggregation (not application loops)
+- 5-minute in-memory cache with TTL
+- Scales efficiently (tested: 110 voters × 12 statements)
+- Query time: ~0.3-0.5 seconds (20-200x faster than N×M approach)
 
 ---
 
@@ -2198,22 +2294,21 @@ useEffect(() => {
 - **StatementCard** (`components/voting/statement-card.tsx`) - Voting interface
   - 2:3 aspect ratio card
   - Amber gradient background
-  - Stacked depth effect
+  - Stacked depth effect (3 white cards behind)
   - Statement text centered (max 140 chars)
-  - Agree/Disagree buttons ON card
-  - Pass/Unsure button BELOW card
+  - Keep/Throw buttons ON card (overlaid at bottom)
+  - Pass button BELOW card
   - Decorative ✦ symbols top and bottom
-  - Props: `statement`, `onVote`, button labels
-
-- **VoteResultOverlay** (`components/voting/vote-result-overlay.tsx`) - Post-vote results
-  - Same 2:3 aspect ratio as statement card
-  - 3D card flip animation (600ms, Y-axis rotation)
-  - Amber gradient background (matches voting flow)
-  - User's vote indicator with icon
-  - Animated vote distribution bars (staggered 500ms fills)
-  - Clickable to advance to next card
-  - Next button for manual advance
-  - Props: `statement`, `userVote`, percentages, `totalVotes`, `onNext`
+  - **Inline results mode:** Tri-colored bar replaces buttons after vote
+    - Single bar with Green/Red/Gray segments
+    - Animated width growth (staggered 100ms, 200ms, 300ms delays)
+    - Percentages shown inside (≥15%) or below (<15%)
+    - User's vote segment shows icon (✓/✗/−)
+  - **Exit animations** based on vote (500ms):
+    - Keep: Slides RIGHT and up with 15° rotation
+    - Throw: Slides LEFT and down with −25° rotation
+    - Pass: Slides straight DOWN
+  - Props: `statement`, `onVote`, button labels, `showResults`, `shouldExit`, `userVote`, percentages
 
 - **InsightCard** (`components/shared/insight-card.tsx`) - Personal insights
   - 2:3 aspect ratio card (max-w-xs)
@@ -2418,40 +2513,67 @@ Desktop: 1024px+         (expanded layout)
 
 #### 2. Card Transitions (Voting)
 
-**A. Card Flip (Vote → Results):**
-- 3D rotation on Y-axis: 0° → 180°
-- Duration: 600ms
-- Easing: ease-in-out
-- Front (statement) hidden after 90°
-- Back (results) appears from 90° → 180°
-- Same amber gradient on both sides
-- Perspective: 1000px on parent container
+**A. Vote Button Exit (After Vote Cast):**
+- Vote buttons fade out: opacity 1 → 0
+- Duration: 200ms
+- Easing: ease-out
 
-**B. Results Reveal (After Flip):**
-- Vote indicator: Scale 0.8 → 1.0 + Fade in, 300ms, delay 100ms
-- Bar 1 (Agree): Fill 0% → X%, 500ms, delay 300ms
-- Bar 2 (Disagree): Fill 0% → Y%, 500ms, delay 500ms
-- Bar 3 (Unsure): Fill 0% → Z%, 500ms, delay 700ms
-- Next button: Fade in, 300ms, delay 1200ms
-- Easing: ease-out for all
+**B. Inline Results Reveal:**
+- **Tri-colored bar appearance:**
+  - Bar container fades in: opacity 0 → 1, scale 0.95 → 1
+  - Duration: 300ms with spring animation
+  - Stiffness: 400, damping: 25
+- **Segment width animations (staggered):**
+  - Green segment (Keep): width 0% → X%, delay 100ms
+  - Red segment (Throw): width 0% → Y%, delay 200ms
+  - Gray segment (Pass): width 0% → Z%, delay 300ms
+  - Duration: 500ms per segment
+  - Easing: spring (stiffness 300, damping 25)
+- **Percentage labels:**
+  - Inside segments (≥15%): Fade in with 300ms delay after segment fills
+  - Scale: 0.8 → 1.0
+- **User vote icon:** Appears with segment percentage
+- **Total display time:** 3 seconds
 
-**C. Card-to-Card Transition (Results → Next Statement):**
-- **Results card exit:**
-  - Slide left: translateX(-400px)
-  - Fade out: opacity 0
+**C. Exit Animation (Vote-Based, After 2.5s):**
+- **Keep vote exit:**
+  - Translate: x: 0 → 400px, y: 0 → −100px
+  - Rotate: 0° → 15°
+  - Opacity: 1 → 0
+  - Duration: 500ms
+  - Easing: ease-in-out
+- **Throw vote exit:**
+  - Translate: x: 0 → −400px, y: 0 → 150px
+  - Rotate: 0° → −25°
+  - Opacity: 1 → 0
   - Duration: 400ms
   - Easing: ease-in-out
-- **Next statement card enter:**
-  - Slide in from right: translateX(400px → 0)
-  - Scale: 0.95 → 1.0 (depth effect)
-  - Fade in: opacity 0 → 1
-  - Duration: 400ms
+- **Pass vote exit:**
+  - Translate: y: 0 → 400px (straight down)
+  - No rotation
+  - Opacity: 1 → 0
+  - Duration: 450ms
   - Easing: ease-in-out
-- **Buttons transition separately:**
-  - Vote buttons: Fade only (300ms), no slide
-  - Pass button: Fade only (300ms), no slide
-  - Next button: Fade out (300ms) on exit
-  - Keeps UI stable during card transition
+
+**D. Next Statement Card Entry:**
+- **Initial deck position:**
+  - Behind current card: x: 50px, y: 60px
+  - Rotated: 5°
+  - Scaled down: 0.9
+  - Opacity: 0
+- **Animate to center:**
+  - Translate: x: 0, y: 0
+  - Rotate: 0°
+  - Scale: 1.0
+  - Opacity: 1
+  - Duration: 600ms with spring animation
+  - Stiffness: 250, damping: 20, mass: 0.8
+  - Delay: 200ms (brief pause before drawing from deck)
+- **Vote buttons appear:**
+  - Fade in with scale animation
+  - Delay: 800ms after card settles
+  - Duration: 300ms
+  - Stiffness: 400, damping: 25
 
 #### 3. Card Deck Package (Poll Entry Page)
 - **Initial Load:**

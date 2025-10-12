@@ -247,35 +247,40 @@ All user-facing text translated, including:
 
 4. **First Vote Action**
    - User clicks one of three buttons:
-     - **Agree** (on card, primary action)
-     - **Disagree** (on card, primary action)
-     - **Pass/Unsure** (below card, secondary action)
+     - **Keep/לשמור** (on card, primary action)
+     - **Throw/לזרוק** (on card, primary action)
+     - **Pass/לדלג** (below card, secondary action)
    - **System creates user record in database** (with session_id)
    - Vote is recorded
    - **Vote is final and irreversible** - no changing votes later
-   - **Card flip animation (600ms 3D rotation):**
-     - Card rotates 180° on Y-axis
-     - Front (statement) hidden, back (results) revealed
-     - Same amber gradient background on results side
-   - **Vote distribution reveals with animation:**
-     - Vote indicator scales + fades in (300ms)
-     - Horizontal bars fill sequentially with staggered delays (500ms each, 200ms stagger)
-     - Shows: X% agree, Y% disagree, Z% neutral
-     - Total vote count displayed
-     - User's vote highlighted with icon and color
-     - Statement text shown smaller at top for context
+   - **Inline results display (3 seconds):**
+     - Statement card remains in place (no flip)
+     - Vote buttons disappear (200ms fade out)
+     - **Tri-colored results bar appears** at bottom of card (animated)
+     - Bar shows three colored segments in one unified component:
+       - **Green segment** (Keep): Shows percentage of Keep votes
+       - **Red segment** (Throw): Shows percentage of Throw votes
+       - **Gray segment** (Pass): Shows percentage of Pass votes
+     - Each segment animates width from 0% with staggered delays (100ms, 200ms, 300ms)
+     - Percentages ≥15% shown inside segments with white text
+     - Percentages <15% shown in small labels below bar
+     - User's vote segment shows icon (✓ for Keep, ✗ for Throw, − for Pass)
+     - Results display for 3 seconds
 
-5. **Manual Transition to Next Statement**
-   - After animations complete, **Next button appears** (fades in at 1.2s)
-   - **User must click "Next →" button** to advance (no auto-advance)
+5. **Exit Animation and Auto-Advance**
+   - After 2.5 seconds of results display, **exit animation triggers** (500ms):
+     - **Keep vote:** Card slides RIGHT and up with slight rotation (positive direction in RTL)
+     - **Throw vote:** Card slides LEFT and down with rotation (thrown away)
+     - **Pass vote:** Card slides straight DOWN (set aside, neutral)
+   - **Automatic advance** - No manual "Next" button required
+   - At 3 seconds total, next statement loads
    - **No "back" button** - forward-only progression
-   - Previous vote statistics disappear
-   - New statement card appears (clean slate, no distributions shown)
+   - New statement card slides in from deck position (behind and rotated)
    - Progress bar updates (next segment fills)
 
 6. **Continued Voting**
    - Process repeats for each statement in sequence
-   - Vote → Card flips → See results → Click Next → Next statement
+   - Vote → Inline results (3s) → Exit animation (0.5s) → Next statement
    - Stories-style progress bar shows overall completion
    - **No ability to review or change previous votes**
    - One-way journey through all statements
@@ -695,17 +700,22 @@ All user-facing text translated, including:
    - **No backward navigation** once vote cast
 
 #### Vote Distribution Display Rules
-- **Before voting:** No distribution shown (clean card)
-- **After voting:** Card flips with 3D animation to reveal results
-- **Animation:** 600ms card flip (rotateY 180°) with same aspect ratio and amber gradient
-- **Timing:** Results remain visible until user clicks "Next →" button (manual advance)
+- **Before voting:** No distribution shown (clean card with vote buttons)
+- **After voting:** Inline tri-colored results bar appears on card (no flip)
+- **Animation:** Results bar segments grow from 0% width with staggered delays (100ms, 200ms, 300ms)
+- **Timing:** Results display for 3 seconds, then card auto-advances with exit animation
 - **Components:**
-  - Statement text at top (smaller, text-sm)
-  - User's vote indicator with icon (center)
-  - Percentage breakdown (agree/disagree/neutral) with animated bars
-  - Animated horizontal bars filling from 0% to actual percentage
-  - Total vote count at bottom
-  - "Next →" button below card
+  - Statement text remains visible at center of card
+  - Tri-colored results bar at bottom of card (replaces vote buttons):
+    - Green segment (Keep/לשמור votes)
+    - Red segment (Throw/לזרוק votes)
+    - Gray segment (Pass/לדלג votes)
+  - Percentages shown inside segments (if ≥15%) or in labels below bar (if <15%)
+  - User's vote segment shows icon (✓ for Keep, ✗ for Throw, − for Pass)
+- **Exit animation:** After 2.5 seconds, card exits based on user's vote:
+  - Keep: Slides RIGHT and up (positive direction in RTL)
+  - Throw: Slides LEFT and down (thrown away)
+  - Pass: Slides straight DOWN (set aside)
 - **Visibility:** Only after user commits their vote (no peeking)
 
 ---
@@ -858,40 +868,29 @@ All user-facing text translated, including:
 
 #### Display & Access
 
-1. **Results Card (Collectible Design):**
+1. **Poll Results Page with Demographic Heatmap:**
    - **Route:** `/polls/[slug]/results`
    - **Accessible to:** All users (voters and non-voters)
-   - **Card Design:**
-     - **2:3 aspect ratio card** (max-w-xs, matches insights card)
-     - **Emerald/teal animated gradient background** (8s shimmer cycle)
-     - **"Poll Results" badge** at top (emerald color scheme)
-     - **Statistics display** with icons:
-       - Users icon + participant count
-       - Vote icon + total vote count
-       - Inline flex layout with gap
-     - **AI-generated summary text** (scrollable, max-h-[220px]):
-       - Overall poll sentiment
-       - Most agreed/disagreed statements
-       - Divisive topics
-       - Key themes and trends
-     - **Metadata section at bottom**:
-       - Poll question (line-clamp-2)
-       - Generated date (hydration-safe en-US format)
    - **Page Layout:**
-     - Clean, minimal design
-     - Just card + "Back to All Decks" button
-     - No clutter, no extra navigation
-     - Blue-indigo gradient background
-     - Container: max-w-3xl, px-4 py-4
+     - **Poll Stats Card** at top:
+       - Poll question (large, centered)
+       - Participant count with Users icon
+       - Vote count with Vote icon
+       - Clean gradient background (emerald to teal)
+     - **Demographic Heatmap Dashboard** below:
+       - Interactive visualization of vote patterns by demographics
+       - See "Demographic Heatmap" section below for details
+     - Container: max-w-6xl, space-y-6
+     - Clean, focused layout with just stats + heatmap
 
 2. **From Personal Insight Screen:**
    - User clicks "View All Results" button
    - Navigates to `/polls/[slug]/results`
-   - Shows ResultsCard as described above
+   - Shows poll stats card + demographic heatmap
 
 3. **Accessing Later:**
    - **Authenticated users:** Can access from user dashboard for completed polls
-   - **Anonymous users:** Lost after leaving page (unless they authenticate)
+   - **Anonymous users:** Can access results page for any poll
    - Available for both active and closed polls
 
 4. **Closed Poll Access (`/polls/[slug]/closed`):**
@@ -912,13 +911,41 @@ All user-facing text translated, including:
      - CAN view poll results (public data)
      - Same clean, minimal layout
 
-#### Content Structure
-- Overall poll sentiment and consensus areas
-- Most agreed/disagreed statements
-- Divisive topics (statements with split opinions)
-- Demographic patterns (if applicable)
-- Key themes and trends
-- Participation statistics
+#### Demographic Heatmap
+**Purpose:** Visualize how different demographic groups voted on each statement, inspired by Pol.is.
+
+**Key Features:**
+- **Statement-by-demographic grid** showing agreement percentages
+- **5-color scale:** Dark green (+80% to +100%) → Light green (+60% to +79%) → Yellow (-59% to +59%) → Light red (-79% to -60%) → Dark red (-100% to -80%)
+- **Agreement calculation:** (agrees - disagrees) / (agrees + disagrees) × 100 (pass votes excluded from calculation but tracked)
+- **Statement classification:**
+  - **Consensus** - Most groups agree (>80% agreement)
+  - **Partial Consensus** - Many groups agree (60-79% agreement)
+  - **Split** - Mixed opinions (around 50/50)
+  - **Divisive** - Strong disagreement patterns
+- **Privacy threshold:** Minimum 3 votes per cell to prevent re-identification (cells below threshold show "—")
+- **Pass vote indicator:** Dots (•) shown when >30% of responses are "pass"
+- **Single attribute view:** View one demographic at a time (gender, age group, ethnicity, political party)
+- **Responsive design:**
+  - **Desktop/tablet:** Table view with sticky headers
+  - **Mobile:** Card-based layout
+- **Filtering & sorting:**
+  - Sort by classification type or alphabetically
+  - Filter by statement type (consensus/partial/split/divisive)
+- **Auto-refresh:** 30-second polling for new data
+- **5-minute caching:** In-memory cache with TTL for performance
+
+**Data Display:**
+- Each cell shows:
+  - Agreement percentage (colored background)
+  - Total response count in parentheses
+  - Pass indicator (•) if applicable
+- Hover tooltip shows detailed breakdown (agrees/disagrees/passes)
+
+**Performance:**
+- Single optimized query using PostgreSQL GROUP BY
+- Database-level aggregation for efficiency
+- Scales to large polls (tested with 110+ voters, 12 statements)
 
 ---
 
@@ -1380,21 +1407,30 @@ To access "Create Poll" interface, user must have ONE of:
    - Average time to complete poll
    - Drop-off points (where users stop voting)
 
-4. **Demographics Breakdown** (if demographic data available)
-   - Vote patterns by age group
-   - Vote patterns by gender
-   - Vote patterns by ethnicity
-   - Vote patterns by political party
-   - Demographic composition of participants
+4. **Demographic Heatmap Dashboard**
+   - **Same heatmap as public results page** but accessible from management interface
+   - Navigate to Analytics tab to view demographic analysis
+   - All features available:
+     - Statement-by-demographic grid visualization
+     - 5-color agreement scale
+     - Statement classification (consensus/partial/split/divisive)
+     - Attribute selection (gender, age group, ethnicity, political party)
+     - Filtering and sorting options
+     - Privacy threshold protection
+     - Responsive table/card layouts
+   - **Poll selector** at top (for admins viewing multiple polls)
+   - **Auto-refresh** every 30 seconds
+   - See "Demographic Heatmap" section in Journey 7 for full feature details
 
 #### Admin View Feature
 
 **Special Privilege for Owners/Managers:**
-- "View All Statements" mode
-- See all statements with vote distributions WITHOUT voting
-- Useful for understanding poll dynamics without influencing results
-- Separate from normal voting interface
-- Read-only view - cannot cast votes from this interface
+- Access demographic heatmap dashboard from management interface
+- View patterns across demographic groups
+- Identify consensus and divisive statements
+- Useful for understanding poll dynamics and audience composition
+- All data aggregated and anonymized (privacy threshold enforced)
+- Read-only analytical view
 
 #### Export Options
 - Export THIS poll's data (CSV format)
@@ -2335,7 +2371,7 @@ This document outlines the complete functionality of Pulse, a participatory poll
    - **One statement card at a time** - Instagram Stories-style focused experience
    - **Vote before reveal** - Statistics shown only after user commits their vote (no peeking)
    - **Manual progression** - User clicks "Next →" button after viewing results to advance
-   - **Card flip animation** - 600ms 3D flip reveals results on back of card
+   - **Inline results display** - Tri-colored bar appears on card bottom with animated segment growth
    - **Forward-only flow** - No back button, no vote changes, irreversible progression
    - **Completion-triggered insights** - AI-generated insights appear after user finishes or votes all statements
    - Low-friction participation (anonymous allowed with optional demographics)
