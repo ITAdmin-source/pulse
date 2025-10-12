@@ -10,14 +10,13 @@ interface PollDeckCardProps {
   emoji?: string | null;
 }
 
-export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProps) {
+export function PollDeckCard({ slug, question, status }: PollDeckCardProps) {
   const isActive = status === "active";
-  const displayEmoji = emoji || "🎴"; // Default to card game emoji if no emoji set
 
   return (
     <Link href={`/polls/${slug}`}>
       <motion.div
-        className="relative cursor-pointer"
+        className="relative cursor-pointer group"
         initial="rest"
         whileHover="hover"
         animate="rest"
@@ -25,7 +24,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={{ perspective: "1000px" }}
       >
-        {/* Back cards in deck - 3 WHITE CARDS with realistic stacking and fan-out on hover */}
+        {/* Back cards in deck - 3 WHITE CARDS with realistic stacking */}
         <motion.div
           className="absolute inset-0 bg-white rounded-3xl shadow-md border border-gray-200 pointer-events-none z-0"
           style={{ transformStyle: "preserve-3d" }}
@@ -53,7 +52,7 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
 
         {/* Main Card */}
         <motion.div
-          className={`relative w-full aspect-[2/3] rounded-3xl shadow-2xl border-0 z-10 ${
+          className={`relative w-full aspect-[2/3] rounded-3xl shadow-2xl border-0 z-10 overflow-hidden ${
             isActive
               ? "bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50"
               : "bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"
@@ -68,28 +67,20 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
             }
           }}
         >
-          {/* Status Badge - Top Corner */}
-          <div className="absolute top-4 end-4">
-            <span
-              className={`inline-block px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full ${
-                isActive
-                  ? "bg-green-100 text-green-700 border border-green-200"
-                  : "bg-gray-300 text-gray-700 border border-gray-400"
-              }`}
-            >
-              {isActive ? "פעיל" : "סגור"}
-            </span>
+          {/* Top decorative element */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-center">
+            <div className={`text-3xl ${isActive ? "opacity-70" : "opacity-40"}`}>✦</div>
           </div>
 
-          {/* Large Emoji at top */}
-          <div className="absolute top-16 start-1/2 -translate-x-1/2">
-            <div className="text-6xl">
-              {displayEmoji}
+          {/* Status indicator - Subtle corner dot */}
+          {isActive && (
+            <div className="absolute top-4 end-4 z-20">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
             </div>
-          </div>
+          )}
 
-          {/* Question - Center of card (below emoji) */}
-          <div className="absolute inset-0 flex items-center justify-center p-6 pt-28">
+          {/* Question - Center of card */}
+          <div className="absolute inset-0 flex items-center justify-center p-6 pt-16 pb-14">
             <p
               className={`text-center text-base md:text-lg font-bold leading-tight line-clamp-5 ${
                 isActive ? "text-gray-900" : "text-gray-600"
@@ -100,16 +91,17 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
             </p>
           </div>
 
-          {/* Closed Ribbon (if closed) - Semi-transparent so question shows through */}
-          {!isActive && (
-            <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] bg-gray-600/80 text-white px-12 py-1.5 text-sm font-bold tracking-widest shadow-lg pointer-events-none">
-              סגור
-            </div>
-          )}
-
-          {/* Decorative element at bottom */}
-          <div className="absolute bottom-4 start-1/2 -translate-x-1/2 text-2xl opacity-40">
-            {isActive ? "✦" : "◆"}
+          {/* Bottom decorative bars */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1 justify-center">
+            <div className={`w-8 h-1 rounded-full ${
+              isActive ? "bg-amber-400/40" : "bg-gray-400/40"
+            }`} />
+            <div className={`w-8 h-1 rounded-full ${
+              isActive ? "bg-amber-400/40" : "bg-gray-400/40"
+            }`} />
+            <div className={`w-8 h-1 rounded-full ${
+              isActive ? "bg-amber-400/40" : "bg-gray-400/40"
+            }`} />
           </div>
 
           {/* Subtle pattern overlay */}
@@ -119,6 +111,15 @@ export function PollDeckCard({ slug, question, status, emoji }: PollDeckCardProp
               backgroundSize: '24px 24px'
             }} />
           </div>
+
+          {/* Closed state overlay */}
+          {!isActive && (
+            <div className="absolute inset-0 bg-gray-900/10 backdrop-blur-[0.5px] flex items-center justify-center pointer-events-none">
+              <div className="bg-gray-700/90 text-white px-6 py-2 rounded-full text-sm font-semibold tracking-wide shadow-lg">
+                סגור
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </Link>

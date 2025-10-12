@@ -96,7 +96,7 @@ export function AdaptiveHeader() {
   // Voting variant - special header for voting interface
   if (variant === "voting") {
     return (
-      <header className="border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b-2 border-indigo-100 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex-1 min-w-0">

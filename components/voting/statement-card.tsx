@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, X, Minus } from "lucide-react";
@@ -39,6 +39,17 @@ export function StatementCard({
 }: StatementCardProps) {
   // Button visibility state for exit animation
   const [buttonsVisible, setButtonsVisible] = useState(true);
+
+  // Swipe gesture state
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+
+  // Swipe direction indicators (visual feedback during drag)
+  const showKeepIndicator = useTransform(x, [50, 200], [0, 1]);
+  const showThrowIndicator = useTransform(x, [-200, -50], [1, 0]);
+  const showPassIndicator = useTransform(y, [50, 200], [0, 1]);
 
   // RTL-correct exit animations based on vote choice (from old VoteResultOverlay)
   const getExitAnimation = () => {
@@ -105,11 +116,53 @@ export function StatementCard({
     }, 200);
   };
 
+  // Handle swipe gesture end
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const swipeThreshold = 100;
+    const swipeVelocityThreshold = 500;
+
+    // Check for horizontal swipes (Keep/Throw)
+    if (Math.abs(info.offset.x) > Math.abs(info.offset.y)) {
+      // Right swipe = Keep (1)
+      if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocityThreshold) {
+        handleVote(1);
+        return;
+      }
+      // Left swipe = Throw (-1)
+      if (info.offset.x < -swipeThreshold || info.velocity.x < -swipeVelocityThreshold) {
+        handleVote(-1);
+        return;
+      }
+    }
+    // Check for vertical swipes (Pass)
+    else {
+      // Down swipe = Pass (0)
+      if (info.offset.y > swipeThreshold || info.velocity.y > swipeVelocityThreshold) {
+        handleVote(0);
+        return;
+      }
+    }
+
+    // If no threshold met, snap back to center
+    x.set(0);
+    y.set(0);
+  };
+
   return (
     <div className="relative flex flex-col items-center w-full max-w-xs mx-auto px-4">
       {/* Statement Card - Content with overlaying buttons */}
       <motion.div
-        className="relative w-full group z-10 mb-6"
+        className="relative w-full group z-10 mb-6 cursor-grab active:cursor-grabbing"
+        style={{
+          x: showResults || shouldExit ? 0 : x,
+          y: showResults || shouldExit ? 0 : y,
+          rotate: showResults || shouldExit ? 0 : rotate,
+          opacity: showResults || shouldExit ? 1 : opacity,
+        }}
+        drag={!showResults && !shouldExit && !disabled}
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.7}
+        onDragEnd={handleDragEnd}
         initial={{
           x: 50,        // Slightly to the right (deck position)
           y: 60,        // Behind/below
@@ -131,7 +184,7 @@ export function StatementCard({
           mass: 0.8,
           delay: 0.2    // Brief pause before drawing from deck
         }}
-        whileHover={!shouldExit ? {
+        whileHover={!shouldExit && !showResults ? {
           y: -4,
           scale: 1.02
         } : undefined}
@@ -152,6 +205,41 @@ export function StatementCard({
 
         {/* Main card with fixed aspect ratio */}
         <Card className="relative w-full aspect-[2/3] shadow-lg rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50">
+          {/* Swipe Direction Indicators */}
+          {!showResults && !shouldExit && (
+            <>
+              {/* Keep indicator (right swipe) */}
+              <motion.div
+                className="absolute top-8 right-8 pointer-events-none"
+                style={{ opacity: showKeepIndicator }}
+              >
+                <div className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold text-xl shadow-2xl border-4 border-white rotate-12">
+                  <Check className="h-8 w-8" />
+                </div>
+              </motion.div>
+
+              {/* Throw indicator (left swipe) */}
+              <motion.div
+                className="absolute top-8 left-8 pointer-events-none"
+                style={{ opacity: showThrowIndicator }}
+              >
+                <div className="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold text-xl shadow-2xl border-4 border-white -rotate-12">
+                  <X className="h-8 w-8" />
+                </div>
+              </motion.div>
+
+              {/* Pass indicator (down swipe) */}
+              <motion.div
+                className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none"
+                style={{ opacity: showPassIndicator }}
+              >
+                <div className="bg-gray-600 text-white px-6 py-3 rounded-2xl font-bold text-xl shadow-2xl border-4 border-white">
+                  <Minus className="h-8 w-8" />
+                </div>
+              </motion.div>
+            </>
+          )}
+
           <CardContent className="p-6 h-full flex flex-col justify-center items-center">
             {/* Small decorative element */}
             <div className="mb-4 text-3xl opacity-60">✦</div>

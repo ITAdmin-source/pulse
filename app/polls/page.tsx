@@ -127,15 +127,15 @@ export default function PollsPage() {
     return "active";
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-12">
         {/* Welcome Section */}
-        <section className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+        <section className="mb-12 text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">
             בחר חפיסה לחקור
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light">
             בחר חפיסה, מיין את הקלפים וגלה את נקודת המבט הייחודית שלך.
           </p>
         </section>
