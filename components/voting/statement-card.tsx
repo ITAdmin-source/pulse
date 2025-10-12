@@ -157,13 +157,12 @@ export function StatementCard({
               className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-full px-6"
               initial={{ y: 10, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
               transition={{
                 type: "spring",
                 stiffness: 400,
                 damping: 25,
-                delay: 0.8,  // Appear AFTER card settles
-                exit: { duration: 0.15 }  // Quick fade (Option 3: simultaneous)
+                delay: 0.8  // Appear AFTER card settles
               }}
             >
               <div className="flex gap-3 w-full justify-center max-w-xs mx-auto">

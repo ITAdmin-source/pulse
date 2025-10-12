@@ -458,15 +458,9 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   // Get progress from StatementManager
   const progress = statementManager?.getProgress();
-  const voteDistribution = statementManager?.getVoteDistribution();
-
   const votedCount = progress?.totalVoted || 0;
   const threshold = progress?.threshold || 10;
   const canFinish = progress?.canFinish || false;
-
-  const agreeCount = voteDistribution?.agreeCount || 0;
-  const disagreeCount = voteDistribution?.disagreeCount || 0;
-  const unsureCount = voteDistribution?.unsureCount || 0;
 
   // Handle finishing voting session
   const handleFinish = useCallback(async () => {
@@ -1007,9 +1001,6 @@ export default function VotingPage({ params }: VotingPageProps) {
     return (
       <ContinuationPage
         statementsVoted={votedCount}
-        agreeCount={agreeCount}
-        disagreeCount={disagreeCount}
-        unsureCount={unsureCount}
         minStatementsRequired={threshold}
         hasMoreStatements={hasMoreStatements}
         onContinue={handleContinue}

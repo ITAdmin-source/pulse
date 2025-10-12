@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { getPollBySlugAction } from "@/actions/polls-actions";
-import { getVotingProgressAction, getStatementBatchAction } from "@/actions/votes-actions";
+import { getVotingProgressAction } from "@/actions/votes-actions";
 import { getSessionIdAction } from "@/actions/users-actions";
 import { getUserRolesByUserIdAction } from "@/actions/user-roles-actions";
 import { UserService } from "@/lib/services/user-service";
