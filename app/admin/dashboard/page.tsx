@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Users, FileText, CheckCircle, TrendingUp } from "lucide-react";
+import { Users, FileText, CheckCircle, TrendingUp } from "lucide-react";
 import { AdminService } from "@/lib/services/admin-service";
 
 export default async function AdminDashboardPage() {
@@ -11,21 +11,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/polls">
-                <ArrowLeft className="h-4 w-4 me-2" />
-                Back to Polls
-              </Link>
-            </Button>
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-            <div className="w-32"></div>
-          </div>
-        </div>
-      </header>
+      {/* Header is now handled by AdaptiveHeader */}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-6xl">

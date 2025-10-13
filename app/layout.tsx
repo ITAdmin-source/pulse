@@ -3,7 +3,6 @@ import { Rubik } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { heIL } from "@clerk/localizations";
 import { UserProvider } from "@/contexts/user-context";
-import { HeaderProvider } from "@/contexts/header-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
 import "./globals.css";
@@ -37,10 +36,8 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <UserProvider>
-              <HeaderProvider>
-                <AdaptiveHeader />
-                {children}
-              </HeaderProvider>
+              <AdaptiveHeader />
+              {children}
             </UserProvider>
           </Providers>
         </body>
