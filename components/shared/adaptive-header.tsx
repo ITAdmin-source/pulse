@@ -313,9 +313,9 @@ function detectVariantFromRoute(pathname: string): HeaderVariant {
     return "minimal";
   }
 
-  // Voting interface
+  // Voting interface - now uses minimal header (voting UI is self-contained)
   if (pathname.includes("/vote")) {
-    return "voting";
+    return "minimal";
   }
 
   // Management interface

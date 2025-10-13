@@ -16,22 +16,22 @@ export function ProgressBar({
   className,
 }: ProgressBarProps) {
   return (
-    <div className={cn("flex gap-1 w-full", className)}>
+    <div className={cn("flex gap-1.5 w-full", className)}>
       {Array.from({ length: totalSegments }).map((_, index) => {
         const isFilled = index < currentSegment;
         const isCurrent = index === currentSegment;
 
-        // When showing results, the current segment should be filled (black) not pulsing
+        // When showing results, the current segment should be filled not pulsing
         const shouldFillCurrent = isCurrent && showingResults;
 
         return (
           <div
             key={index}
             className={cn(
-              "h-1 flex-1 rounded-full transition-all duration-300",
-              (isFilled || shouldFillCurrent) && "bg-primary",
-              isCurrent && !showingResults && "bg-primary/50 animate-pulse",
-              !isFilled && !isCurrent && "bg-muted"
+              "h-2 flex-1 rounded-full transition-all duration-300",
+              (isFilled || shouldFillCurrent) && "bg-amber-500",
+              isCurrent && !showingResults && "bg-amber-300 animate-pulse",
+              !isFilled && !isCurrent && "bg-amber-100"
             )}
           />
         );

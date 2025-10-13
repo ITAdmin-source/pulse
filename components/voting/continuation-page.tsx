@@ -57,7 +57,7 @@ export function ContinuationPage({
   // Scenario 1: No more statements - Deck Complete (Celebration)
   if (!hasMoreStatements) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -69,14 +69,14 @@ export function ContinuationPage({
           className="max-w-md w-full"
         >
           {/* Celebration Card */}
-          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-8">
+          <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-3xl shadow-xl border border-amber-200/50 p-8">
             {/* Trophy Icon */}
             <div className="flex justify-center mb-6">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-full p-4 shadow-lg"
+                className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-full p-4 shadow-lg"
               >
                 <Trophy className="h-12 w-12 text-white" />
               </motion.div>
@@ -91,7 +91,7 @@ export function ContinuationPage({
             </p>
 
             {/* Call to Action */}
-            <Button onClick={onFinish} className="w-full h-12" size="lg">
+            <Button onClick={onFinish} className="w-full h-12 bg-gradient-to-b from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800" size="lg">
               צפייה בתובנות
             </Button>
           </div>
@@ -102,7 +102,7 @@ export function ContinuationPage({
 
   // Scenario 2: More statements available - Progress Milestone
   return (
-    <div className="flex items-center justify-center min-h-[60vh] px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -114,14 +114,14 @@ export function ContinuationPage({
         className="max-w-md w-full"
       >
         {/* Progress Card */}
-        <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-2xl shadow-lg border-2 border-amber-200 p-8">
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 rounded-3xl shadow-xl border border-amber-200/50 p-8">
           {/* Milestone Badge */}
           <div className="flex justify-center mb-6">
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-full p-4 shadow-lg"
+              className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-full p-4 shadow-lg"
             >
               <Trophy className="h-12 w-12 text-white" />
             </motion.div>
@@ -152,13 +152,18 @@ export function ContinuationPage({
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            <Button onClick={onContinue} className="w-full h-11" size="lg" disabled={!!error}>
+            <Button
+              onClick={onContinue}
+              className="w-full h-12 bg-gradient-to-b from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
+              size="lg"
+              disabled={!!error}
+            >
               המשך לבחור
             </Button>
             <Button
               onClick={onFinish}
               variant="outline"
-              className="w-full h-11"
+              className="w-full h-12 border-amber-200 hover:bg-amber-50"
               size="lg"
               disabled={!canFinish}
               title={!canFinish ? `בחר עוד ${remainingVotes} כדי לסיים` : "סיום וצפייה בתובנות"}

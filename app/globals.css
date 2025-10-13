@@ -50,8 +50,11 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+
+  /* Warm amber primary for voting interface */
+  --primary: oklch(0.646 0.149 55.815); /* amber-600 */
   --primary-foreground: oklch(0.985 0 0);
+
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -75,6 +78,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Voting interface specific tokens */
+  --voting-background: oklch(0.976 0.007 70.08); /* amber-50 */
+  --card-deck-shadow: oklch(0.556 0 0 / 0.1);
 }
 
 .dark {

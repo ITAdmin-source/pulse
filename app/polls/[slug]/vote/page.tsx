@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { useHeader } from "@/contexts/header-context";
 import {
   StatementCard,
   ProgressBar,
@@ -131,7 +129,6 @@ interface Poll {
 export default function VotingPage({ params }: VotingPageProps) {
   const router = useRouter();
   const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
-  const { setConfig, resetConfig } = useHeader();
 
   // Core app state
   const [poll, setPoll] = useState<Poll | null>(null);
@@ -456,7 +453,7 @@ export default function VotingPage({ params }: VotingPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, poll, statementManager]);
 
-  // Get progress from StatementManager
+  // Get progress from StatementManager (used throughout component)
   const progress = statementManager?.getProgress();
   const votedCount = progress?.totalVoted || 0;
   const threshold = progress?.threshold || 10;
@@ -485,71 +482,8 @@ export default function VotingPage({ params }: VotingPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canFinish, statementManager, poll, router]);
 
-  // Configure header with poll context
-  useEffect(() => {
-    if (!poll || !statementManager) return;
-
-    const progress = statementManager.getProgress();
-
-    setConfig({
-      variant: "voting",
-      title: poll.question,
-      subtitle: poll.endTime
-        ? `Ends ${new Date(poll.endTime).toLocaleDateString()} at ${new Date(poll.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        : undefined,
-      actions: (
-        <>
-          {poll.allowUserStatements && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowStatementModal(true)}
-                  disabled={isSavingVote}
-                  className="gap-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">הוספת קלף</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>הוסף קלף חדש כדי לשתף נקודת מבט חסרה</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant={progress.canFinish ? "default" : "ghost"}
-                disabled={!progress.canFinish || isSavingVote}
-                onClick={handleFinish}
-              >
-                סיום
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {progress.canFinish
-                ? "השלם הצבעה וצפה בתובנות שלך"
-                : progress.threshold === progress.totalStatementsInPoll
-                ? `הצבע על כל ${progress.totalStatementsInPoll} ההצהרות לסיום`
-                : `השלם את 10 ההצהרות הראשונות לסיום`}
-            </TooltipContent>
-          </Tooltip>
-        </>
-      ),
-      customContent: (
-        <ProgressBar
-          totalSegments={progress.statementsInCurrentBatch}
-          currentSegment={progress.positionInBatch}
-          showingResults={votingState.showResults || false}
-        />
-      ),
-    });
-
-    return () => resetConfig();
-  }, [poll, statementManager, isSavingVote, votingState.phase, votingState.showResults, setConfig, resetConfig, handleFinish]);
+  // Header configuration removed - using default header variant
+  // Poll question, progress bar, and actions now rendered in page layout
 
   const handleVote = async (value: 1 | 0 | -1) => {
     // Check ref-based lock FIRST and set immediately (atomic operation)
@@ -971,9 +905,9 @@ export default function VotingPage({ params }: VotingPageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-amber-600" />
           <p className="text-gray-600">טוען סקר...</p>
         </div>
       </div>
@@ -983,7 +917,7 @@ export default function VotingPage({ params }: VotingPageProps) {
   // Error state
   if (!poll || !votingState.currentStatement && votingState.phase === 'viewing') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
           <p className="text-xl text-gray-900 mb-4">אין הצהרות זמינות</p>
           <Button asChild>
@@ -1016,9 +950,9 @@ export default function VotingPage({ params }: VotingPageProps) {
 
   if (votingState.phase === 'finished') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-600" />
           <h1 className="text-3xl font-bold">מייצר את התובנות שלך...</h1>
           <p className="text-gray-600">אנא המתן בעוד אנו מנתחים את התשובות שלך</p>
         </div>
@@ -1027,10 +961,25 @@ export default function VotingPage({ params }: VotingPageProps) {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 pt-[var(--header-height,74px)]">
-      {/* Main Voting Interface - Header is handled by AdaptiveHeader */}
-      <main className="h-full overflow-hidden flex items-start justify-center px-4 py-4">
-        <div className="w-full max-w-md">
+    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex flex-col" dir="rtl">
+      {/* Main Voting Interface - Full viewport layout with header spacing */}
+      <main className="flex-1 flex flex-col overflow-hidden px-4 py-8 min-h-0">
+        {/* Poll Question Label - Refined card-like pill */}
+        <div className="flex-shrink-0 mb-8">
+          <div className="max-w-md mx-auto px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-stone-200 shadow-sm">
+            <h1 className="text-base md:text-lg font-semibold text-gray-900 text-center" dir="auto">
+              {poll?.question}
+            </h1>
+            {poll?.endTime && (
+              <p className="text-xs text-gray-600 text-center mt-2" dir="auto">
+                מסתיים ב-{new Date(poll.endTime).toLocaleDateString()} בשעה {new Date(poll.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Statement Card - Takes available space and shrinks if needed */}
+        <div className="flex-1 flex items-center justify-center w-full max-w-md mx-auto min-h-0">
           <AnimatePresence mode="popLayout">
             {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard
@@ -1047,17 +996,32 @@ export default function VotingPage({ params }: VotingPageProps) {
                 agreePercent={votingState.voteDistribution?.agreePercent}
                 disagreePercent={votingState.voteDistribution?.disagreePercent}
                 unsurePercent={votingState.voteDistribution?.unsurePercent}
+                showAddCardButton={poll?.allowUserStatements}
+                onAddCard={() => setShowStatementModal(true)}
               />
             ) : (
               // Transitioning between states
               <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-amber-600" />
                 <p className="text-gray-600">טוען...</p>
               </div>
             )}
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Progress Bar Footer - Fixed at bottom */}
+      {progress && (
+        <footer className="flex-shrink-0 bg-white/70 backdrop-blur-sm border-t border-stone-200">
+          <div className="container mx-auto px-4 py-4">
+            <ProgressBar
+              totalSegments={progress.statementsInCurrentBatch}
+              currentSegment={progress.positionInBatch}
+              showingResults={votingState.showResults || false}
+            />
+          </div>
+        </footer>
+      )}
 
       {/* Demographics Modal - Mandatory, non-dismissible */}
       <DemographicsModal
