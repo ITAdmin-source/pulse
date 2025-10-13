@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   }, [setConfig, resetConfig]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       {/* Auth Content - Header is handled by AdaptiveHeader */}
       <div className="flex items-center justify-center min-h-[calc(100vh-72px)] px-4 py-8">
         <div className="w-full max-w-md">

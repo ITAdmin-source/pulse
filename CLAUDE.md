@@ -264,6 +264,101 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - **Demographics** - Mandatory one-time prompt before first card (all 4 fields required), never re-requested, only shown if user doesn't already have demographics
 - **Closed poll access** - Both voters and non-voters can view results; only voters see personal insights
 
+### Design System & Look-and-Feel (v1.5 - 2025-10-13)
+
+**Philosophy:** Neutral backdrop with warm card accents for maximum visual hierarchy
+
+#### Core Design Tokens (`lib/design-tokens.ts`)
+Centralized design system with colors, spacing, typography, and animation constants:
+- **Background colors** - Stone gradients for all pages
+- **Card colors** - Warm amber for active content, purple for insights, green for results
+- **Spacing system** - 8px base unit (8, 16, 24, 32, 40, 48px)
+- **Typography scale** - 5 consistent sizes with proper font weights
+- **Animation timings** - Standardized durations for all transitions
+
+#### Universal Page Background
+**All pages use:** `bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100`
+- Applied to: voting, results, insights, polls list, poll entry, admin, auth pages
+- Cool neutral gray-beige for 40-50% contrast with warm cards
+- Creates professional, cohesive app-wide aesthetic
+
+#### Card System
+**Primary Cards (Statements, Active Polls):**
+- Gradient: `from-amber-50 via-orange-50/40 to-amber-50`
+- Border: `border-amber-200/50`
+- Shadow: `shadow-lg` to `shadow-xl`
+- Corners: `rounded-3xl` for tactile card aesthetic
+- Aspect ratio: 2:3 (consistent across all card types)
+
+**Secondary Cards (Insights):**
+- Gradient: `from-violet-50 via-indigo-50/40 to-violet-50`
+- Same border/shadow pattern as primary cards
+
+**Results Cards:**
+- Gradient: `from-emerald-50 via-teal-50/40 to-emerald-50`
+- Consistent card aesthetic
+
+**Closed/Inactive:**
+- Gradient: `from-gray-200 via-gray-100 to-gray-200`
+- Overlay: `bg-gray-900/10` with status badge
+
+#### Container Patterns
+**Headers/Footers:**
+- Background: `bg-white/70` to `bg-white/95` with `backdrop-blur-sm`
+- Border: `border-stone-200` (top or bottom based on position)
+
+**Content Containers:**
+- Poll question pill: `bg-white/80 backdrop-blur-sm border-stone-200`
+- Form containers: `bg-white/70` with stone borders
+- Card backgrounds within pages: `bg-white/80` (not full stone gradient)
+
+#### Interactive Elements
+**Progress Bar:**
+- Filled: `bg-amber-500`
+- Current: `bg-amber-300` with pulse animation
+- Empty: `bg-amber-100`
+- Size: `h-2` (thicker for visibility)
+- Gap: `gap-1.5` between segments
+
+**Buttons:**
+- Keep/Agree: `bg-gradient-to-b from-emerald-600 to-emerald-700`
+- Throw/Disagree: `bg-gradient-to-b from-red-600 to-red-700`
+- Pass/Skip: `bg-gray-600`
+- Primary Action: `bg-gradient-to-b from-amber-600 to-amber-700`
+- Secondary: `border-amber-200 hover:bg-amber-50`
+- All buttons: `shadow-lg hover:shadow-xl` with `h-14` for primary voting actions
+
+#### Typography
+**Text Colors:**
+- Primary: `text-gray-900` (dark, high contrast)
+- Secondary: `text-gray-600` (medium, readable)
+- Muted: `text-gray-500` (subtle, helper text)
+- On-card: `text-gray-800` (slightly lighter for warm backgrounds)
+
+**Font Sizes:**
+- Context (poll questions): `text-base md:text-lg font-semibold`
+- Statement (hero): `text-lg md:text-xl font-medium` (enlarged in v1.5)
+- Buttons: `text-base font-bold`
+- Helper text: `text-sm text-gray-600`
+
+#### Spacing & Rhythm
+**Consistent 8px system:**
+- xs: 8px, sm: 16px, md: 24px, lg: 32px, xl: 40px, 2xl: 48px
+- Page padding: `py-8` to `py-12`
+- Card margins: `mb-8` between sections
+- Button height: `h-12` for secondary, `h-14` for primary voting actions
+
+#### Component Styling Rules
+When creating/styling components:
+1. **Always use stone background** for full-page containers
+2. **Use white/80 overlays** for nested containers (not stone gradient)
+3. **Use amber borders** (`border-amber-200/50`) for warm cards
+4. **Use stone borders** (`border-stone-200`) for neutral containers
+5. **Maintain 3xl rounding** (`rounded-3xl`) for cards
+6. **Apply consistent shadows** (`shadow-lg` standard, `shadow-xl` for hero elements)
+7. **Follow RTL principles** with logical properties (ms-*, me-*, start, end)
+8. **Keep decorative elements** (✦ symbols) for card authenticity
+
 ## Technology Stack
 
 - **Framework**: Next.js 15 with App Router

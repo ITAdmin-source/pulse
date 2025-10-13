@@ -191,7 +191,7 @@ export function ResultsDashboard({
         <Collapsible open={allCardsOpen} onOpenChange={setAllCardsOpen}>
           <Card className="border-gray-200">
             <CollapsibleTrigger className="w-full">
-              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-white/70 transition-colors">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl">כל הקלפים ({statements.length})</CardTitle>
                   <ChevronDown

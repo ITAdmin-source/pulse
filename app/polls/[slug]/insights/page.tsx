@@ -23,7 +23,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
   const pollResult = await getPollBySlugAction(slug);
   if (!pollResult.success || !pollResult.data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">סקר לא נמצא</h1>
           <Button asChild>
@@ -51,7 +51,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
 
   if (!dbUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">הפעלה לא נמצאה</h1>
           <p className="text-gray-600 mb-4">אנא התחל להצביע כדי ליצור תובנות.</p>
@@ -77,7 +77,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     const remainingVotes = Math.max(0, threshold - totalVoted);
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center space-y-6 max-w-md px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             בחר עוד קלפים תחילה
@@ -127,7 +127,7 @@ export default async function InsightsPage({ params }: InsightsPageProps) {
     } catch (error) {
       console.error("Failed to generate insight:", error);
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
           <div className="text-center space-y-6 max-w-md px-4">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               לא ניתן ליצור תובנות

@@ -47,7 +47,7 @@ export function ShuffleIntro({ onComplete, onSkip }: ShuffleIntroProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex items-center justify-center z-50"
       onClick={onSkip}
     >
       {/* Skip button */}

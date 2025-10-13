@@ -1,10 +1,11 @@
 # Pulse - UX/UI Specification Document
 
-**Version:** 1.4
-**Date:** 2025-10-10
+**Version:** 1.5
+**Date:** 2025-10-13
 **Purpose:** Complete frontend specification for designers and developers
 
 **Changelog:**
+- **v1.5 (2025-10-13)**: Unified design system makeover - Implemented neutral stone backgrounds (`from-stone-100 via-stone-50 to-stone-100`) across all pages, warm amber cards create visual hierarchy, thicker progress bars (`h-2`), stone borders (`border-stone-200`), consistent component patterns, maximum card prominence through contrast
 - **v1.4 (2025-10-10)**: Card deck terminology finalized - Updated all button labels and terminology to Hebrew infinitives (לשמור/לזרוק/לדלג), replaced "vote/voting" with "choose/choosing" conceptually
 - **v1.3 (2025-10-09)**: Hebrew RTL makeover - Complete Hebrew translation with gender-neutral forms, RTL layout using CSS logical properties, Rubik font, Clerk Hebrew localization, all UI components translated
 - **v1.2 (2025-10-08)**: Card deck metaphor refinements - InsightCard/ResultsCard redesigns, Continuation page achievement metaphor, Closed poll dual-card layout, Poll listing deck cards with emoji
@@ -238,15 +239,83 @@ All user-facing elements translated:
   - Progress bar shows position in the deck (Instagram Stories style)
   - Personal insights and poll results are collectible cards
   - Continuation page uses achievement/milestone metaphor
-- **Color System (Card-Coded Gradients):**
-  - **Amber**: Voting cards, active polls, progress pages (`from-amber-50 via-orange-50/40 to-amber-50`)
-  - **Indigo/Violet**: Personal insights (`#ddd6fe`, `#e0e7ff`, `#dbeafe` with animated shimmer)
-  - **Emerald/Teal**: Poll results (`#d1fae5`, `#dbeafe` with animated shimmer)
-  - **Gray**: Closed/archived polls
-- **Typography:** Rubik font family (Hebrew + Latin support)
+
+### Unified Color System (v1.5 - 2025-10-13)
+
+**Design Philosophy:** Neutral backdrop with warm card accents
+- Warm amber cards "glow" against cool neutral backgrounds
+- Maximum visual hierarchy - cards are undisputed hero elements
+- Physical card metaphor: like warm playing cards on a neutral table
+- Consistent across all pages for cohesive app experience
+
+#### Background Colors
+- **Page Backgrounds:** `bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100`
+  - Cool neutral gray-beige gradient
+  - Applied universally: voting, results, insights, admin, auth pages
+  - Creates 40-50% contrast with warm card elements
+
+- **Container Overlays:** `bg-white/70` to `bg-white/80` with `backdrop-blur-sm`
+  - Used for headers, footers, pills, form containers
+  - Semi-transparent white for depth without blocking background
+  - Border: `border-stone-200` for subtle definition
+
+#### Card & Content Colors
+- **Primary Cards (Active Polls, Statements):** `from-amber-50 via-orange-50/40 to-amber-50`
+  - Warm amber gradient makes cards pop against neutral background
+  - Border: `border-amber-200/50` for soft definition
+  - Shadow: `shadow-lg` to `shadow-xl` for depth
+  - Rounded corners: `rounded-3xl` for tactile card aesthetic
+
+- **Secondary Cards (Insights):** `from-violet-50 via-indigo-50/40 to-violet-50`
+  - Cool purple gradient for differentiation
+  - Maintains same border/shadow pattern as primary cards
+
+- **Results Cards:** `from-emerald-50 via-teal-50/40 to-emerald-50`
+  - Green gradient for results/completion
+  - Consistent card aesthetic across all card types
+
+- **Closed/Inactive States:** `from-gray-200 via-gray-100 to-gray-200`
+  - Desaturated gray gradient
+  - Overlay: `bg-gray-900/10` with status badge
+
+#### Accent Colors
+- **Progress Bar:** `bg-amber-500` (filled), `bg-amber-300` (current/pulsing), `bg-amber-100` (empty)
+  - Thickness: `h-2` (thicker than v1.4)
+  - Gap: `gap-1.5` between segments
+  - Warm amber for consistency with card theme
+
+- **Borders:**
+  - Primary: `border-stone-200` (neutral containers)
+  - Accent: `border-amber-200/50` (warm cards)
+  - Strong: `border-amber-200` (emphasis)
+
+- **Interactive States:**
+  - Keep/Agree: `from-emerald-600 to-emerald-700` (green gradient)
+  - Throw/Disagree: `from-red-600 to-red-700` (red gradient)
+  - Pass/Unsure: `bg-gray-600` (neutral gray)
+  - Primary Actions: `from-amber-600 to-amber-700` (warm amber)
+
+#### Component Patterns
+- **Headers:** `bg-white/95 backdrop-blur-sm border-b-2 border-stone-200`
+- **Footers:** `bg-white/70 backdrop-blur-sm border-t border-stone-200`
+- **Modals:** White/amber cards on semi-transparent backdrop
+- **Form Inputs:** White background with stone borders
+- **Buttons:**
+  - Primary: Amber gradient with `shadow-lg`
+  - Secondary: `border-amber-200 hover:bg-amber-50`
+  - Ghost: Minimal with gray text
+
+#### Typography
+- **Font Family:** Rubik (Hebrew + Latin support)
   - Primary font: Rubik (replaces Geist Sans/Mono)
   - Font weights: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
   - Optimized for Hebrew readability with excellent glyph coverage
+
+- **Text Colors:**
+  - Primary: `text-gray-900` (dark, high contrast)
+  - Secondary: `text-gray-600` (medium, readable)
+  - Muted: `text-gray-500` (subtle, helper text)
+  - On-card: `text-gray-800` (slightly lighter for warm backgrounds)
   - Clean, modern sans-serif style works well for both Hebrew and Latin characters
 - **Spacing System:** 4px base grid (4, 8, 16, 24, 32, 48, 64px)
 - **Border Radius:** Cards: 24px (rounded-3xl), Buttons: 8px, Small elements: 4px

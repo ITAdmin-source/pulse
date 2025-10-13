@@ -24,7 +24,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
 
   if (!pollResult.success || !pollResult.data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">סקר לא נמצא</h1>
           <Button asChild>
@@ -51,7 +51,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
     const isScheduled = poll.startTime && new Date(poll.startTime) > new Date();
 
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             {isScheduled ? "סקר עדיין לא פעיל" : "סקר לא זמין"}
@@ -117,7 +117,7 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
   const isCompleted = votedCount > 0 && votedCount >= totalStatements;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       {/* Prefetch first batch of statements in background for faster voting page load */}
       {dbUser && (isNewUser || isInProgress) && (
         <PrefetchStatements pollId={poll.id} userId={dbUser.id} batchNumber={1} />

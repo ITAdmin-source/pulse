@@ -562,7 +562,7 @@ export default function ManagePage({ params }: ManagePageProps) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">Loading poll data...</p>
@@ -574,7 +574,7 @@ export default function ManagePage({ params }: ManagePageProps) {
   // Show error state if poll not found
   if (!poll) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-900 text-xl mb-4">Poll not found</p>
           <Button asChild>
@@ -594,7 +594,7 @@ export default function ManagePage({ params }: ManagePageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Poll Header */}
@@ -772,7 +772,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                   {pendingStatements.map((statement) => (
                     <div
                       key={statement.id}
-                      className="flex gap-3 p-4 bg-gray-50 rounded-lg border"
+                      className="flex gap-3 p-4 bg-white/80 rounded-lg border"
                     >
                       <Checkbox
                         checked={selectedStatements.includes(statement.id)}
@@ -832,7 +832,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                 {approvedStatements.map((statement) => (
                   <div
                     key={statement.id}
-                    className="flex gap-3 p-4 bg-gray-50 rounded-lg border"
+                    className="flex gap-3 p-4 bg-white/80 rounded-lg border"
                   >
                     <div className="flex-grow space-y-2">
                       <p className="text-gray-900">{statement.text}</p>
@@ -1284,7 +1284,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                         .map((manager) => (
                           <div
                             key={manager.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            className="flex items-center justify-between p-3 bg-white/80 rounded-lg border border-gray-200"
                           >
                             <div className="flex items-center gap-3">
                               <Badge variant="secondary">Manager</Badge>
@@ -1332,7 +1332,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                 </div>
 
                 {/* Help Text */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-amber-50/60 border border-gray-200 rounded-lg p-4">
                   <h4 className="font-semibold text-sm text-gray-900 mb-2">How to add managers</h4>
                   <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
                     <li>Get the user&apos;s Clerk ID or email address</li>

@@ -28,11 +28,11 @@ export function HeatmapTable({ data }: HeatmapTableProps) {
         <div className="overflow-hidden border border-gray-200 rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             {/* Header */}
-            <thead className="bg-gray-50 sticky top-0 z-10">
+            <thead className="bg-white/70 sticky top-0 z-10">
               <tr>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gray-50 border-l border-gray-200"
+                  className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-white/70 border-l border-gray-200"
                   style={{ minWidth: '250px', maxWidth: '400px' }}
                 >
                   הצהרה
@@ -63,7 +63,7 @@ export function HeatmapTable({ data }: HeatmapTableProps) {
             {/* Body */}
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((statement, idx) => (
-                <tr key={statement.statementId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr key={statement.statementId} className={idx % 2 === 0 ? 'bg-white' : 'bg-white/70'}>
                   {/* Statement text */}
                   <td
                     className="px-4 py-3 text-sm text-gray-900 sticky right-0 bg-inherit border-l border-gray-200"

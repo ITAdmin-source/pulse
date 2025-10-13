@@ -23,7 +23,11 @@
       "Bash(ping:*)",
       "Bash(node:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(sed:*)",
+      "Bash(for file in components/admin/user-details-modal.tsx components/analytics/*.tsx components/polls/anonymous-insight-handler.tsx components/shared/results-dashboard.tsx components/voting/shuffle-intro.tsx)",
+      "Bash(do [ -f \"$file\" ])",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": [

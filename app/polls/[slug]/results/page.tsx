@@ -48,7 +48,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   const poll = pollResult.success ? pollResult.data : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="space-y-6">

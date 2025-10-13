@@ -60,7 +60,7 @@ export default function DashboardPage() {
 
   if (userLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <main className="container mx-auto px-4 py-8">
           <Skeleton className="h-12 w-64 mb-8" />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

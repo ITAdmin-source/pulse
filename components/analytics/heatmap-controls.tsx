@@ -133,7 +133,7 @@ export function HeatmapControls({
               variant="outline"
               size="sm"
               onClick={() => toggleType(type.value)}
-              className={`${selectedTypes.includes(type.value) ? type.color : 'bg-white hover:bg-gray-50'} border transition-colors`}
+              className={`${selectedTypes.includes(type.value) ? type.color : 'bg-white hover:bg-white/70'} border transition-colors`}
             >
               {type.label}
             </Button>

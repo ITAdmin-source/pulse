@@ -115,7 +115,7 @@ export function AnonymousInsightHandler({
   // Loading state - calm and simple for fast response
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center space-y-4 max-w-md px-4">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
 
@@ -134,7 +134,7 @@ export function AnonymousInsightHandler({
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
         <div className="text-center space-y-6 max-w-md px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">לא ניתן ליצור תובנות</h1>
           <h2 className="text-xl text-gray-700">Could Not Generate Insights</h2>
@@ -158,7 +158,7 @@ export function AnonymousInsightHandler({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       <main className="container mx-auto px-4 py-4 max-w-3xl">
         <div className="space-y-4">
           {/* Insight Card */}

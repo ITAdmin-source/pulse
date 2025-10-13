@@ -241,25 +241,25 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
                   </div>
                 ) : detailedStats ? (
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-white/70 rounded-lg">
                       <p className="text-sm text-gray-600">Polls Participated</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
                         {detailedStats.pollsParticipated.length}
                       </p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-white/70 rounded-lg">
                       <p className="text-sm text-gray-600">Total Votes</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
                         {detailedStats.totalVotes}
                       </p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-white/70 rounded-lg">
                       <p className="text-sm text-gray-600">Insights Generated</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
                         {detailedStats.insightsGenerated}
                       </p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-white/70 rounded-lg">
                       <p className="text-sm text-gray-600">Statements Submitted</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
                         {detailedStats.statementsSubmitted}
@@ -283,7 +283,7 @@ export function UserDetailsModal({ user, onClose, onUpdate }: UserDetailsModalPr
                     {user.roles.map((role, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
+                        className="flex items-center justify-between p-2 bg-white/70 rounded border border-gray-200"
                       >
                         <div>
                           <Badge variant="outline">{role.role}</Badge>

@@ -155,184 +155,186 @@ export function StatementCard({
         </Card>
       </motion.div>
 
-      {/* Action Buttons - Below card, NOT overlaying */}
-      <AnimatePresence mode="wait">
-        {!showResults && buttonsVisible && (
-          <motion.div
-            key="buttons"
-            className="w-full max-w-xs space-y-4"
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25,
-              delay: 0.6  // Appear after card settles
-            }}
-          >
-            {/* Primary voting buttons - Side by side */}
-            <div className="flex gap-3 w-full justify-center">
-              {/* Keep button (לשמור) - appears on RIGHT in RTL */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="flex-1"
-              >
-                <Button
-                  onClick={() => handleVote(1)}
-                  disabled={disabled}
-                  className="w-full h-14 text-base font-bold shadow-lg hover:shadow-xl transition-all bg-gradient-to-b from-emerald-600 to-emerald-700"
+      {/* Fixed-height action area - prevents card from jumping */}
+      <div className="w-full max-w-xs relative" style={{ minHeight: '140px' }}>
+        <AnimatePresence mode="wait">
+          {!showResults && buttonsVisible && (
+            <motion.div
+              key="buttons"
+              className="absolute inset-0 w-full space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                delay: 0.6  // Appear after card settles
+              }}
+            >
+              {/* Primary voting buttons - Side by side */}
+              <div className="flex gap-3 w-full justify-center">
+                {/* Keep button (לשמור) - appears on RIGHT in RTL */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className="flex-1"
                 >
-                  {agreeLabel}
-                </Button>
-              </motion.div>
-
-              {/* Throw button (לזרוק) - appears on LEFT in RTL */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="flex-1"
-              >
-                <Button
-                  onClick={() => handleVote(-1)}
-                  disabled={disabled}
-                  className="w-full h-14 text-base font-bold shadow-lg hover:shadow-xl transition-all"
-                  variant="destructive"
-                >
-                  {disagreeLabel}
-                </Button>
-              </motion.div>
-            </div>
-
-            {/* Secondary actions row - Skip and Add Card */}
-            <div className="flex items-center justify-center gap-3">
-              {/* Skip/Pass button */}
-              <Button
-                onClick={() => handleVote(0)}
-                disabled={disabled}
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-900 text-sm"
-              >
-                {passLabel}
-              </Button>
-
-              {/* Add Card button (if enabled) */}
-              {showAddCardButton && onAddCard && (
-                <>
-                  <span className="text-gray-400">|</span>
                   <Button
-                    onClick={onAddCard}
+                    onClick={() => handleVote(1)}
                     disabled={disabled}
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600 hover:text-blue-700 text-sm"
+                    className="w-full h-14 text-base font-bold shadow-lg hover:shadow-xl transition-all bg-gradient-to-b from-emerald-600 to-emerald-700"
                   >
-                    <Plus className="h-4 w-4 me-1" />
-                    הוסף קלף
+                    {agreeLabel}
                   </Button>
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Results Display - Below card */}
-        {showResults && (
-          <motion.div
-            key="results"
-            className="w-full max-w-xs"
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25
-            }}
-          >
-            <div className="space-y-2">
-              {/* Tri-colored results bar */}
-              <div className="flex h-14 w-full rounded-full overflow-hidden shadow-lg border-2 border-white/80">
-                {/* Keep segment (Green) */}
-                <motion.div
-                  className="bg-emerald-600 flex items-center justify-center relative"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${agreePercent}%` }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                >
-                  {agreePercent > 0 && (
-                    <motion.div
-                      className="flex items-center gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      {userVote === 1 && <Check className="h-5 w-5 text-white" />}
-                      {agreePercent >= 15 && (
-                        <span className="text-sm font-bold text-white">{agreePercent}%</span>
-                      )}
-                    </motion.div>
-                  )}
                 </motion.div>
 
-                {/* Throw segment (Red) */}
+                {/* Throw button (לזרוק) - appears on LEFT in RTL */}
                 <motion.div
-                  className="bg-red-600 flex items-center justify-center relative"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${disagreePercent}%` }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className="flex-1"
                 >
-                  {disagreePercent > 0 && (
-                    <motion.div
-                      className="flex items-center gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      {userVote === -1 && <X className="h-5 w-5 text-white" />}
-                      {disagreePercent >= 15 && (
-                        <span className="text-sm font-bold text-white">{disagreePercent}%</span>
-                      )}
-                    </motion.div>
-                  )}
-                </motion.div>
-
-                {/* Pass segment (Gray) */}
-                <motion.div
-                  className="bg-gray-600 flex items-center justify-center relative"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${unsurePercent}%` }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                >
-                  {unsurePercent > 0 && (
-                    <motion.div
-                      className="flex items-center gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      {userVote === 0 && <Minus className="h-5 w-5 text-white" />}
-                      {unsurePercent >= 15 && (
-                        <span className="text-sm font-bold text-white">{unsurePercent}%</span>
-                      )}
-                    </motion.div>
-                  )}
+                  <Button
+                    onClick={() => handleVote(-1)}
+                    disabled={disabled}
+                    className="w-full h-14 text-base font-bold shadow-lg hover:shadow-xl transition-all"
+                    variant="destructive"
+                  >
+                    {disagreeLabel}
+                  </Button>
                 </motion.div>
               </div>
 
-              {/* Labels below bar (for segments too small to show percentage) */}
-              <div className="flex justify-between text-xs text-gray-600 px-2" dir="rtl">
-                <span>{agreeLabel} {agreePercent < 15 ? `${agreePercent}%` : ''}</span>
-                <span>{disagreeLabel} {disagreePercent < 15 ? `${disagreePercent}%` : ''}</span>
-                <span>{passLabel} {unsurePercent < 15 ? `${unsurePercent}%` : ''}</span>
+              {/* Secondary actions row - Skip and Add Card */}
+              <div className="flex items-center justify-center gap-3">
+                {/* Skip/Pass button */}
+                <Button
+                  onClick={() => handleVote(0)}
+                  disabled={disabled}
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-900 text-sm"
+                >
+                  {passLabel}
+                </Button>
+
+                {/* Add Card button (if enabled) */}
+                {showAddCardButton && onAddCard && (
+                  <>
+                    <span className="text-gray-400">|</span>
+                    <Button
+                      onClick={onAddCard}
+                      disabled={disabled}
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 text-sm"
+                    >
+                      <Plus className="h-4 w-4 me-1" />
+                      הוסף קלף
+                    </Button>
+                  </>
+                )}
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* Results Display - Same vertical space as buttons */}
+          {showResults && (
+            <motion.div
+              key="results"
+              className="absolute inset-0 w-full flex items-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25
+              }}
+            >
+              <div className="space-y-2 w-full">
+                {/* Tri-colored results bar */}
+                <div className="flex h-14 w-full rounded-full overflow-hidden shadow-lg border-2 border-white/80">
+                  {/* Keep segment (Green) */}
+                  <motion.div
+                    className="bg-emerald-600 flex items-center justify-center relative"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${agreePercent}%` }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    {agreePercent > 0 && (
+                      <motion.div
+                        className="flex items-center gap-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        {userVote === 1 && <Check className="h-5 w-5 text-white" />}
+                        {agreePercent >= 15 && (
+                          <span className="text-sm font-bold text-white">{agreePercent}%</span>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Throw segment (Red) */}
+                  <motion.div
+                    className="bg-red-600 flex items-center justify-center relative"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${disagreePercent}%` }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    {disagreePercent > 0 && (
+                      <motion.div
+                        className="flex items-center gap-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        {userVote === -1 && <X className="h-5 w-5 text-white" />}
+                        {disagreePercent >= 15 && (
+                          <span className="text-sm font-bold text-white">{disagreePercent}%</span>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Pass segment (Gray) */}
+                  <motion.div
+                    className="bg-gray-600 flex items-center justify-center relative"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${unsurePercent}%` }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    {unsurePercent > 0 && (
+                      <motion.div
+                        className="flex items-center gap-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        {userVote === 0 && <Minus className="h-5 w-5 text-white" />}
+                        {unsurePercent >= 15 && (
+                          <span className="text-sm font-bold text-white">{unsurePercent}%</span>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* Labels below bar (for segments too small to show percentage) */}
+                <div className="flex justify-between text-xs text-gray-600 px-2" dir="rtl">
+                  <span>{agreeLabel} {agreePercent < 15 ? `${agreePercent}%` : ''}</span>
+                  <span>{disagreeLabel} {disagreePercent < 15 ? `${disagreePercent}%` : ''}</span>
+                  <span>{passLabel} {unsurePercent < 15 ? `${unsurePercent}%` : ''}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

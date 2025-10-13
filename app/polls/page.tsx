@@ -127,7 +127,7 @@ export default function PollsPage() {
     return "active";
   };
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
       {/* Main Content - Header is handled by AdaptiveHeader */}
       <main className="container mx-auto px-4 py-12">
         {/* Welcome Section */}
