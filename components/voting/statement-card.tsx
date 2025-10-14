@@ -140,7 +140,7 @@ export function StatementCard({
         />
 
         {/* Main card with fixed aspect ratio - scales down to fit viewport */}
-        <Card className="relative w-full aspect-[2/3] max-h-[50vh] md:max-h-[60vh] shadow-lg rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50">
+        <Card className="relative w-full aspect-[2/3] max-h-[45vh] md:max-h-[60vh] shadow-lg rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50">
           <CardContent className="p-6 h-full flex flex-col justify-center items-center relative">
             {/* Small decorative element */}
             <div className="mb-4 text-3xl opacity-60">✦</div>

@@ -1010,8 +1010,8 @@ export default function VotingPage({ params }: VotingPageProps) {
     <div className="h-[calc(100vh-48px)] overflow-hidden bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex flex-col" dir="rtl">
       {/* Main Voting Interface - Full viewport layout with header spacing */}
       <main className="flex-1 flex flex-col overflow-y-auto px-4 min-h-0" data-debug="main-container">
-        {/* Statement Card - Fills available space */}
-        <div className="flex-1 flex items-center justify-center w-full max-w-md mx-auto min-h-0" data-debug="card-container">
+        {/* Card container - natural sizing on mobile, expands on desktop */}
+        <div className="md:flex-1 flex items-center justify-center w-full max-w-md mx-auto min-h-0 py-4 md:py-0" data-debug="card-container">
           <AnimatePresence mode="popLayout">
             {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard
