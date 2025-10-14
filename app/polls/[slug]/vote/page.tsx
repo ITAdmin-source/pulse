@@ -1040,20 +1040,20 @@ export default function VotingPage({ params }: VotingPageProps) {
             )}
           </AnimatePresence>
         </div>
-      </main>
 
-      {/* Progress Bar Footer - Fixed at bottom */}
-      {progress && (
-        <footer className="flex-shrink-0 bg-white/70 backdrop-blur-sm border-t border-stone-200">
-          <div className="container mx-auto px-4 py-2">
-            <ProgressBar
-              totalSegments={progress.statementsInCurrentBatch}
-              currentSegment={progress.positionInBatch}
-              showingResults={votingState.showResults || false}
-            />
+        {/* Progress Bar - Part of scrollable content */}
+        {progress && (
+          <div className="flex-shrink-0 w-full max-w-md mx-auto pb-4 pt-2">
+            <div className="bg-white/70 backdrop-blur-sm border border-stone-200 rounded-2xl px-4 py-3">
+              <ProgressBar
+                totalSegments={progress.statementsInCurrentBatch}
+                currentSegment={progress.positionInBatch}
+                showingResults={votingState.showResults || false}
+              />
+            </div>
           </div>
-        </footer>
-      )}
+        )}
+      </main>
 
       {/* Demographics Modal - Mandatory, non-dismissible */}
       <DemographicsModal

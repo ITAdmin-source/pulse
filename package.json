@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mobile": "next dev -H 0.0.0.0",
     "dev:clean": "npm run kill-dev && npm run clean && npm run dev",
     "kill-dev": "taskkill /f /im node.exe",
     "clean": "rm -rf .next && npm cache clean --force",
