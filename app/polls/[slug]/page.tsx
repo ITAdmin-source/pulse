@@ -117,14 +117,14 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
   const isCompleted = votedCount > 0 && votedCount >= totalStatements;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
+    <div className="h-[calc(100vh-48px)] overflow-hidden bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex flex-col">
       {/* Prefetch first batch of statements in background for faster voting page load */}
       {dbUser && (isNewUser || isInProgress) && (
         <PrefetchStatements pollId={poll.id} userId={dbUser.id} batchNumber={1} />
       )}
 
       {/* Main Content - Header is handled by AdaptiveHeader */}
-      <main className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-72px)]">
+      <main className="flex-1 container mx-auto px-4 py-4 flex items-center justify-center">
         <div className="max-w-2xl w-full space-y-8">
           {/* Manage Poll Button - show for owners/managers */}
           {canManage && (

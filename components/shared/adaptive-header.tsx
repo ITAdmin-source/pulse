@@ -93,27 +93,18 @@ export function AdaptiveHeader() {
 
     return (
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex items-center justify-between gap-2">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-start justify-between gap-2">
             {/* Share Button - Poll Entry Page */}
             <ShareButton url={shareUrl} title={pollTitle || undefined} description="בוא לבחור קלפים ולגלות את נקודת המבט שלך" />
 
-            {/* Poll Title (Truncated with Tooltip) */}
+            {/* Poll Title (Multi-line, no truncate) */}
             {pollTitle ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-1 text-center min-w-0">
-                      <h1 className="text-sm font-medium text-gray-800 truncate" dir="auto">
-                        {displayTitle}
-                      </h1>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs" dir="auto">{displayTitle}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="flex-1 text-center min-w-0 px-2">
+                <h1 className="text-sm md:text-base font-semibold text-gray-800 line-clamp-3" dir="auto">
+                  {displayTitle}
+                </h1>
+              </div>
             ) : (
               <div className="flex-1 text-center min-w-0">
                 <div className="h-4 w-32 bg-gray-200 animate-pulse rounded mx-auto" />

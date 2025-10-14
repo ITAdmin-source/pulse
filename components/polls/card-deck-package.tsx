@@ -41,11 +41,11 @@ export function CardDeckPackage({
         onClick={onClick}
         className="cursor-pointer relative z-10"
       >
-        <Card className="relative w-full aspect-[2/3] shadow-2xl rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 transition-shadow hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]" style={{ willChange: "transform" }}>
-          <CardContent className="p-8 h-full flex flex-col justify-between items-center">
+        <Card className="relative w-full aspect-[2/3] max-h-[60vh] shadow-2xl rounded-3xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 transition-shadow hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]" style={{ willChange: "transform" }}>
+          <CardContent className="p-2 md:p-6 h-full flex flex-col justify-between items-center">
             {/* Top decorative element */}
-            <div className="text-center space-y-2">
-              <div className="text-4xl opacity-70">✦</div>
+            <div className="text-center space-y-1">
+              <div className="text-3xl opacity-70">✦</div>
               <div className="text-xs font-semibold text-gray-600 tracking-widest uppercase">
                 חפיסת סקר
               </div>
@@ -55,7 +55,7 @@ export function CardDeckPackage({
             <div className="flex-1 flex flex-col items-center justify-center space-y-4 w-full px-2">
               {/* Poll Question + Description */}
               <div className="text-center space-y-2">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                <h2 className="text-lg md:text-l font-bold text-gray-900 leading-tight line-clamp-4">
                   {pollQuestion}
                 </h2>
                 {description && (
@@ -74,15 +74,15 @@ export function CardDeckPackage({
 
               {/* Instructions */}
               <div className="text-center space-y-2">
-                <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed">
                   שמור או זרוק כל קלף
                 </p>
                 {allowUserStatements && (
-                  <p className="text-sm text-amber-700 font-semibold">
+                  <p className="text-xs md:text-sm text-amber-700 font-semibold">
                     הוסף קלף מנצח
                   </p>
                 )}
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-600 leading-relaxed">
                   גלה תובנות מפתיעות
                 </p>
               </div>

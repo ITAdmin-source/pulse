@@ -46,6 +46,16 @@ export const colors = {
     shadow: "shadow-lg",
     text: "text-gray-800",
     deckLayer: "bg-white",
+    // Card aspect ratios - restored to original 2:3 after removing poll question pill
+    aspect: {
+      standard: "aspect-[2/3]", // Classic card proportions (portrait)
+      compact: "aspect-[3/4]", // Alternative: shorter cards
+    },
+    // Max heights for viewport constraints
+    maxHeight: {
+      entry: "max-h-[60vh]", // Entry page deck
+      voting: "max-h-[50vh] md:max-h-[60vh]", // Voting page statements (responsive)
+    },
   },
 } as const;
 

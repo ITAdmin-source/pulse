@@ -459,6 +459,52 @@ export default function VotingPage({ params }: VotingPageProps) {
   const threshold = progress?.threshold || 10;
   const canFinish = progress?.canFinish || false;
 
+  // Debug: Measure viewport and component heights
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const measureHeights = () => {
+      const viewportHeight = window.innerHeight;
+      const header = document.querySelector('header');
+      const pollQuestion = document.querySelector('[data-debug="poll-question"]');
+      const cardContainer = document.querySelector('[data-debug="card-container"]');
+      const card = document.querySelector('[data-debug="statement-card"]');
+      const secondaryButtons = document.querySelector('[data-debug="secondary-buttons"]');
+      const footer = document.querySelector('footer');
+      const main = document.querySelector('main');
+
+      console.log('=== VIEWPORT MEASUREMENTS (Desktop Debug) ===');
+      console.log('Viewport Height:', viewportHeight + 'px');
+      console.log('\n--- Component Heights ---');
+      console.log('Header:', header?.getBoundingClientRect().height + 'px');
+      console.log('Poll Question Container:', pollQuestion?.getBoundingClientRect().height + 'px');
+      console.log('Card Container (with margins):', cardContainer?.getBoundingClientRect().height + 'px');
+      console.log('Statement Card (actual):', card?.getBoundingClientRect().height + 'px');
+      console.log('Secondary Buttons:', secondaryButtons?.getBoundingClientRect().height + 'px');
+      console.log('Footer:', footer?.getBoundingClientRect().height + 'px');
+      console.log('Main Container:', main?.getBoundingClientRect().height + 'px');
+
+      const total = (header?.getBoundingClientRect().height || 0) +
+                    (main?.getBoundingClientRect().height || 0) +
+                    (footer?.getBoundingClientRect().height || 0);
+
+      console.log('\n--- Totals ---');
+      console.log('Total Height:', total + 'px');
+      console.log('Overflow:', (total - viewportHeight) + 'px');
+      console.log('Fits in viewport:', total <= viewportHeight ? '✅ YES' : '❌ NO');
+      console.log('=====================================\n');
+    };
+
+    // Measure after render and animations settle
+    const timers = [
+      setTimeout(measureHeights, 100),
+      setTimeout(measureHeights, 1000),
+      setTimeout(measureHeights, 2000),
+    ];
+
+    return () => timers.forEach(clearTimeout);
+  }, [votingState.currentStatement]);
+
   // Handle finishing voting session
   const handleFinish = useCallback(async () => {
     if (!canFinish || !statementManager) {
@@ -961,25 +1007,11 @@ export default function VotingPage({ params }: VotingPageProps) {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex flex-col" dir="rtl">
+    <div className="h-[calc(100vh-48px)] overflow-hidden bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100 flex flex-col" dir="rtl">
       {/* Main Voting Interface - Full viewport layout with header spacing */}
-      <main className="flex-1 flex flex-col overflow-hidden px-4 py-8 min-h-0">
-        {/* Poll Question Label - Refined card-like pill */}
-        <div className="flex-shrink-0 mb-8">
-          <div className="max-w-md mx-auto px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-stone-200 shadow-sm">
-            <h1 className="text-base md:text-lg font-semibold text-gray-900 text-center" dir="auto">
-              {poll?.question}
-            </h1>
-            {poll?.endTime && (
-              <p className="text-xs text-gray-600 text-center mt-2" dir="auto">
-                מסתיים ב-{new Date(poll.endTime).toLocaleDateString()} בשעה {new Date(poll.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Statement Card - Takes available space and shrinks if needed */}
-        <div className="flex-1 flex items-center justify-center w-full max-w-md mx-auto min-h-0">
+      <main className="flex-1 flex flex-col overflow-y-auto px-4 min-h-0" data-debug="main-container">
+        {/* Statement Card - Fills available space */}
+        <div className="flex-1 flex items-center justify-center w-full max-w-md mx-auto min-h-0" data-debug="card-container">
           <AnimatePresence mode="popLayout">
             {votingState.phase === 'viewing' && votingState.currentStatement ? (
               <StatementCard
@@ -1013,7 +1045,7 @@ export default function VotingPage({ params }: VotingPageProps) {
       {/* Progress Bar Footer - Fixed at bottom */}
       {progress && (
         <footer className="flex-shrink-0 bg-white/70 backdrop-blur-sm border-t border-stone-200">
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-4 py-2">
             <ProgressBar
               totalSegments={progress.statementsInCurrentBatch}
               currentSegment={progress.positionInBatch}
