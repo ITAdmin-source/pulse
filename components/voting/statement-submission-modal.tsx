@@ -19,6 +19,7 @@ interface StatementSubmissionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pollId: string;
+  pollTitle: string;
   userId: string | null;
   autoApprove: boolean;
 }
@@ -29,6 +30,7 @@ export function StatementSubmissionModal({
   open,
   onOpenChange,
   pollId,
+  pollTitle,
   userId,
   autoApprove,
 }: StatementSubmissionModalProps) {
@@ -82,59 +84,52 @@ export function StatementSubmissionModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>הוספת קלף חדש</DialogTitle>
+          <DialogTitle>יש לך רעיון? חסרה נקודת המבט שלך?</DialogTitle>
           <DialogDescription>
-            צור קלף חדש כדי להוסיף נקודת מבט חסרה לחפיסת הסקר.
-            {!autoApprove && " הקלף שלך יבדק לפני ההוספה."}
+            {pollTitle}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Text Input */}
+          {/* Card-style Text Editor */}
           <div className="space-y-2">
-            <label htmlFor="card-text" className="text-sm font-medium">
-              מה צריך להיות כתוב על הקלף?
-            </label>
-            <Textarea
-              id="card-text"
-              placeholder="כתוב את ההצהרה כאן..."
-              rows={4}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              disabled={isSubmitting}
-              className={isOverLimit ? "border-red-500 focus-visible:ring-red-500" : ""}
-              dir="auto"
-            />
-            <div className="flex items-center justify-between text-sm">
-              <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-500"}>
+            <div className="relative p-6 rounded-2xl border border-amber-200/50 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="text-xl opacity-40 flex-shrink-0">✦</div>
+                <Textarea
+                  id="card-text"
+                  placeholder="כתוב את תשובתך כאן..."
+                  rows={3}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  disabled={isSubmitting}
+                  className={`flex-1 text-center resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-medium text-gray-800 placeholder:text-gray-400 ${isOverLimit ? "text-red-600" : ""}`}
+                  dir="auto"
+                />
+                <div className="text-xl opacity-40 flex-shrink-0">✦</div>
+              </div>
+            </div>
+
+            {/* Character counter */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-400"}>
                 {characterCount}/{MAX_CHARACTERS} תווים
               </span>
               {isOverLimit && (
                 <span className="text-red-600 font-medium">
-                  {characterCount - MAX_CHARACTERS} מעבר למגבלה
+                  ({characterCount - MAX_CHARACTERS} מעבר למגבלה)
                 </span>
               )}
             </div>
-          </div>
 
-          {/* Mini Card Preview */}
-          {text.trim().length > 0 && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">תצוגה מקדימה:</label>
-              <div className="relative">
-                {/* Mini horizontal card preview */}
-                <div className="relative p-4 rounded-xl border-0 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xl opacity-60 flex-shrink-0">✦</div>
-                    <p className="text-sm font-medium text-gray-800 leading-relaxed line-clamp-2 flex-1 text-center" dir="auto">
-                      {text}
-                    </p>
-                    <div className="text-xl opacity-60 flex-shrink-0">✦</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            {/* Approval status helper text */}
+            <p className="text-xs text-gray-400">
+              {autoApprove
+                ? "הקלף שלך יתווסף לחפיסה מיד"
+                : "הקלף שלך יעבור בדיקה לפני שיתווסף לחפיסה"
+              }
+            </p>
+          </div>
         </div>
 
         <DialogFooter>

@@ -1034,6 +1034,7 @@ export default function VotingPage({ params }: VotingPageProps) {
         open={showStatementModal}
         onOpenChange={setShowStatementModal}
         pollId={poll.id}
+        pollTitle={poll.question}
         userId={userId}
         autoApprove={poll.autoApproveStatements || false}
       />

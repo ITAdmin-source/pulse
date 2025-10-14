@@ -55,7 +55,7 @@ export function AdaptiveHeader() {
   if (variant === "cross-poll") {
     return (
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-1">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             {/* Share Button - Landing Page */}
             <ShareButton url="/" title="Pulse" description="בחר חפיסה, מיין קלפים וגלה את נקודת המבט שלך" />
@@ -93,7 +93,7 @@ export function AdaptiveHeader() {
 
     return (
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-1">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between gap-2">
             {/* Share Button - Poll Entry Page */}
             <ShareButton url={shareUrl} title={pollTitle || undefined} description="בוא לבחור קלפים ולגלות את נקודת המבט שלך" />
