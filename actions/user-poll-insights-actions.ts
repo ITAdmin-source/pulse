@@ -12,6 +12,7 @@ import {
   upsertUserPollInsight,
 } from "@/db/queries/user-poll-insights-queries";
 import { type NewUserPollInsight } from "@/db/schema/user-poll-insights";
+import { AIService } from "@/lib/services/ai-service";
 
 export async function createUserPollInsightAction(data: NewUserPollInsight) {
   try {
@@ -100,5 +101,35 @@ export async function getUserPollInsightAction(userId: string, pollId: string) {
   } catch (error) {
     console.error("Error fetching user poll insight:", error);
     return { success: false, error: "Failed to fetch user poll insight" };
+  }
+}
+
+/**
+ * Generate insight using AIService and automatically save to database
+ * This combines generation + persistence in one atomic operation (server-side)
+ */
+export async function generateAndSaveInsightAction(userId: string, pollId: string) {
+  try {
+    // Generate insight using AIService (same as old UI)
+    const generated = await AIService.generatePersonalInsight(userId, pollId);
+
+    // Save to database immediately
+    const saveResult = await upsertUserPollInsight(userId, pollId, generated.title, generated.body);
+
+    revalidatePath("/polls");
+
+    return {
+      success: true,
+      data: {
+        title: saveResult.title,
+        body: saveResult.body
+      }
+    };
+  } catch (error) {
+    console.error("Error generating and saving insight:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate insight"
+    };
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +15,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedPollsAction } from "@/actions/polls-actions";
 import { toast } from "sonner";
-import { PollDeckCard } from "@/components/polls/poll-deck-card";
+import { PollCardGradient } from "@/components/polls-v2/poll-card-gradient";
+import { pollsList } from "@/lib/strings/he";
+import { colors } from "@/lib/design-tokens-v2";
 
 type PollStatus = "all" | "active" | "closed";
 type SortBy = "recent" | "popular" | "ending";
@@ -34,7 +36,6 @@ interface Poll {
 }
 
 export default function PollsPage() {
-  const { isSignedIn } = useUser();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<PollStatus>("active");
@@ -127,61 +128,97 @@ export default function PollsPage() {
     return "active";
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100">
-      {/* Main Content - Header is handled by AdaptiveHeader */}
+    <div className={`min-h-screen ${colors.background.page.className}`}>
+      {/* Sticky Auth Header */}
+      <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-900/80 via-purple-800/60 to-purple-900/80 backdrop-blur-md border-b border-purple-500/20">
+        <div className="container mx-auto px-4 py-3 flex justify-end items-center">
+          {/* Auth Controls */}
+          <SignedOut>
+            <div className="flex gap-2">
+              <SignInButton mode="modal">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-purple-700/50 hover:text-white">
+                  כניסה
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button variant="outline" size="sm" className="bg-white/95 border-purple-400/40 text-purple-700 hover:bg-purple-700/50 hover:text-white hover:border-purple-400/60">
+                  הצטרפות
+                </Button>
+              </SignUpButton>
+            </div>
+          </SignedOut>
+
+          <SignedIn>
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "w-9 h-9",
+                  userButtonPopoverCard: "z-[60]"
+                }
+              }}
+            />
+          </SignedIn>
+        </div>
+      </header>
+
+      {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
         {/* Welcome Section */}
         <section className="mb-12 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">
-            בחר חפיסה לחקור
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+            {pollsList.appTitle}
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light">
-            בחר חפיסה, מיין את הקלפים וגלה את נקודת המבט הייחודית שלך.
+          <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto font-light">
+            {pollsList.heroHeadline}
           </p>
         </section>
 
         {/* Filters */}
-        <section className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <section className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex gap-2">
             <Button
               variant={statusFilter === "active" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("active")}
+              className={statusFilter === "active" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
             >
-              פעיל
+              {pollsList.filterActive}
             </Button>
             <Button
               variant={statusFilter === "closed" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("closed")}
+              className={statusFilter === "closed" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
             >
-              סגור
+              {pollsList.filterClosed}
             </Button>
             <Button
               variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("all")}
+              className={statusFilter === "all" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
             >
-              הכל
+              {pollsList.filterAll}
             </Button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Input
               type="search"
-              placeholder="חפש סקרים..."
-              className="w-full md:w-64"
+              placeholder={pollsList.searchPlaceholder}
+              className="w-full md:w-64 bg-white/10 border-white/20 text-white placeholder:text-white/60"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="מיון לפי" />
+              <SelectTrigger className="w-full sm:w-40 bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder={pollsList.sortByLabel} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">הכי חדש</SelectItem>
-                <SelectItem value="popular">הכי פופולרי</SelectItem>
-                <SelectItem value="ending">מסתיים בקרוב</SelectItem>
+                <SelectItem value="recent">{pollsList.sortRecent}</SelectItem>
+                <SelectItem value="popular">{pollsList.sortPopular}</SelectItem>
+                <SelectItem value="ending">{pollsList.sortEnding}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -189,27 +226,28 @@ export default function PollsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <section className="grid gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="w-full aspect-[2/3]">
-                <Skeleton className="w-full h-full rounded-3xl" />
+              <div key={i} className="w-full h-80">
+                <Skeleton className="w-full h-full rounded-2xl bg-white/10" />
               </div>
             ))}
           </section>
         )}
 
-        {/* Poll Deck Grid */}
+        {/* Poll Grid */}
         {!isLoading && filteredPolls.length > 0 && (
-          <section className="grid gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPolls.map((poll) => {
               const displayStatus = getPollStatus(poll);
               return (
-                <PollDeckCard
+                <PollCardGradient
                   key={poll.id}
                   slug={poll.slug}
                   question={poll.question}
                   status={displayStatus}
-                  emoji={poll.emoji}
+                  positionCount={poll.statementCount}
+                  voterCount={poll.totalVoters}
                 />
               );
             })}
@@ -219,15 +257,15 @@ export default function PollsPage() {
         {/* Empty State */}
         {!isLoading && filteredPolls.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-xl text-gray-600 mb-4">לא נמצאו סקרים</p>
-            <p className="text-gray-500 mb-6">
-              {searchQuery ? "נסה לשנות את החיפוש או הסינון" : "נסה לשנות את הסינון או חזור מאוחר יותר"}
+            <p className="text-xl text-white mb-4">{pollsList.emptyStateTitle}</p>
+            <p className="text-white/70 mb-6">
+              {searchQuery ? pollsList.emptyStateSearchHint : pollsList.emptyStateFilterHint}
             </p>
-            {isSignedIn && (
-              <Button variant="outline" asChild>
-                <Link href="/polls/create">צור סקר</Link>
+            <SignedIn>
+              <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
+                <Link href="/polls/create">{pollsList.createPollCta}</Link>
               </Button>
-            )}
+            </SignedIn>
           </div>
         )}
       </main>

@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type HeaderVariant = "cross-poll" | "poll-specific" | "management" | "admin";
+type HeaderVariant = "cross-poll" | "poll-specific" | "management" | "admin" | null;
 
 export function AdaptiveHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,7 +51,12 @@ export function AdaptiveHeader() {
     }
   }, [pathname, variant]);
 
-  // Cross-Poll Variant - Landing, Polls List, Auth Pages
+  // Return null for new UI routes (inline headers in pages)
+  if (variant === null) {
+    return null;
+  }
+
+  // Cross-Poll Variant - Legacy landing, auth pages
   if (variant === "cross-poll") {
     return (
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
@@ -70,52 +75,6 @@ export function AdaptiveHeader() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        <MobileNav
-          open={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)}
-        />
-      </header>
-    );
-  }
-
-  // Poll-Specific Variant - All poll pages except management
-  if (variant === "poll-specific") {
-    const shareUrl = pollSlug ? `/polls/${pollSlug}` : pathname;
-    const displayTitle = pollTitle || "...";
-
-    return (
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-start justify-between gap-2">
-            {/* Share Button - Poll Entry Page */}
-            <ShareButton url={shareUrl} title={pollTitle || undefined} description="בוא לבחור קלפים ולגלות את נקודת המבט שלך" />
-
-            {/* Poll Title (Multi-line, no truncate) */}
-            {pollTitle ? (
-              <div className="flex-1 text-center min-w-0 px-2">
-                <h1 className="text-sm md:text-base font-semibold text-gray-800 line-clamp-3" dir="auto">
-                  {displayTitle}
-                </h1>
-              </div>
-            ) : (
-              <div className="flex-1 text-center min-w-0">
-                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded mx-auto" />
-              </div>
-            )}
-
-            {/* Hamburger Menu */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 flex-shrink-0"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Menu className="h-5 w-5" />
@@ -211,6 +170,7 @@ export function AdaptiveHeader() {
 
 /**
  * Auto-detect header variant based on current route
+ * Returns null for routes that handle their own inline headers
  */
 function detectVariantFromRoute(pathname: string): HeaderVariant {
   // Admin pages
@@ -223,13 +183,11 @@ function detectVariantFromRoute(pathname: string): HeaderVariant {
     return "management";
   }
 
-  // Poll-specific pages (vote, insights, results, closed, entry)
-  // Match /polls/[slug] but not just /polls
-  if (pathname.startsWith("/polls/") && pathname !== "/polls") {
-    return "poll-specific";
+  // New UI routes - no header needed (inline headers in pages)
+  if (pathname === "/polls" || (pathname.startsWith("/polls/") && !pathname.includes("/manage"))) {
+    return null;
   }
 
-  // Cross-poll pages (landing, polls list, auth)
-  // Includes: /, /polls, /login, /signup
+  // Legacy cross-poll pages (landing, auth, etc.)
   return "cross-poll";
 }

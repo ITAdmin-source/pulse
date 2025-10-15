@@ -5,45 +5,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Pulse** is a participatory polling platform inspired by Pol.is that enables democratic engagement through:
-- **Card-based choosing** - Users choose cards (Keep/Throw/Pass) from a deck within polls
-- **User-generated content** - Participants can submit new cards (when enabled)
-- **Personal insights** - AI-generated insights based on individual card choices
+- **Statement-based voting** - Users vote on statements (Agree/Disagree/Pass) in discussions
+- **User-generated content** - Participants can submit new positions (when enabled)
+- **Personal insights** - AI-generated influence profiles based on voting patterns
 - **Flexible participation** - Anonymous (browser session) or authenticated (Clerk) users
 - **Database-managed RBAC** - Fine-grained permissions independent of Clerk roles
 
-### Card Deck Terminology
+### UI Terminology (v2.0 - Statement-Based)
 
 **Primary UI Language: Hebrew with RTL support**
 
-The application uses a physical card deck metaphor throughout. While the database layer uses technical terms like "statement," "vote," and "poll," the user-facing interface uses card terminology:
+The application uses empowering "influence" language. While the database layer uses technical terms like "statement," "vote," and "poll," the user-facing interface uses Hebrew terminology focused on discussion and impact:
 
 | Database/Code (Technical) | User Interface (English) | User Interface (Hebrew) |
 |---------------------------|--------------------------|------------------------|
-| Poll | Deck | חפיסה |
-| Statement | Card | קלף |
-| Vote | Choose | בחר |
-| Voter | Player | שחקן |
-| Agree (vote value: 1) | Keep | לשמור |
-| Disagree (vote value: -1) | Throw | לזרוק |
-| Unsure/Pass (vote value: 0) | Pass | לדלג |
-| Voting Interface | Card Choosing Interface | ממשק בחירת קלפים |
-| Statement Submission | Add Card | הוסף קלף |
-| Vote Distribution | Choice Results | תוצאות בחירה |
-| Personal Insights | Personal Card | קלף אישי |
-| Poll Results | Deck Summary | סיכום חפיסה |
+| Poll | Discussion | דיון |
+| Statement | Position/Stance | עמדה |
+| Vote | Vote/Influence | הצבעה / השפעה |
+| Agree (vote value: 1) | Agree | מסכים/ה |
+| Disagree (vote value: -1) | Disagree | לא מסכים/ה |
+| Unsure/Pass (vote value: 0) | Pass/Skip | דילוג |
+| Voting Interface | Voting Interface | ממשק הצבעה |
+| Statement Submission | Add Position | הוסף עמדה |
+| Vote Distribution | Vote Results | תוצאות הצבעה |
+| Personal Insights | Influence Profile | פרופיל ההשפעה |
+| Poll Results | Discussion Results | תוצאות הדיון |
 
 **Implementation Notes:**
 - Database schema uses "votes," "statements," "polls" (unchanged for stability)
 - Service layer and actions use technical terminology internally
-- UI components, page text, and user-facing messages use Hebrew card terminology
+- UI components, page text, and user-facing messages use Hebrew terminology from `lib/strings/he.ts`
 - All UI text defaults to Hebrew with `dir="auto"` for proper RTL rendering
-- Button labels: לשמור (Keep) / לזרוק (Throw) / לדלג (Pass)
+- Button labels: מסכים/ה (Agree) / לא מסכים/ה (Disagree) / דילוג (Pass)
+- Conjugated forms for voting buttons (showing both masculine/feminine endings)
+- Plural imperative forms for commands (gender-neutral)
 
 ### Additional Documentation
 
-For comprehensive details on user workflows and interface design:
+For comprehensive details on design and implementation:
 - **[USE_CASES.md](USE_CASES.md)** - Complete user journeys, personas, and detailed workflow documentation
 - **[UX_UI_SPEC.md](UX_UI_SPEC.md)** - Full UX/UI specification including component library, layouts, and interaction patterns
+- **[.claude/misc/MIGRATION_PLAN.md](.claude/misc/MIGRATION_PLAN.md)** - Complete UX redesign migration plan with phased implementation
+- **[.claude/misc/HEBREW_TERMINOLOGY.md](.claude/misc/HEBREW_TERMINOLOGY.md)** - Full Hebrew terminology reference with approved terms
 
 ## Development Commands
 
@@ -256,108 +259,114 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - Only approved statements visible to voters
 - **Minimum 6 statements required** to create a poll (mandatory, not just recommended)
 
-### UX/UI Design Principles
-- **Card deck metaphor** - Each statement is a card, each poll is a deck, voting is sorting cards
-- **Stories-style progress bar** - Shows position in the deck (Instagram Stories style)
+### UX/UI Design Principles (v2.0 - 2025-10-15)
+- **Statement-based voting** - Direct voting on positions with split-screen Agree/Disagree buttons
+- **Stories-style progress bar** - Shows position in current batch (Instagram Stories style)
 - **User creation timing** - User record created on demographics save OR first vote (whichever first)
-- **Statement batching** - Shows 10 statements at a time with continuation page for larger polls
-- **Demographics** - Mandatory one-time prompt before first card (all 4 fields required), never re-requested, only shown if user doesn't already have demographics
+- **Statement batching** - Shows 10 statements at a time with inline "next batch" prompts
+- **Demographics** - **Mandatory AFTER 10 votes, BEFORE results** (all 4 fields required), never re-requested
 - **Closed poll access** - Both voters and non-voters can view results; only voters see personal insights
+- **Single-page architecture** - Combined Vote/Results views with tab navigation (no separate routes)
+- **Results unlocking** - Results tab locked until 10 votes completed
 
-### Design System & Look-and-Feel (v1.5 - 2025-10-13)
+### Design System & Look-and-Feel (v2.0 - 2025-10-15)
 
-**Philosophy:** Neutral backdrop with warm card accents for maximum visual hierarchy
+**Philosophy:** Dark gradient background with vibrant purple/pink accents for modern, social-first aesthetic
 
-#### Core Design Tokens (`lib/design-tokens.ts`)
-Centralized design system with colors, spacing, typography, and animation constants:
-- **Background colors** - Stone gradients for all pages
-- **Card colors** - Warm amber for active content, purple for insights, green for results
-- **Spacing system** - 8px base unit (8, 16, 24, 32, 40, 48px)
-- **Typography scale** - 5 consistent sizes with proper font weights
-- **Animation timings** - Standardized durations for all transitions
+#### Core Design Tokens (`lib/design-tokens-v2.ts`)
+Centralized design system with new color palette, spacing, typography, and animation constants:
+- **Background colors** - Dark purple gradient (`from-slate-900 via-purple-900 to-slate-900`)
+- **Card colors** - Simple white cards with purple/pink gradient headers
+- **Voting colors** - Flat green (agree), red (disagree), gray (pass) - NO gradients
+- **Spacing system** - 8px base unit maintained (8, 16, 24, 32, 40, 48px)
+- **Typography scale** - Responsive Tailwind classes (sm:, md:)
+- **Animation timings** - Framer Motion variants for all transitions
 
 #### Universal Page Background
-**All pages use:** `bg-gradient-to-br from-stone-100 via-stone-50 to-stone-100`
-- Applied to: voting, results, insights, polls list, poll entry, admin, auth pages
-- Cool neutral gray-beige for 40-50% contrast with warm cards
-- Creates professional, cohesive app-wide aesthetic
+**All voting pages use:** `bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900`
+- Applied to: voting, results, polls list, poll page
+- Dark purple gradient creates modern, app-like aesthetic
+- High contrast with white content cards
 
-#### Card System
-**Primary Cards (Statements, Active Polls):**
-- Gradient: `from-amber-50 via-orange-50/40 to-amber-50`
-- Border: `border-amber-200/50`
-- Shadow: `shadow-lg` to `shadow-xl`
-- Corners: `rounded-3xl` for tactile card aesthetic
-- Aspect ratio: 2:3 (consistent across all card types)
+#### New Component Patterns
+**Poll Cards (Gradient Header):**
+- Header gradient: `from-purple-600 to-pink-600`
+- Body: Simple white (`#ffffff`)
+- Border radius: `rounded-2xl` (24px)
+- Shadow: `shadow-xl` with `hover:shadow-2xl`
+- No aspect ratio constraint (flexible height)
 
-**Secondary Cards (Insights):**
-- Gradient: `from-violet-50 via-indigo-50/40 to-violet-50`
-- Same border/shadow pattern as primary cards
+**Split Vote Card:**
+- White card with gray header (`bg-gray-50` with `border-b-4 border-purple-200`)
+- 50/50 split voting buttons (full height, 50% width each)
+- Agree: `bg-green-500` (flat, right side in RTL)
+- Disagree: `bg-red-500` (flat, left side in RTL)
+- Hover expansion: `hover:flex-[1.2]` (expands to 60/40 ratio)
+- Stats appear ON buttons after vote (animated)
 
-**Results Cards:**
-- Gradient: `from-emerald-50 via-teal-50/40 to-emerald-50`
-- Consistent card aesthetic
+**Progress Segments:**
+- Height: `h-1` (thinner than v1.5)
+- Completed: `bg-purple-500`
+- Current: `bg-purple-300 animate-pulse`
+- Upcoming: `bg-white/20`
+- Gap: `gap-1`
 
-**Closed/Inactive:**
-- Gradient: `from-gray-200 via-gray-100 to-gray-200`
-- Overlay: `bg-gray-900/10` with status badge
+**Question Pill:**
+- Blue gradient: `from-blue-600 to-blue-500`
+- Rounded: `rounded-xl`
+- Shadow: `shadow-lg`
+- Text: white, centered
 
-#### Container Patterns
-**Headers/Footers:**
-- Background: `bg-white/70` to `bg-white/95` with `backdrop-blur-sm`
-- Border: `border-stone-200` (top or bottom based on position)
+**Tab Navigation:**
+- Background: `bg-white/10` with `backdrop-blur`
+- Active tab: `bg-white text-purple-900`
+- Inactive tab: `bg-white/10 text-white`
+- Disabled tab: `bg-white/5 text-white/40`
 
-**Content Containers:**
-- Poll question pill: `bg-white/80 backdrop-blur-sm border-stone-200`
-- Form containers: `bg-white/70` with stone borders
-- Card backgrounds within pages: `bg-white/80` (not full stone gradient)
-
-#### Interactive Elements
-**Progress Bar:**
-- Filled: `bg-amber-500`
-- Current: `bg-amber-300` with pulse animation
-- Empty: `bg-amber-100`
-- Size: `h-2` (thicker for visibility)
-- Gap: `gap-1.5` between segments
+**Insight Card:**
+- Gradient: `from-indigo-600 via-purple-600 to-pink-600`
+- Decorative circles: `bg-white/10`
+- Text: white
+- Shadow: `shadow-2xl`
 
 **Buttons:**
-- Keep/Agree: `bg-gradient-to-b from-emerald-600 to-emerald-700`
-- Throw/Disagree: `bg-gradient-to-b from-red-600 to-red-700`
-- Pass/Skip: `bg-gray-600`
-- Primary Action: `bg-gradient-to-b from-amber-600 to-amber-700`
-- Secondary: `border-amber-200 hover:bg-amber-50`
-- All buttons: `shadow-lg hover:shadow-xl` with `h-14` for primary voting actions
+- Agree: `bg-green-500` (flat, no gradient)
+- Disagree: `bg-red-500` (flat, no gradient)
+- Pass: `bg-gray-100` (light gray)
+- Primary Action: `bg-purple-600`
+- Secondary: `border-gray-200 hover:bg-gray-50`
 
 #### Typography
 **Text Colors:**
-- Primary: `text-gray-900` (dark, high contrast)
-- Secondary: `text-gray-600` (medium, readable)
-- Muted: `text-gray-500` (subtle, helper text)
-- On-card: `text-gray-800` (slightly lighter for warm backgrounds)
+- Primary: `text-gray-900` (on white cards)
+- Secondary: `text-gray-600` (on white cards)
+- Inverse: `text-white` (on dark backgrounds)
 
-**Font Sizes:**
-- Context (poll questions): `text-base md:text-lg font-semibold`
-- Statement (hero): `text-lg md:text-xl font-medium` (enlarged in v1.5)
-- Buttons: `text-base font-bold`
-- Helper text: `text-sm text-gray-600`
-
-#### Spacing & Rhythm
-**Consistent 8px system:**
-- xs: 8px, sm: 16px, md: 24px, lg: 32px, xl: 40px, 2xl: 48px
-- Page padding: `py-8` to `py-12`
-- Card margins: `mb-8` between sections
-- Button height: `h-12` for secondary, `h-14` for primary voting actions
+**Font Sizes (Responsive):**
+- Hero: `text-2xl sm:text-4xl font-bold`
+- Statement: `text-lg sm:text-xl font-medium`
+- Voting buttons: `text-xl sm:text-2xl font-bold`
+- Regular buttons: `text-sm sm:text-base font-semibold`
+- Body: `text-sm sm:text-base`
 
 #### Component Styling Rules
 When creating/styling components:
-1. **Always use stone background** for full-page containers
-2. **Use white/80 overlays** for nested containers (not stone gradient)
-3. **Use amber borders** (`border-amber-200/50`) for warm cards
-4. **Use stone borders** (`border-stone-200`) for neutral containers
-5. **Maintain 3xl rounding** (`rounded-3xl`) for cards
-6. **Apply consistent shadows** (`shadow-lg` standard, `shadow-xl` for hero elements)
+1. **Use dark gradient background** for all voting pages
+2. **Use white cards** for content (not colored gradients)
+3. **Use purple/pink gradients** for headers and special cards
+4. **Use flat colors** for voting buttons (no gradients)
+5. **Maintain 2xl rounding** (`rounded-2xl`) for cards
+6. **Apply consistent shadows** (`shadow-xl` for cards)
 7. **Follow RTL principles** with logical properties (ms-*, me-*, start, end)
-8. **Keep decorative elements** (✦ symbols) for card authenticity
+8. **Import strings from** `lib/strings/he.ts` for all text
+
+#### String Management
+All user-facing text managed in `lib/strings/he.ts`:
+- Organized by page/component
+- Hebrew with gender-neutral forms where possible
+- Conjugated forms for voting buttons (מסכים/ה, לא מסכים/ה)
+- Utility functions for common patterns
+- Type-safe with TypeScript
 
 ## Technology Stack
 
@@ -403,16 +412,18 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
 - `/api/vote/cast` - Cast a vote (votes are immutable, cannot update)
 - `/api/statement/submit` - Submit a new statement to a poll
 
-## Application Pages & Routes
+## Application Pages & Routes (v2.0 - Single-Page Architecture)
 
 ### Public Pages
-- `/` - Landing page
+- `/` - Landing page (redirects to `/polls`)
 - `/polls` - Browse all published polls with filtering
-- `/polls/[slug]` - Poll overview page
-- `/polls/[slug]/vote` - Voting interface (card deck UI)
-- `/polls/[slug]/insights` - Personal AI-generated insights (requires minimum votes)
-- `/polls/[slug]/results` - Poll results and aggregate data
-- `/polls/[slug]/closed` - Closed poll view (accessible to all)
+- **`/polls/[slug]`** - **Combined poll page with Vote/Results views** (single-page with tabs)
+  - Replaces old separate routes: `/vote`, `/insights`, `/results`, `/closed`
+  - Vote view: Voting interface with split-screen buttons
+  - Results view: Personal insights + aggregate results + demographic heatmap
+  - Tab navigation switches between views (no page reload)
+  - Results tab locked until 10 votes completed
+  - Demographics modal appears after 10th vote (blocks Results until submitted)
 
 ### Authenticated Pages
 - `/polls/create` - Create new poll (requires sign-in)
@@ -442,23 +453,28 @@ All test pages are publicly accessible in development:
 - **Supabase pooler connections** - Using connection pooling for better IPv4 compatibility and performance
 - **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
 - **Context-based state** - UserContext and HeaderContext for global state management
+- **Single-page architecture (v2.0)** - Combined Vote/Results views with tab navigation instead of separate routes
+- **Centralized strings (v2.0)** - All Hebrew UI text managed in `lib/strings/he.ts` for consistency
 
 ### Voting & Poll Features
-- **Card deck metaphor** - Visual design inspired by card deck with Stories progress bar for intuitive voting
-- **Statement batching** - 10 statements at a time with continuation pages for better UX on large polls
+- **Statement-based voting** - Direct voting on positions with split-screen Agree/Disagree buttons
+- **Statement batching** - 10 statements at a time with inline "next batch" prompts for better UX on large polls
 - **Immutable votes** - Once cast, votes cannot be changed (enforced in voting logic)
-- **Fixed voting threshold** - Users must complete first batch (10) or all statements if fewer to finish and see insights
-- **Universal closed poll access** - Both voters and non-voters can view results; voters get insights
+- **Fixed voting threshold** - Users must complete 10 votes to unlock Results view
+- **Results unlocking (v2.0)** - Results tab locked until 10 votes completed, shows counter "(7/10)"
+- **Universal closed poll access** - Both voters and non-voters can view results; voters get personal insights
 - **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
 - **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
 
-### User Experience
+### User Experience (v2.0)
 - **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
 - **Automatic upgrade flow** - Anonymous→authenticated transition preserves all user data
 - **User creation flexibility** - Users created on demographics save OR first vote (whichever first)
-- **Demographics prompt** - One-time optional prompt, never re-requested
+- **Demographics gating** - **Mandatory AFTER 10 votes, BEFORE results** (all 4 fields required), never re-requested
 - **Adaptive header system** - Dynamic header variants (voting, management, admin, minimal, default)
-- **Real-time vote results** - Immediate feedback after voting with distribution overlay
+- **Real-time vote stats** - Stats appear on voting buttons immediately after each vote (animated)
+- **Tab-based navigation** - Client-side view switching between Vote and Results (no page reload)
+- **Dark modern aesthetic** - Purple/pink gradient background with white content cards
 
 ### Content & Data Management
 - **Minimum 6 statements** - Required (not just recommended) to create a poll for meaningful engagement
@@ -473,10 +489,30 @@ All test pages are publicly accessible in development:
 ### UI Components
 - **`components/ui/`** - Radix UI primitives styled with Tailwind CSS v4
 - **`components/shared/`** - Shared layout components (AdaptiveHeader, MobileNav)
-- **`components/voting/`** - Voting interface components (StatementCard, ProgressBar, VoteResultOverlay, ContinuationPage)
-- **`components/polls/`** - Poll-specific components (PollCard, DemographicsModal, PollFilters, InsightActions)
 - **`components/modals/`** - Modal dialogs (PublishPollModal, UnpublishPollModal, AddStatementModal, EditStatementModal)
 - **`components/auth/`** - Authentication components (ProtectedRoute)
+
+### v1.x Components (Legacy - Being Replaced)
+- **`components/voting/`** - Old voting interface (StatementCard, ProgressBar, VoteResultOverlay, ContinuationPage)
+- **`components/polls/`** - Old poll components (PollDeckCard, CardDeckPackage, ClickableCardDeck)
+
+### v2.0 Components (New Architecture)
+- **`components/voting-v2/`** - New voting interface components
+  - `SplitVoteCard` - 50/50 split Agree/Disagree buttons with stats overlay
+  - `ProgressSegments` - Stories-style progress bar (thinner, purple theme)
+  - `QuestionPill` - Blue gradient pill displaying poll question
+  - `NextBatchPrompt` - Inline prompt between batches
+- **`components/polls-v2/`** - New poll components
+  - `PollCardGradient` - Purple/pink gradient header with white body
+  - `TabNavigation` - Vote/Results tab switcher
+  - `ResultsLockedBanner` - Shows when results are locked with counter
+- **`components/results-v2/`** - Results view components
+  - `InsightCard` - Gradient card with personal influence profile
+  - `AggregateStats` - Vote distribution visualization
+  - `DemographicHeatmap` - Demographic breakdown charts
+- **`components/banners/`** - Informational banners
+  - `DemographicsBanner` - Prompts demographics after 10 votes
+  - `ResultsLockedBanner` - Explains results unlocking requirement
 
 ### Header System
 - **AdaptiveHeader** (`components/shared/adaptive-header.tsx`) - Context-aware header with multiple variants
@@ -489,14 +525,6 @@ All test pages are publicly accessible in development:
   - `minimal` - Simple header for auth/results pages
   - `hidden` - No header rendered
 
-### Voting Interface Components
-- **StatementCard** - Individual statement with vote buttons
-- **ProgressBar** - Stories-style progress indicator (Instagram-like)
-- **StatementCounter** - Shows current position in batch
-- **VoteResultOverlay** - Displays vote distribution after voting
-- **ContinuationPage** - Between-batch summary page
-- **StatementSubmissionModal** - User-submitted statements modal
-
 ## Development Guidelines
 
 ### For New Features
@@ -505,6 +533,17 @@ All test pages are publicly accessible in development:
 3. **Create actions** - Wrap service calls in Server Actions
 4. **Build UI** - Use actions in React components
 5. **Use contexts** - Leverage UserContext and HeaderContext for state
+6. **Import strings** - All UI text from `lib/strings/he.ts` (never hardcode Hebrew text)
+7. **Use design tokens** - Import from `lib/design-tokens-v2.ts` for styling consistency
+
+### v2.0 Development Guidelines
+- **Component isolation** - New components in `components/*-v2/` directories
+- **Reference migration plan** - Follow `.claude/misc/MIGRATION_PLAN.md` for implementation sequence
+- **Preserve infrastructure** - Never modify DB schema, queries, actions, or services during UI migration
+- **Hebrew terminology** - Use approved terms from `lib/strings/he.ts` (דיון for poll, עמדה for statement)
+- **Design system adherence** - Follow `lib/design-tokens-v2.ts` for colors, spacing, animations
+- **Single-page architecture** - Build tab-based views, not separate routes
+- **RTL layout** - Use logical properties (ms-*, me-*, start, end) not directional (ml-*, mr-*, left, right)
 
 ### Code Quality Standards
 - **Always run `npm run build`** - Ensure TypeScript compilation before committing
@@ -513,6 +552,7 @@ All test pages are publicly accessible in development:
 - **Handle errors consistently** - Use the established error patterns
 - **Leverage contexts** - Use UserContext for user state, HeaderContext for header config
 - **Immutable votes** - Never allow vote updates once cast
+- **Centralized strings** - Import all UI text from `lib/strings/he.ts`
 
 ### Hooks & Utilities
 - **`hooks/use-current-user.ts`** - Access user context (wraps UserContext)
@@ -522,3 +562,7 @@ All test pages are publicly accessible in development:
 - **`lib/utils/voting.ts`** - Vote calculation utilities
 - **`lib/utils/slug.ts`** - URL slug generation
 - **`lib/utils/permissions.ts`** - Permission checking helpers
+
+### Design & Localization Utilities (v2.0)
+- **`lib/design-tokens-v2.ts`** - Complete design system (colors, spacing, typography, components)
+- **`lib/strings/he.ts`** - Centralized Hebrew strings organized by page/component
