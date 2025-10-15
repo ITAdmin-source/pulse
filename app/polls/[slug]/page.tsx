@@ -39,6 +39,7 @@ import { AggregateStats } from "@/components/results-v2/aggregate-stats";
 import { DemographicHeatmap } from "@/components/results-v2/demographic-heatmap";
 import { MoreStatementsPrompt } from "@/components/results-v2/more-statements-prompt";
 import { VotingCompleteBanner } from "@/components/results-v2/voting-complete-banner";
+import { StatementSubmissionModal } from "@/components/voting/statement-submission-modal";
 
 // Actions
 import { getPollBySlugAction } from "@/actions/polls-actions";
@@ -802,7 +803,23 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
             {/* Voting Interface */}
             <AnimatePresence mode="wait">
-              {votingPhase === "viewing" && currentStatement && (
+              {showStatementModal ? (
+                <StatementSubmissionModal
+                  key="statement-submission"
+                  open={showStatementModal}
+                  onOpenChange={setShowStatementModal}
+                  pollId={poll.id}
+                  pollTitle={poll.question}
+                  userId={userId}
+                  autoApprove={poll.autoApproveStatements}
+                  onUserCreated={(newUserId) => {
+                    setUserId(newUserId);
+                    if (statementManager) {
+                      statementManager.userId = newUserId;
+                    }
+                  }}
+                />
+              ) : votingPhase === "viewing" && currentStatement ? (
                 <SplitVoteCard
                   key={currentStatement.id}
                   statementText={currentStatement.text}
@@ -815,9 +832,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   disabled={isSavingVote}
                   allowAddStatement={poll?.allowUserStatements || false}
                 />
-              )}
-
-              {votingPhase === "batchComplete" && !showDemographicsBanner && (
+              ) : votingPhase === "batchComplete" && !showDemographicsBanner ? (
                 <NextBatchPrompt
                   key="batch-prompt"
                   batchNumber={progress?.currentBatch || 1}
@@ -825,16 +840,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   remainingStatements={Math.min(10, totalStatements - votedCount)}
                   onContinue={handleContinueBatch}
                 />
-              )}
-
-              {showDemographicsBanner && (
+              ) : showDemographicsBanner ? (
                 <DemographicsBanner
                   key="demographics-banner"
                   onOpenModal={() => setShowDemographicsModal(true)}
                 />
-              )}
-
-              {votingPhase === "finished" && (
+              ) : votingPhase === "finished" ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
                   <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -850,7 +861,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                     צפו בתוצאות
                   </button>
                 </div>
-              )}
+              ) : null}
             </AnimatePresence>
           </div>
         )}

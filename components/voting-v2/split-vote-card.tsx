@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, HelpCircle } from "lucide-react";
+import { Plus, HelpCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { voting } from "@/lib/strings/he";
 
 interface SplitVoteCardProps {
@@ -66,7 +66,7 @@ export function SplitVoteCard({
             }`}
           >
             <div
-              className={`transition-all duration-300 ${
+              className={`flex flex-col items-center transition-all duration-300 ${
                 showStats
                   ? "scale-110"
                   : hoveredButton === "disagree" && !showStats
@@ -74,6 +74,7 @@ export function SplitVoteCard({
                   : "scale-100"
               }`}
             >
+              <ThumbsDown size={48} className="text-white mb-3 sm:w-16 sm:h-16 sm:mb-4" />
               <span className="text-white font-bold text-xl sm:text-2xl">{voting.disagreeButton}</span>
 
               {/* Stats Overlay */}
@@ -105,7 +106,7 @@ export function SplitVoteCard({
             }`}
           >
             <div
-              className={`transition-all duration-300 ${
+              className={`flex flex-col items-center transition-all duration-300 ${
                 showStats
                   ? "scale-110"
                   : hoveredButton === "agree" && !showStats
@@ -113,6 +114,7 @@ export function SplitVoteCard({
                   : "scale-100"
               }`}
             >
+              <ThumbsUp size={48} className="text-white mb-3 sm:w-16 sm:h-16 sm:mb-4" />
               <span className="text-white font-bold text-xl sm:text-2xl">{voting.agreeButton}</span>
 
               {/* Stats Overlay */}

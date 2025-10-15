@@ -1,18 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { createStatementAction } from "@/actions/statements-actions";
+import { ensureUserExistsAction } from "@/actions/users-actions";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
 
 interface StatementSubmissionModalProps {
@@ -22,6 +14,7 @@ interface StatementSubmissionModalProps {
   pollTitle: string;
   userId: string | null;
   autoApprove: boolean;
+  onUserCreated?: (userId: string) => void;
 }
 
 const MAX_CHARACTERS = 140;
@@ -33,13 +26,15 @@ export function StatementSubmissionModal({
   pollTitle,
   userId,
   autoApprove,
+  onUserCreated,
 }: StatementSubmissionModalProps) {
+  const { user: dbUser, sessionId } = useCurrentUser();
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const characterCount = text.length;
   const isOverLimit = characterCount > MAX_CHARACTERS;
-  const canSubmit = text.trim().length > 0 && !isOverLimit && userId;
+  const canSubmit = text.trim().length > 0 && !isOverLimit;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -47,26 +42,49 @@ export function StatementSubmissionModal({
     setIsSubmitting(true);
 
     try {
+      // Ensure user exists (returns existing user or creates new one)
+      let effectiveUserId = userId;
+
+      if (!effectiveUserId) {
+        const userResult = await ensureUserExistsAction({
+          clerkUserId: dbUser?.clerkUserId || undefined,
+          sessionId: sessionId || undefined,
+        });
+
+        if (!userResult.success || !userResult.data) {
+          toast.error("שגיאה ביצירת משתמש");
+          return;
+        }
+
+        effectiveUserId = userResult.data.id;
+
+        // Notify parent component of user creation
+        if (onUserCreated) {
+          onUserCreated(effectiveUserId);
+        }
+      }
+
+      // Submit statement with ensured userId
       const result = await createStatementAction({
         pollId,
         text: text.trim(),
-        submittedBy: userId,
+        submittedBy: effectiveUserId,
         approved: autoApprove ? true : null, // null = pending approval
       });
 
       if (result.success) {
         toast.success(
           autoApprove
-            ? "הקלף שלך נוסף לחפיסה!"
-            : "הקלף נשלח לבדיקה"
+            ? "העמדה שלך נוספה!"
+            : "העמדה נשלחה לאישור"
         );
         setText(""); // Clear form
         onOpenChange(false);
       } else {
-        toast.error(result.error || "הוספת הקלף נכשלה");
+        toast.error(result.error || "שגיאה בהוספת עמדה");
       }
     } catch (error) {
-      console.error("Error submitting card:", error);
+      console.error("Error submitting statement:", error);
       toast.error("אירעה שגיאה בלתי צפויה");
     } finally {
       setIsSubmitting(false);
@@ -80,81 +98,71 @@ export function StatementSubmissionModal({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>יש לך רעיון? חסרה נקודת המבט שלך?</DialogTitle>
-          <DialogDescription>
-            {pollTitle}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="relative w-full max-w-2xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4" dir="auto">
+          הוסף עמדה משלך
+        </h3>
+        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4" dir="auto">
+          שתף עמדה שאחרים יוכלו להצביע עליה. שמור על בהירות ומיקוד ברעיון אחד.
+        </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="לדוגמה: אנחנו צריכים זמני פגישה גמישים יותר"
+        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base"
+        rows={4}
+        disabled={isSubmitting}
+        dir="auto"
+      />
 
-        <div className="space-y-4">
-          {/* Card-style Text Editor */}
-          <div className="space-y-2">
-            <div className="relative p-6 rounded-2xl border border-amber-200/50 bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50 shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="text-xl opacity-40 flex-shrink-0">✦</div>
-                <Textarea
-                  id="card-text"
-                  placeholder="כתוב את תשובתך כאן..."
-                  rows={3}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  disabled={isSubmitting}
-                  className={`flex-1 text-center resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base font-medium text-gray-800 placeholder:text-gray-400 ${isOverLimit ? "text-red-600" : ""}`}
-                  dir="auto"
-                />
-                <div className="text-xl opacity-40 flex-shrink-0">✦</div>
-              </div>
-            </div>
+      {/* Character counter */}
+      <div className="mb-3 sm:mb-4">
+        <span className={`text-xs ${isOverLimit ? "text-red-600 font-medium" : "text-gray-500"}`}>
+          {characterCount}/{MAX_CHARACTERS} תווים
+        </span>
+        {isOverLimit && (
+          <span className="text-xs text-red-600 font-medium ms-2">
+            ({characterCount - MAX_CHARACTERS} מעבר למגבלה)
+          </span>
+        )}
+      </div>
 
-            {/* Character counter */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className={isOverLimit ? "text-red-600 font-medium" : "text-gray-400"}>
-                {characterCount}/{MAX_CHARACTERS} תווים
-              </span>
-              {isOverLimit && (
-                <span className="text-red-600 font-medium">
-                  ({characterCount - MAX_CHARACTERS} מעבר למגבלה)
-                </span>
-              )}
-            </div>
+      {/* Approval status helper text */}
+      <p className="text-xs text-gray-500 mb-4" dir="auto">
+        {autoApprove
+          ? "העמדה שלך תתווסף מיד"
+          : "העמדה שלך תעבור אישור לפני שתתווסף"
+        }
+      </p>
 
-            {/* Approval status helper text */}
-            <p className="text-xs text-gray-400">
-              {autoApprove
-                ? "הקלף שלך יתווסף לחפיסה מיד"
-                : "הקלף שלך יעבור בדיקה לפני שיתווסף לחפיסה"
-              }
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSubmitting}
-          >
-            ביטול
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 me-2 animate-spin" />
-                מוסיף קלף...
-              </>
-            ) : (
-              "הוספת קלף"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="flex gap-2 sm:gap-3">
+        <button
+          onClick={handleClose}
+          disabled={isSubmitting}
+          className="flex-1 py-2.5 sm:py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ביטול
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit || isSubmitting}
+          className="flex-1 py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>שולח...</span>
+            </>
+          ) : (
+            "שלח עמדה"
+          )}
+        </button>
+      </div>
+      </div>
+    </div>
   );
 }
