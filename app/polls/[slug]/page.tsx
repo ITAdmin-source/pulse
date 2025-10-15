@@ -776,6 +776,15 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Poll Header - Question and Description */}
+        <div className="text-center mb-6">
+          <div className="text-4xl sm:text-5xl mb-2 sm:mb-3">📊</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">{poll.question}</h1>
+          {poll.description && (
+            <p className="text-purple-200 text-sm sm:text-base">{poll.description}</p>
+          )}
+        </div>
+
         {/* Tab Navigation */}
         <div className="mb-8">
           <TabNavigation
@@ -790,9 +799,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         {/* Vote Tab */}
         {activeTab === "vote" && (
           <div className="space-y-6">
-            {/* Question Pill */}
-            <QuestionPill question={poll.question} />
-
             {/* Progress Segments */}
             {progress && (
               <ProgressSegments
