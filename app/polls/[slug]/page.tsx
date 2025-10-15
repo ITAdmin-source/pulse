@@ -10,7 +10,7 @@ import { getUserRolesByUserIdAction } from "@/actions/user-roles-actions";
 import { UserService } from "@/lib/services/user-service";
 import { ClickableCardDeck } from "@/components/polls/clickable-card-deck";
 import { canManagePoll as checkCanManagePoll } from "@/lib/utils/permissions";
-import { PrefetchStatements } from "@/components/polls/prefetch-statements";
+import { PrefetchStatements, PrefetchStatementsAnonymous } from "@/components/polls/prefetch-statements";
 
 interface PollEntryPageProps {
   params: Promise<{
@@ -121,6 +121,11 @@ export default async function PollEntryPage({ params }: PollEntryPageProps) {
       {/* Prefetch first batch of statements in background for faster voting page load */}
       {dbUser && (isNewUser || isInProgress) && (
         <PrefetchStatements pollId={poll.id} userId={dbUser.id} batchNumber={1} />
+      )}
+
+      {/* Prefetch for anonymous users without DB record yet */}
+      {!dbUser && (
+        <PrefetchStatementsAnonymous pollId={poll.id} />
       )}
 
       {/* Main Content - Header is handled by AdaptiveHeader */}

@@ -280,18 +280,26 @@ export default function VotingPage({ params }: VotingPageProps) {
           setUserId(dbUser.id);
           setSessionId(contextSessionId);
 
-          // Load user's votes for THIS poll only
-          const votesResult = await getUserVotesForPollAction(dbUser.id, fetchedPoll.id);
+          // STAGE 1: Parallel fetch votes and progress (both fully independent)
+          const [votesResult, progressResult] = await Promise.all([
+            getUserVotesForPollAction(dbUser.id, fetchedPoll.id),
+            getVotingProgressAction(fetchedPoll.id, dbUser.id)
+          ]);
+
           const userVotesLookup = votesResult.success ? votesResult.data || {} : {};
 
-          // Load user's voting progress to restore their position
-          const progressResult = await getVotingProgressAction(fetchedPoll.id, dbUser.id);
           if (progressResult.success && progressResult.data) {
             const { totalVoted, totalStatements, currentBatch, thresholdReached } = progressResult.data;
 
-            // Only show demographics modal if user has NO demographics AND no votes
+            // STAGE 2: Conditional parallel fetch based on totalVoted
             if (totalVoted === 0) {
-              const demographicsResult = await getUserDemographicsByIdAction(dbUser.id);
+              // New user - check demographics AND load first batch in parallel
+              const [demographicsResult, batchResult] = await Promise.all([
+                getUserDemographicsByIdAction(dbUser.id),
+                getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch)
+              ]);
+
+              // Check demographics first (early exit if needed)
               if (!demographicsResult.success || !demographicsResult.data) {
                 setShowDemographicsModal(true);
                 // Don't load statements yet - wait for demographics modal to be handled
@@ -300,40 +308,63 @@ export default function VotingPage({ params }: VotingPageProps) {
                 hasInitializedRef.current = true;
                 return;
               }
-            }
 
-            // Load the current batch of unvoted statements
-            const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
+              // Demographics exist, proceed with batch result
+              if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
+                const manager = new StatementManager(
+                  batchResult.data,
+                  userVotesLookup,
+                  fetchedPoll.id,
+                  dbUser.id,
+                  totalStatements
+                );
 
-            if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
-              // Create StatementManager instance
-              const manager = new StatementManager(
-                batchResult.data,
-                userVotesLookup,
-                fetchedPoll.id,
-                dbUser.id,
-                totalStatements
-              );
+                setStatementManager(manager);
 
-              setStatementManager(manager);
-
-              // Get first unvoted statement and set initial voting state
-              const firstStatement = manager.getNextStatement();
-              setVotingState({
-                phase: 'viewing',
-                currentStatement: firstStatement,
-                showResults: false,
-              });
-            } else {
-              // No more unvoted statements - user has completed voting
-              if (thresholdReached) {
-                toast.success("השלמת את בחירת הקלפים בסקר זה!");
-                router.push(`/polls/${resolvedParams.slug}/insights`);
+                const firstStatement = manager.getNextStatement();
+                setVotingState({
+                  phase: 'viewing',
+                  currentStatement: firstStatement,
+                  showResults: false,
+                });
               } else {
+                // No statements available
                 toast.error("אין קלפים זמינים לבחירה");
                 router.push(`/polls/${resolvedParams.slug}`);
+                return;
               }
-              return;
+            } else {
+              // Returning user - skip demographics check, just load batch
+              const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
+
+              if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
+                const manager = new StatementManager(
+                  batchResult.data,
+                  userVotesLookup,
+                  fetchedPoll.id,
+                  dbUser.id,
+                  totalStatements
+                );
+
+                setStatementManager(manager);
+
+                const firstStatement = manager.getNextStatement();
+                setVotingState({
+                  phase: 'viewing',
+                  currentStatement: firstStatement,
+                  showResults: false,
+                });
+              } else {
+                // No more unvoted statements - user has completed voting
+                if (thresholdReached) {
+                  toast.success("השלמת את בחירת הקלפים בסקר זה!");
+                  router.push(`/polls/${resolvedParams.slug}/insights`);
+                } else {
+                  toast.error("אין קלפים זמינים לבחירה");
+                  router.push(`/polls/${resolvedParams.slug}`);
+                }
+                return;
+              }
             }
           }
         } else if (contextSessionId) {
@@ -343,7 +374,11 @@ export default function VotingPage({ params }: VotingPageProps) {
           setShowDemographicsModal(true);
 
           // Load first batch of statements (all approved, since user has no votes yet)
+          console.log("[VOTE PAGE] Anonymous user - calling getApprovedStatementsByPollIdAction for poll:", fetchedPoll.id);
+          const startTime = performance.now();
           const statementsResult = await getApprovedStatementsByPollIdAction(fetchedPoll.id);
+          const duration = performance.now() - startTime;
+          console.log(`[VOTE PAGE] getApprovedStatementsByPollIdAction completed in ${duration.toFixed(2)}ms`);
           if (statementsResult.success && statementsResult.data) {
             const firstBatch = statementsResult.data.slice(0, BATCH_SIZE);
 

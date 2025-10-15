@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   createStatement,
   deleteStatement,
@@ -17,6 +17,7 @@ export async function createStatementAction(data: NewStatement) {
   try {
     const statement = await createStatement(data);
     revalidatePath("/polls");
+    revalidateTag("statements"); // Invalidate statements cache
     return { success: true, data: statement };
   } catch (error) {
     console.error("Error creating statement:", error);
@@ -31,6 +32,7 @@ export async function updateStatementAction(id: string, data: Partial<NewStateme
       return { success: false, error: "Statement not found" };
     }
     revalidatePath("/polls");
+    revalidateTag("statements"); // Invalidate statements cache
     return { success: true, data: updatedStatement };
   } catch (error) {
     console.error("Error updating statement:", error);
@@ -45,6 +47,7 @@ export async function deleteStatementAction(id: string) {
       return { success: false, error: "Statement not found" };
     }
     revalidatePath("/polls");
+    revalidateTag("statements"); // Invalidate statements cache
     return { success: true };
   } catch (error) {
     console.error("Error deleting statement:", error);
@@ -83,11 +86,18 @@ export async function getStatementsByPollIdAction(pollId: string) {
 }
 
 export async function getApprovedStatementsByPollIdAction(pollId: string) {
+  const timestamp = new Date().toISOString();
+  console.log(`[ACTION ${timestamp}] getApprovedStatementsByPollIdAction called for poll:`, pollId);
+
   try {
+    const startTime = performance.now();
     const statements = await getApprovedStatementsByPollId(pollId);
+    const duration = performance.now() - startTime;
+
+    console.log(`[ACTION ${timestamp}] Query completed in ${duration.toFixed(2)}ms, found ${statements.length} statements`);
     return { success: true, data: statements };
   } catch (error) {
-    console.error("Error fetching approved statements for poll:", error);
+    console.error(`[ACTION ${timestamp}] Error fetching approved statements for poll:`, error);
     return { success: false, error: "Failed to fetch approved statements for poll" };
   }
 }
@@ -112,6 +122,7 @@ export async function rejectStatementAction(id: string) {
       return { success: false, error: "Statement not found" };
     }
     revalidatePath("/polls");
+    revalidateTag("statements"); // Invalidate statements cache
     return { success: true };
   } catch (error) {
     console.error("Error rejecting statement:", error);
@@ -126,6 +137,7 @@ export async function approveStatementAction(id: string) {
       return { success: false, error: "Statement not found" };
     }
     revalidatePath("/polls");
+    revalidateTag("statements"); // Invalidate statements cache
     return { success: true, data: updatedStatement };
   } catch (error) {
     console.error("Error approving statement:", error);

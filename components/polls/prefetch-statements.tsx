@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { getStatementBatchAction } from "@/actions/votes-actions";
+import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 
 interface PrefetchStatementsProps {
   pollId: string;
@@ -32,5 +33,33 @@ export function PrefetchStatements({ pollId, userId, batchNumber }: PrefetchStat
   }, [pollId, userId, batchNumber]);
 
   // This component renders nothing
+  return null;
+}
+
+/**
+ * Prefetch statements for anonymous users (no userId yet)
+ * Uses getApprovedStatementsByPollIdAction instead of batch action
+ * Anonymous users load ALL approved statements on vote page, so we prefetch that
+ */
+export function PrefetchStatementsAnonymous({ pollId }: { pollId: string }) {
+  useEffect(() => {
+    console.log("[PREFETCH] Anonymous prefetch component mounted for poll:", pollId);
+
+    const prefetch = async () => {
+      try {
+        console.log("[PREFETCH] Starting anonymous statements prefetch...");
+        await getApprovedStatementsByPollIdAction(pollId);
+        console.log("[PREFETCH] Anonymous statements prefetch completed successfully!");
+        // Data is now cached by Next.js for when user enters vote page
+      } catch (error) {
+        console.error("[PREFETCH] Prefetch approved statements failed:", error);
+      }
+    };
+
+    // Small delay to avoid blocking main render
+    const timer = setTimeout(prefetch, 100);
+    return () => clearTimeout(timer);
+  }, [pollId]);
+
   return null;
 }

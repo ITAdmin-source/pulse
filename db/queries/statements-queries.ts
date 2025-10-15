@@ -1,4 +1,5 @@
 import { eq, desc, and, isNull } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "../db";
 import { statements, type Statement, type NewStatement } from "../schema/statements";
 import { polls } from "../schema/polls";
@@ -28,13 +29,32 @@ export async function getStatementsByPollId(pollId: string): Promise<Statement[]
     .orderBy(desc(statements.createdAt));
 }
 
-export async function getApprovedStatementsByPollId(pollId: string): Promise<Statement[]> {
-  return await db
-    .select()
-    .from(statements)
-    .where(and(eq(statements.pollId, pollId), eq(statements.approved, true)))
-    .orderBy(desc(statements.createdAt));
-}
+// Use Next.js unstable_cache for cross-request caching
+// This enables prefetch to work across Server Action boundaries
+export const getApprovedStatementsByPollId = unstable_cache(
+  async (pollId: string): Promise<Statement[]> => {
+    const queryId = Math.random().toString(36).substring(7);
+    const timestamp = new Date().toISOString();
+
+    console.log(`[QUERY ${queryId}] ${timestamp} - Cache MISS - Executing DB query for poll: ${pollId}`);
+
+    const startTime = performance.now();
+    const result = await db
+      .select()
+      .from(statements)
+      .where(and(eq(statements.pollId, pollId), eq(statements.approved, true)))
+      .orderBy(desc(statements.createdAt));
+    const duration = performance.now() - startTime;
+
+    console.log(`[QUERY ${queryId}] DB query completed in ${duration.toFixed(2)}ms, found ${result.length} statements`);
+    return result;
+  },
+  ['approved-statements'], // Cache key prefix
+  {
+    revalidate: 60, // Cache for 60 seconds
+    tags: ['statements'] // Tag for cache invalidation
+  }
+);
 
 export async function getAllPendingStatements(): Promise<Statement[]> {
   return await db
