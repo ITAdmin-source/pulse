@@ -45,3 +45,21 @@ export async function deleteUserProfile(userId: string): Promise<boolean> {
 
   return result.length > 0;
 }
+
+export async function upsertUserProfile(data: NewUserProfile): Promise<UserProfile> {
+  const result = await db
+    .insert(userProfiles)
+    .values(data)
+    .onConflictDoUpdate({
+      target: userProfiles.userId,
+      set: {
+        name: data.name,
+        pictureUrl: data.pictureUrl,
+        socialLink: data.socialLink,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  return result[0];
+}

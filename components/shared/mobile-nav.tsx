@@ -19,9 +19,20 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
   const { userRoles } = useCurrentUser();
   const userHasManagementRole = userRoles.length > 0 && hasAnyManagementRole(userRoles);
 
+  const handleInteractOutside = (e: Event) => {
+    // Simply prevent closing on ALL outside interactions
+    // This keeps the Sheet open, and we'll close it manually via the X button or nav links
+    console.log('=== Sheet InteractOutside - Preventing all outside closes ===');
+    e.preventDefault();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-72">
+      <SheetContent
+        side="right"
+        className="w-72"
+        onInteractOutside={handleInteractOutside}
+      >
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle>תפריט</SheetTitle>
@@ -39,7 +50,9 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                 afterSignOutUrl="/"
                 appearance={{
                   elements: {
-                    userButtonAvatarBox: "w-9 h-9"
+                    userButtonAvatarBox: "w-9 h-9",
+                    userButtonPopoverCard: "z-[60]",
+                    userButtonPopoverActionButton: "z-[60]"
                   }
                 }}
               >

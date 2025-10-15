@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { UserService } from "./user-service";
+import { upsertUserProfile, getUserProfileById } from "@/db/queries/user-profiles-queries";
 
 export interface ClerkUserProfile {
   id: string;
@@ -217,5 +218,100 @@ export class UserProfileService {
       default:
         return undefined;
     }
+  }
+
+  /**
+   * Extract name and profile image from Clerk user data
+   * Prioritizes social provider data over Clerk defaults
+   */
+  static extractProfileFromClerk(clerkUser: ClerkUserProfile): { name: string | null; pictureUrl: string | null } {
+    // Try to get name from Clerk's full name first
+    let name: string | null = null;
+    if (clerkUser.fullName) {
+      name = clerkUser.fullName;
+    } else if (clerkUser.firstName && clerkUser.lastName) {
+      name = `${clerkUser.firstName} ${clerkUser.lastName}`;
+    } else if (clerkUser.firstName) {
+      name = clerkUser.firstName;
+    }
+
+    // Get profile image URL from Clerk
+    const pictureUrl = clerkUser.imageUrl || null;
+
+    return { name, pictureUrl };
+  }
+
+  /**
+   * Save profile data to user_profiles table from Clerk data
+   * This is called during initial signup or upgrade
+   */
+  static async saveProfileFromClerk(userId: string, clerkUserId: string): Promise<void> {
+    try {
+      // Fetch fresh profile from Clerk
+      const clerkProfile = await this.getUserProfile(clerkUserId);
+
+      if (!clerkProfile) {
+        console.log("No Clerk profile found for user:", clerkUserId);
+        return;
+      }
+
+      // Extract name and picture
+      const { name, pictureUrl } = this.extractProfileFromClerk(clerkProfile);
+
+      // Only save if we have at least name or picture
+      if (!name && !pictureUrl) {
+        console.log("No name or picture to save for user:", userId);
+        return;
+      }
+
+      // Upsert to user_profiles table
+      await upsertUserProfile({
+        userId,
+        name,
+        pictureUrl,
+        socialLink: null, // Can be set by user later
+      });
+
+      console.log("Profile saved for user:", userId, { name, pictureUrl: pictureUrl ? "yes" : "no" });
+    } catch (error) {
+      console.error("Error saving profile from Clerk:", error);
+      // Don't throw - this is a best-effort operation
+    }
+  }
+
+  /**
+   * Get display name with priority: user_profiles.name > Clerk profile > email > fallback
+   */
+  static async getDisplayName(userId: string, clerkUserId?: string): Promise<string> {
+    // First check user_profiles table
+    const userProfile = await getUserProfileById(userId);
+    if (userProfile?.name) {
+      return userProfile.name;
+    }
+
+    // Fall back to Clerk profile if available
+    if (clerkUserId) {
+      return await this.getUserDisplayName(clerkUserId);
+    }
+
+    return "Anonymous User";
+  }
+
+  /**
+   * Get profile image URL with priority: user_profiles.pictureUrl > Clerk profile
+   */
+  static async getProfileImageUrl(userId: string, clerkUserId?: string): Promise<string | null> {
+    // First check user_profiles table
+    const userProfile = await getUserProfileById(userId);
+    if (userProfile?.pictureUrl) {
+      return userProfile.pictureUrl;
+    }
+
+    // Fall back to Clerk profile if available
+    if (clerkUserId) {
+      return await this.getUserImageUrl(clerkUserId);
+    }
+
+    return null;
   }
 }

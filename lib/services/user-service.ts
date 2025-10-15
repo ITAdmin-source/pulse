@@ -4,6 +4,7 @@ import { users, userRoles, userDemographics } from "@/db/schema";
 import type { User } from "@/db/schema";
 import { createUserSchema, upgradeUserSchema } from "@/lib/validations/user";
 import { z } from "zod";
+import { UserProfileService } from "./user-profile-service";
 
 export class UserService {
   static async createUser(data: z.infer<typeof createUserSchema>): Promise<User> {
@@ -77,6 +78,9 @@ export class UserService {
       .where(eq(users.id, anonymousUser.id))
       .returning();
 
+    // Populate profile from Clerk (name + picture from social signup)
+    await UserProfileService.saveProfileFromClerk(upgradedUser.id, validatedData.clerkUserId);
+
     return upgradedUser;
   }
 
@@ -97,14 +101,18 @@ export class UserService {
 
   /**
    * Gets existing authenticated user by Clerk ID, creates if from webhook
+   * Also populates user_profiles with name and picture from social signup
    */
   static async getOrCreateUserByClerkId(clerkUserId: string): Promise<User> {
     // Try to find existing user by Clerk ID
     let user = await this.findByClerkId(clerkUserId);
 
     if (!user) {
-      // Create new authenticated user (usually from webhook)
+      // Create new authenticated user (usually from webhook or JIT)
       user = await this.createUser({ clerkUserId });
+
+      // Populate profile from Clerk (name + picture from social signup)
+      await UserProfileService.saveProfileFromClerk(user.id, clerkUserId);
     }
 
     return user;

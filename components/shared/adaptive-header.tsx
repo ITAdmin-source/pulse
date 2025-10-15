@@ -159,7 +159,9 @@ export function AdaptiveHeader() {
                   afterSignOutUrl="/"
                   appearance={{
                     elements: {
-                      userButtonAvatarBox: "w-9 h-9"
+                      userButtonAvatarBox: "w-9 h-9",
+                      userButtonPopoverCard: "z-[60]",
+                      userButtonPopoverActionButton: "z-[60]"
                     }
                   }}
                 >
