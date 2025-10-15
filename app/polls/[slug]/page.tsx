@@ -28,9 +28,7 @@ import { toast } from "sonner";
 // v2.0 Components
 import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
-import { QuestionPill } from "@/components/voting-v2/question-pill";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
-import { NextBatchPrompt } from "@/components/voting-v2/next-batch-prompt";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
 import { DemographicsBanner } from "@/components/banners/demographics-banner";
 import { DemographicsModal, type DemographicsData } from "@/components/polls/demographics-modal";
@@ -40,6 +38,7 @@ import { DemographicHeatmap } from "@/components/results-v2/demographic-heatmap"
 import { MoreStatementsPrompt } from "@/components/results-v2/more-statements-prompt";
 import { VotingCompleteBanner } from "@/components/results-v2/voting-complete-banner";
 import { StatementSubmissionModal } from "@/components/voting/statement-submission-modal";
+// Note: NextBatchPrompt removed - using MoreStatementsPrompt in Results tab instead
 
 // Actions
 import { getPollBySlugAction } from "@/actions/polls-actions";
@@ -86,7 +85,6 @@ interface CombinedPollPageProps {
 }
 
 type TabType = "vote" | "results";
-type VotingPhase = "viewing" | "batchComplete" | "finished";
 
 const BATCH_SIZE = 10;
 
@@ -149,7 +147,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [isSavingVote, setIsSavingVote] = useState(false);
 
   // Voting state
-  const [votingPhase, setVotingPhase] = useState<VotingPhase>("viewing");
   const [currentStatement, setCurrentStatement] = useState<Statement | null>(null);
   const [showVoteStats, setShowVoteStats] = useState(false);
   const [voteStats, setVoteStats] = useState<{ agreePercent: number; disagreePercent: number; passPercent: number } | null>(null);
@@ -157,7 +154,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   // Demographics state
   const [hasDemographics, setHasDemographics] = useState(false);
   const [showDemographicsModal, setShowDemographicsModal] = useState(false);
-  const [showDemographicsBanner, setShowDemographicsBanner] = useState(false);
 
   // Statement submission modal state
   const [showStatementModal, setShowStatementModal] = useState(false);
@@ -187,10 +183,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const isVotingRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
-  // Progress tracking
+  // Progress tracking - single source of truth from statementManager
   const progress = statementManager?.getProgress();
-  const votedCount = progress?.totalVoted || 0;
-  const totalStatements = progress?.totalStatementsInPoll || 0;
+  const votedCount = progress?.totalVoted ?? 0;
+  const totalStatements = progress?.totalStatementsInPoll ?? 0;
 
   // Dynamic threshold: 10 votes OR all statements if poll has fewer than 10
   const votesRequiredForResults = Math.min(10, totalStatements);
@@ -200,7 +196,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Prefetch vote distribution when statement appears (for optimistic updates)
   useEffect(() => {
-    if (votingPhase === "viewing" && currentStatement) {
+    if (currentStatement) {
       const statementId = currentStatement.id;
 
       // Check if already cached
@@ -222,24 +218,62 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         });
       }
     }
-  }, [votingPhase, currentStatement]);
+  }, [currentStatement]);
 
-  // Preload next batch when user reaches statement 8 (for smoother transitions)
+  // Auto-load results when Results tab becomes active
   useEffect(() => {
-    if (votingPhase === "viewing" && progress && statementManager && poll && userId) {
-      const positionInBatch = progress.positionInBatch;
-
-      // Preload next batch at position 8 (0-indexed would be position 7)
-      if (positionInBatch === 8) {
-        const nextBatch = progress.currentBatch + 1;
-
-        // Fire and forget - preload in background
-        getStatementBatchAction(poll.id, userId, nextBatch).catch(() => {
-          // Silent fail - batch will load normally when user clicks Continue
-        });
-      }
+    if (activeTab === "results" && !resultsLocked && hasDemographics && poll && userId) {
+      // Load results data when switching to results tab
+      loadResultsData().catch((error) => {
+        console.error("Error loading results:", error);
+        toast.error("שגיאה בטעינת תוצאות");
+      });
     }
-  }, [votingPhase, progress?.positionInBatch, statementManager, poll, userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, resultsLocked, hasDemographics, poll?.id, userId]);
+
+  // Auto-load next batch when Vote tab becomes active with no current statement
+  useEffect(() => {
+    // Only trigger if:
+    // 1. Vote tab is active
+    // 2. No current statement showing
+    // 3. User has more statements to vote on
+    // 4. StatementManager exists
+    if (activeTab === "vote" && !currentStatement && hasMoreStatements && statementManager) {
+      const loadNextBatchForVoting = async () => {
+        try {
+          // First, check if batch already loaded (from background preload)
+          const nextStmt = statementManager.getNextStatement();
+
+          if (nextStmt) {
+            // ✅ Batch already loaded in background! Just set statement (instant)
+            setCurrentStatement(nextStmt);
+            return;
+          }
+
+          // Batch not loaded yet (preload still running or failed), load it now
+          const hasMore = await statementManager.loadNextBatch();
+
+          if (hasMore) {
+            const stmt = statementManager.getNextStatement();
+            if (stmt) {
+              setCurrentStatement(stmt);
+            } else {
+              console.error("[VoteTab] Batch loaded but no statement found");
+            }
+          } else {
+            console.log("[VoteTab] No more batches available");
+          }
+        } catch (error) {
+          console.error("[VoteTab] Error loading batch:", error);
+          toast.error("שגיאה בטעינת עמדות");
+        }
+      };
+
+      loadNextBatchForVoting();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentStatement, hasMoreStatements]);
 
   // Initialize poll and user data
   useEffect(() => {
@@ -286,10 +320,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         setPoll(fetchedPoll);
 
         // Handle user - authenticated or anonymous
-        let effectiveUserId: string | null = null;
-
         if (dbUser?.id) {
-          effectiveUserId = dbUser.id;
           setUserId(dbUser.id);
           setSessionId(contextSessionId);
 
@@ -322,7 +353,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               );
 
               setStatementManager(manager);
-              setVotingPhase("finished");
               setCurrentStatement(null);
 
               // Auto-switch to results tab if they have demographics
@@ -345,7 +375,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 setStatementManager(manager);
                 const nextStmt = manager.getNextStatement();
                 setCurrentStatement(nextStmt);
-                setVotingPhase("viewing");
               }
             }
           }
@@ -371,7 +400,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
             setStatementManager(manager);
             setCurrentStatement(manager.getNextStatement());
-            setVotingPhase("viewing");
           } else {
             // No statements available
             toast.error("אין עמדות זמינות להצבעה");
@@ -478,10 +506,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           // Silent fail - cache update is not critical
         });
 
-        // Show stats for 2.5 seconds, then advance
+        // Show stats for 1.5 seconds, then advance
         setTimeout(() => {
           handleNextStatement();
-        }, 2500);
+        }, 1500);
       } else {
         // Check if statement was deleted/rejected by admin
         if (result.error?.includes("Statement") || result.error?.includes("not found")) {
@@ -504,78 +532,87 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   };
 
   // Advance to next statement
-  const handleNextStatement = useCallback(() => {
+  const handleNextStatement = useCallback(async () => {
     if (!statementManager) return;
 
     setShowVoteStats(false);
     setVoteStats(null);
 
     statementManager.advanceIndex();
-    const progress = statementManager.getProgress();
+    const newProgress = statementManager.getProgress();
 
     // Check if batch is complete
-    const isBatchComplete = progress.positionInBatch >= progress.statementsInCurrentBatch;
+    const isBatchComplete = newProgress.positionInBatch >= newProgress.statementsInCurrentBatch;
 
     if (isBatchComplete) {
-      // Check if there are ANY statements left in the entire poll
-      const hasAnyStatementsLeft = progress.totalVoted < progress.totalStatementsInPoll;
+      // Batch complete - ALWAYS switch to Results tab
+      setCurrentStatement(null);
 
-      if (hasAnyStatementsLeft) {
-        // Show batch complete prompt
-        setVotingPhase("batchComplete");
-        setCurrentStatement(null);
-
-        // Check if we've reached required votes threshold and need demographics
-        if (progress.totalVoted >= votesRequiredForResults && !hasDemographics) {
-          setShowDemographicsBanner(true);
-        }
-      } else {
-        // No more statements at all - voting finished
-        setVotingPhase("finished");
-        setCurrentStatement(null);
-        toast.success(pollPage.votingComplete);
+      // Preload next batch in background for smoother UX (fire and forget)
+      if (!statementManager.hasVotedOnAll()) {
+        statementManager.loadNextBatch().catch(() => {
+          // Silent fail - batch will load when user clicks continue
+        });
       }
+
+      // Switch to Results tab immediately
+      setActiveTab("results");
+      toast.success("סיימת סבב! צפה בתוצאות");
     } else {
+      // More statements in current batch
       const nextStmt = statementManager.getNextStatement();
       setCurrentStatement(nextStmt);
-      setVotingPhase("viewing");
     }
-  }, [statementManager, hasDemographics]);
+  }, [statementManager]);
 
-  // Continue to next batch
+  // Continue to next batch (called from Results tab "More Statements" prompt)
+  // Just switches to Vote tab - useEffect handles retrieving/loading batch
   const handleContinueBatch = async () => {
-    if (!statementManager) return;
+    // Reset results cache to force fresh load after user votes more
+    setResultsData({
+      insight: null,
+      stats: null,
+      heatmapData: {
+        gender: [],
+        ageGroup: [],
+        ethnicity: [],
+        politicalParty: []
+      },
+      hasMoreStatements: false
+    });
 
-    try {
-      const hasMore = await statementManager.loadNextBatch();
-
-      if (hasMore) {
-        const nextStmt = statementManager.getNextStatement();
-        setCurrentStatement(nextStmt);
-        setVotingPhase("viewing");
-      } else {
-        setVotingPhase("finished");
-        toast.success(pollPage.votingComplete);
-      }
-    } catch (error) {
-      console.error("Error loading next batch:", error);
-      toast.error(pollPage.batchLoadError);
-    }
+    // Switch to vote tab - useEffect will handle getting statement from preloaded batch
+    setActiveTab("vote");
+    toast.success("ממשיך לעמדות נוספות");
   };
 
   // Load results data
-  const loadResultsData = useCallback(async () => {
+  const loadResultsData = useCallback(async (forceRefresh = false) => {
     if (!poll || !userId) return;
+
+    // Skip if already loaded and not forcing refresh (caching)
+    if (resultsData.insight && !forceRefresh) {
+      console.log("[Results] Using cached data");
+      return;
+    }
 
     setIsLoadingResults(true);
     try {
       // Check if user is anonymous (no Clerk ID)
       const isAnonymous = !dbUser?.clerkUserId;
 
-      // For anonymous users, check localStorage first
+      // For anonymous users, check localStorage first (synchronous)
       let insightFromStorage = null;
       if (isAnonymous) {
         insightFromStorage = getInsightFromStorage(poll.id);
+      }
+
+      // Quick check: Do we need to generate insight?
+      // Set generating state BEFORE waiting for async calls
+      if (!insightFromStorage) {
+        // Optimistically assume we'll need to generate
+        // Will be corrected if DB has cached version
+        setIsGeneratingInsight(true);
       }
 
       const [insightResult, pollResultsResult, genderHeatmap, ageHeatmap, ethnicityHeatmap, politicsHeatmap] = await Promise.all([
@@ -597,6 +634,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           profile: emojiMatch ? emojiMatch[2] : insightFromStorage.title,
           description: insightFromStorage.body
         };
+        setIsGeneratingInsight(false); // Turn off since we have cached version
       } else if (insightResult.success && insightResult.data) {
         // ✅ Insight exists in DB - use cached version
         const { title, body } = insightResult.data;
@@ -609,9 +647,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           profile: emojiMatch ? emojiMatch[2] : title,
           description: body
         };
+        setIsGeneratingInsight(false); // Turn off since we have cached version
       } else {
         // ❌ No insight in DB/localStorage - generate using AIService and save
-        setIsGeneratingInsight(true);
+        // isGeneratingInsight already set to true above
         setInsightError(null);
 
         try {
@@ -681,10 +720,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     } finally {
       setIsLoadingResults(false);
     }
-  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId]);
+  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight]);
 
   // Handle tab change
-  const handleTabChange = async (tab: TabType) => {
+  const handleTabChange = (tab: TabType) => {
     if (tab === "results") {
       if (resultsLocked) {
         toast.warning(pollPage.resultsLockedToast);
@@ -696,11 +735,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         setShowDemographicsModal(true);
         return;
       }
-
-      // Load results data when switching to Results tab
-      await loadResultsData();
     }
 
+    // Switch tab (useEffect will handle loading results data)
     setActiveTab(tab);
   };
 
@@ -719,7 +756,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         }
         setHasDemographics(true);
         setShowDemographicsModal(false);
-        setShowDemographicsBanner(false);
         toast.success(pollPage.demographicsSaved);
 
         // Switch to results tab
@@ -825,7 +861,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                     }
                   }}
                 />
-              ) : votingPhase === "viewing" && currentStatement ? (
+              ) : currentStatement ? (
                 <SplitVoteCard
                   key={currentStatement.id}
                   statementText={currentStatement.text}
@@ -838,20 +874,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   disabled={isSavingVote}
                   allowAddStatement={poll?.allowUserStatements || false}
                 />
-              ) : votingPhase === "batchComplete" && !showDemographicsBanner ? (
-                <NextBatchPrompt
-                  key="batch-prompt"
-                  batchNumber={progress?.currentBatch || 1}
-                  statementsCompleted={progress?.statementsInCurrentBatch || 10}
-                  remainingStatements={Math.min(10, totalStatements - votedCount)}
-                  onContinue={handleContinueBatch}
-                />
-              ) : showDemographicsBanner ? (
-                <DemographicsBanner
-                  key="demographics-banner"
-                  onOpenModal={() => setShowDemographicsModal(true)}
-                />
-              ) : votingPhase === "finished" ? (
+              ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
                   <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -867,7 +890,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                     צפו בתוצאות
                   </button>
                 </div>
-              ) : null}
+              ) : (
+                <div key="loading-next" className="bg-white rounded-3xl shadow-xl p-8 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+                  <p className="text-gray-600">טוען עמדות...</p>
+                </div>
+              )}
             </AnimatePresence>
           </div>
         )}
@@ -928,7 +956,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 {hasMoreStatements ? (
                   <MoreStatementsPrompt
                     remainingStatements={totalStatements - votedCount}
-                    onContinue={() => setActiveTab("vote")}
+                    onContinue={handleContinueBatch}
                   />
                 ) : (
                   <VotingCompleteBanner
