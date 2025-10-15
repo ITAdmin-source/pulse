@@ -289,82 +289,52 @@ export default function VotingPage({ params }: VotingPageProps) {
           const userVotesLookup = votesResult.success ? votesResult.data || {} : {};
 
           if (progressResult.success && progressResult.data) {
-            const { totalVoted, totalStatements, currentBatch, thresholdReached } = progressResult.data;
+            const { totalStatements, currentBatch, thresholdReached } = progressResult.data;
 
-            // STAGE 2: Conditional parallel fetch based on totalVoted
-            if (totalVoted === 0) {
-              // New user - check demographics AND load first batch in parallel
-              const [demographicsResult, batchResult] = await Promise.all([
-                getUserDemographicsByIdAction(dbUser.id),
-                getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch)
-              ]);
+            // STAGE 2: Always check demographics first (regardless of vote count)
+            const [demographicsResult, batchResult] = await Promise.all([
+              getUserDemographicsByIdAction(dbUser.id),
+              getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch)
+            ]);
 
-              // Check demographics first (early exit if needed)
-              if (!demographicsResult.success || !demographicsResult.data) {
-                setShowDemographicsModal(true);
-                // Don't load statements yet - wait for demographics modal to be handled
-                // This ensures modal appears BEFORE first statement card
-                setIsLoading(false);
-                hasInitializedRef.current = true;
-                return;
-              }
+            // Check demographics first (early exit if needed)
+            if (!demographicsResult.success || !demographicsResult.data) {
+              setShowDemographicsModal(true);
+              // Don't load statements yet - wait for demographics modal to be handled
+              // This ensures modal appears BEFORE first statement card
+              setIsLoading(false);
+              hasInitializedRef.current = true;
+              return;
+            }
 
-              // Demographics exist, proceed with batch result
-              if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
-                const manager = new StatementManager(
-                  batchResult.data,
-                  userVotesLookup,
-                  fetchedPoll.id,
-                  dbUser.id,
-                  totalStatements
-                );
+            // Demographics exist, proceed with batch result
+            if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
+              const manager = new StatementManager(
+                batchResult.data,
+                userVotesLookup,
+                fetchedPoll.id,
+                dbUser.id,
+                totalStatements
+              );
 
-                setStatementManager(manager);
+              setStatementManager(manager);
 
-                const firstStatement = manager.getNextStatement();
-                setVotingState({
-                  phase: 'viewing',
-                  currentStatement: firstStatement,
-                  showResults: false,
-                });
+              const firstStatement = manager.getNextStatement();
+              setVotingState({
+                phase: 'viewing',
+                currentStatement: firstStatement,
+                showResults: false,
+              });
+            } else {
+              // No more unvoted statements - user has completed voting
+              if (thresholdReached) {
+                toast.success("השלמת את בחירת הקלפים בסקר זה!");
+                router.push(`/polls/${resolvedParams.slug}/insights`);
               } else {
-                // No statements available
                 toast.error("אין קלפים זמינים לבחירה");
                 router.push(`/polls/${resolvedParams.slug}`);
-                return;
               }
-            } else {
-              // Returning user - skip demographics check, just load batch
-              const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
-
-              if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
-                const manager = new StatementManager(
-                  batchResult.data,
-                  userVotesLookup,
-                  fetchedPoll.id,
-                  dbUser.id,
-                  totalStatements
-                );
-
-                setStatementManager(manager);
-
-                const firstStatement = manager.getNextStatement();
-                setVotingState({
-                  phase: 'viewing',
-                  currentStatement: firstStatement,
-                  showResults: false,
-                });
-              } else {
-                // No more unvoted statements - user has completed voting
-                if (thresholdReached) {
-                  toast.success("השלמת את בחירת הקלפים בסקר זה!");
-                  router.push(`/polls/${resolvedParams.slug}/insights`);
-                } else {
-                  toast.error("אין קלפים זמינים לבחירה");
-                  router.push(`/polls/${resolvedParams.slug}`);
-                }
-                return;
-              }
+              return;
             }
           }
         } else if (contextSessionId) {
