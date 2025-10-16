@@ -15,16 +15,6 @@ interface DemographicHeatmapProps {
 }
 
 const attributeConfig = {
-  gender: {
-    icon: Users,
-    label: results.heatmapGender,
-    color: "text-blue-600"
-  },
-  ageGroup: {
-    icon: Calendar,
-    label: results.heatmapAge,
-    color: "text-green-600"
-  },
   ethnicity: {
     icon: Globe,
     label: results.heatmapEthnicity,
@@ -34,11 +24,21 @@ const attributeConfig = {
     icon: Flag,
     label: results.heatmapPolitics,
     color: "text-purple-600"
+  },
+  ageGroup: {
+    icon: Calendar,
+    label: results.heatmapAge,
+    color: "text-green-600"
+  },
+  gender: {
+    icon: Users,
+    label: results.heatmapGender,
+    color: "text-blue-600"
   }
 };
 
 export function DemographicHeatmap({ pollId, data, isLoading = false }: DemographicHeatmapProps) {
-  const [activeAttribute, setActiveAttribute] = useState<DemographicAttribute>("gender");
+  const [activeAttribute, setActiveAttribute] = useState<DemographicAttribute>("ethnicity");
 
   if (isLoading) {
     return (
@@ -193,7 +193,7 @@ export function DemographicHeatmap({ pollId, data, isLoading = false }: Demograp
           </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-6 rounded bg-gray-200 border border-gray-300"></div>
-            <span className="text-gray-700">לא מספיק נתונים</span>
+            <span className="text-gray-700">אין מספיק נתונים</span>
           </div>
         </div>
       </div>

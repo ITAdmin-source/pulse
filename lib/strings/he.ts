@@ -166,8 +166,8 @@ export const voting = {
 
 export const results = {
   // Personal Insight Card
-  insightLabel: 'פרופיל ההשפעה שלכם',
-  insightShareButton: 'שתפו את הפרופיל שלי',
+  insightLabel: 'פרופיל ההשפעה שלך',
+  insightShareButton: 'לשיתוף הפרופיל שלי',
   insightSignUpLink: '💾 הירשמו לשמור פרופיל זה',
   insightLoadingError: 'לא ניתן לטעון תובנות',
 
@@ -177,8 +177,8 @@ export const results = {
   moreStatementsButton: (count: number) => `הצביעו על ${count} הבאות`,
 
   // Voting Complete Banner
-  completeTitle: 'הצבעתם על כל העמדות!',
-  completeMessage: 'תודה על ההשתתפות המלאה שלכם',
+  completeTitle: 'הצבעת על הכל!',
+  completeMessage: 'תודה על השתתפותך המלאה',
   shareButton: 'שיתוף',
 
   // Stats Grid - Section Title
@@ -210,8 +210,8 @@ export const results = {
   allStatementsEmpty: 'אין עמדות להצגה',
 
   // Demographic Heatmap Section
-  heatmapTitle: 'מפת חום דמוגרפית',
-  heatmapDescription: 'התפלגות הסכמה לפי קבוצות דמוגרפיות',
+  heatmapTitle: 'התפלגות הסכמה לפי קבוצות אוכלוסיה',
+  heatmapDescription: '',
   heatmapLoading: 'טוען נתונים...',
 
   // Demographic Attributes
@@ -338,7 +338,7 @@ export const auth = {
 
   // Post-Poll Auth Modal (after completing first poll - anonymous users)
   postPollTitle: 'עבודה מצוינת!',
-  postPollBody: 'הירשמו לשמור את פרופיל ההשפעה שלכם ולראות איך אתם משתווים לאחרים',
+  postPollBody: 'הירשמו לשמור את פרופיל ההשפעה שלך ולראות איך אתם משתווים לאחרים',
   postPollSignUp: 'הירשמו עכשיו',
   postPollDismiss: 'המשיכו כאורח/ת',
   postPollIcon: '🌟',

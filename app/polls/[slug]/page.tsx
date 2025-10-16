@@ -886,8 +886,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">הצבעתם על כל העמדות!</h3>
-                  <p className="text-gray-600 mb-6">תודה על ההשתתפות המלאה שלכם</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">הצבעת על הכל!</h3>
+                  <p className="text-gray-600 mb-6">תודה על השתתפותך המלאה</p>
                   <button
                     onClick={() => handleTabChange("results")}
                     className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-xl transition-shadow"
