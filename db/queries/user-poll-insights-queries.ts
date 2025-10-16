@@ -76,3 +76,57 @@ export async function deleteUserPollInsight(userId: string, pollId: string): Pro
 
   return result.length > 0;
 }
+
+// Artifact Collection Queries
+
+export async function getUserArtifactCollection(userId: string): Promise<UserPollInsight[]> {
+  return await db
+    .select()
+    .from(userPollInsights)
+    .where(eq(userPollInsights.userId, userId))
+    .orderBy(desc(userPollInsights.generatedAt));
+}
+
+export async function markArtifactAsSeen(userId: string, pollId: string): Promise<void> {
+  await db
+    .update(userPollInsights)
+    .set({
+      isNewArtifact: false,
+      firstSeenAt: new Date()
+    })
+    .where(and(
+      eq(userPollInsights.userId, userId),
+      eq(userPollInsights.pollId, pollId),
+      eq(userPollInsights.isNewArtifact, true)
+    ));
+}
+
+export async function getUserArtifactCount(userId: string): Promise<number> {
+  const result = await db
+    .select({ count: desc(userPollInsights.userId) })
+    .from(userPollInsights)
+    .where(eq(userPollInsights.userId, userId));
+
+  return result.length;
+}
+
+export async function updateArtifactRarity(userId: string, pollId: string, rarity: 'common' | 'rare' | 'legendary'): Promise<void> {
+  await db
+    .update(userPollInsights)
+    .set({ artifactRarity: rarity })
+    .where(and(
+      eq(userPollInsights.userId, userId),
+      eq(userPollInsights.pollId, pollId)
+    ));
+}
+
+export async function getNewArtifacts(userId: string): Promise<UserPollInsight[]> {
+  return await db
+    .select()
+    .from(userPollInsights)
+    .where(and(
+      eq(userPollInsights.userId, userId),
+      eq(userPollInsights.isNewArtifact, true)
+    ))
+    .orderBy(desc(userPollInsights.generatedAt));
+}

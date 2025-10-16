@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 import { results } from "@/lib/strings/he";
+import MinimalCollectionFooter, { type ArtifactSlot } from "./minimal-collection-footer";
+import NewArtifactBadge from "./new-artifact-badge";
 
 interface InsightCardProps {
   profile: string;
@@ -10,6 +12,13 @@ interface InsightCardProps {
   description: string;
   onShare?: () => void;
   showSignUpPrompt?: boolean;
+  // Artifact Collection Props
+  isAuthenticated?: boolean;
+  artifacts?: ArtifactSlot[];
+  newlyEarned?: { emoji: string; profile: string };
+  onDismissNewBadge?: () => void;
+  onSignUp?: () => void;
+  onEarnMore?: () => void;
 }
 
 export function InsightCard({
@@ -17,7 +26,13 @@ export function InsightCard({
   emoji,
   description,
   onShare,
-  showSignUpPrompt = false
+  showSignUpPrompt = false,
+  isAuthenticated = false,
+  artifacts = [],
+  newlyEarned,
+  onDismissNewBadge,
+  onSignUp,
+  onEarnMore,
 }: InsightCardProps) {
   return (
     <motion.div
@@ -46,6 +61,15 @@ export function InsightCard({
           {description}
         </p>
 
+        {/* New Artifact Badge (Authenticated Only) */}
+        {isAuthenticated && newlyEarned && (
+          <NewArtifactBadge
+            emoji={newlyEarned.emoji}
+            profileName={newlyEarned.profile}
+            onDismiss={onDismissNewBadge}
+          />
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           {onShare && (
@@ -64,6 +88,15 @@ export function InsightCard({
             </button>
           )}
         </div>
+
+        {/* Minimal Collection Footer (Both Anonymous and Authenticated) */}
+        <MinimalCollectionFooter
+          isAuthenticated={isAuthenticated}
+          currentEmoji={emoji}
+          artifacts={artifacts}
+          onSignUp={onSignUp}
+          onEarnMore={onEarnMore}
+        />
       </div>
     </motion.div>
   );

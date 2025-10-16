@@ -43,6 +43,13 @@
       "when": 1760612238513,
       "tag": "0005_puzzling_skrulls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1760620779929,
+      "tag": "0006_late_magma",
+      "breakpoints": true
     }
   ]
 }

@@ -133,3 +133,62 @@ export async function generateAndSaveInsightAction(userId: string, pollId: strin
     };
   }
 }
+
+// Artifact Collection Actions
+
+export async function getUserArtifactCollectionAction(userId: string) {
+  try {
+    const { getUserArtifactCollection } = await import("@/db/queries/user-poll-insights-queries");
+    const artifacts = await getUserArtifactCollection(userId);
+    return { success: true, data: artifacts };
+  } catch (error) {
+    console.error("Error fetching user artifact collection:", error);
+    return { success: false, error: "Failed to fetch artifact collection" };
+  }
+}
+
+export async function markArtifactAsSeenAction(userId: string, pollId: string) {
+  try {
+    const { markArtifactAsSeen } = await import("@/db/queries/user-poll-insights-queries");
+    await markArtifactAsSeen(userId, pollId);
+    revalidatePath("/polls");
+    return { success: true };
+  } catch (error) {
+    console.error("Error marking artifact as seen:", error);
+    return { success: false, error: "Failed to mark artifact as seen" };
+  }
+}
+
+export async function getUserArtifactCountAction(userId: string) {
+  try {
+    const { getUserArtifactCount } = await import("@/db/queries/user-poll-insights-queries");
+    const count = await getUserArtifactCount(userId);
+    return { success: true, data: count };
+  } catch (error) {
+    console.error("Error getting user artifact count:", error);
+    return { success: false, error: "Failed to get artifact count" };
+  }
+}
+
+export async function updateArtifactRarityAction(userId: string, pollId: string, rarity: 'common' | 'rare' | 'legendary') {
+  try {
+    const { updateArtifactRarity } = await import("@/db/queries/user-poll-insights-queries");
+    await updateArtifactRarity(userId, pollId, rarity);
+    revalidatePath("/polls");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating artifact rarity:", error);
+    return { success: false, error: "Failed to update artifact rarity" };
+  }
+}
+
+export async function getNewArtifactsAction(userId: string) {
+  try {
+    const { getNewArtifacts } = await import("@/db/queries/user-poll-insights-queries");
+    const newArtifacts = await getNewArtifacts(userId);
+    return { success: true, data: newArtifacts };
+  } catch (error) {
+    console.error("Error fetching new artifacts:", error);
+    return { success: false, error: "Failed to fetch new artifacts" };
+  }
+}

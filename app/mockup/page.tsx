@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown, HelpCircle, Plus, Users, TrendingUp, MessageSquare, Share2, ArrowLeft, Sparkles } from 'lucide-react';
+import InsightArtifactsCollection, { InsightArtifact } from './components/InsightArtifactsCollection';
+import FloatingArtifactsBadge from './components/FloatingArtifactsBadge';
+import InsightCardWithCollection from './components/InsightCardWithCollection';
 
 const PolisMultiPoll = () => {
   const [currentView, setCurrentView] = useState<string>('home');
@@ -31,6 +34,39 @@ const PolisMultiPoll = () => {
   });
   const [hasDemographics, setHasDemographics] = useState(false);
   const [showWhyWeAsk, setShowWhyWeAsk] = useState(false);
+
+  // Insight artifacts collection state
+  const [collectedArtifacts, setCollectedArtifacts] = useState<InsightArtifact[]>([
+    {
+      id: '1',
+      emoji: '🌟',
+      profile: 'The Optimist',
+      description: 'You see the potential in new ideas and are open to change.',
+      pollTitle: 'Team Work Culture',
+      earnedDate: 'Oct 10, 2025',
+      rarity: 'common',
+    },
+    {
+      id: '2',
+      emoji: '⚖️',
+      profile: 'The Balanced Evaluator',
+      description: 'You approach each statement on its own merits.',
+      pollTitle: 'Climate Action',
+      earnedDate: 'Oct 12, 2025',
+      rarity: 'rare',
+    },
+  ]);
+
+  // Newly earned artifact for celebration
+  const [newlyEarnedArtifact, setNewlyEarnedArtifact] = useState<string | null>(null);
+
+  // Poll-specific authentication states (for demo purposes)
+  // Poll 1: Anonymous, Poll 2: Authenticated, Poll 3: Authenticated
+  const pollAuthState: Record<string, boolean> = {
+    'work-culture': false,      // Anonymous user
+    'climate-action': true,      // Authenticated user
+    'ai-future': true            // Authenticated user (closed poll)
+  };
 
   const polls = [
     {
@@ -117,6 +153,9 @@ const PolisMultiPoll = () => {
   const currentPoll = polls.find(p => p.id === selectedPoll);
   const statements = currentPoll?.statements || [];
 
+  // Determine if current user is authenticated for this poll
+  const isAuthenticated = selectedPoll ? pollAuthState[selectedPoll as keyof typeof pollAuthState] ?? false : false;
+
   const votedCount = Object.keys(votes).length;
   const canSeeResults = votedCount >= MIN_VOTES_REQUIRED;
 
@@ -134,10 +173,10 @@ const PolisMultiPoll = () => {
     const newVotes = {...votes, [currentStatement.id]: voteType};
     setVotes(newVotes);
     setRevealedStats({...revealedStats, [currentStatement.id]: true});
-    
+
     const newVotedCount = Object.keys(newVotes).length;
     const hasMetMinimum = newVotedCount >= MIN_VOTES_REQUIRED;
-    
+
     setTimeout(() => {
       if (currentStatementIndex < batchEnd - 1) {
         setCurrentStatementIndex(currentStatementIndex + 1);
@@ -146,6 +185,14 @@ const PolisMultiPoll = () => {
           setShowDemographicsForm(true);
         } else {
           setActiveView('results');
+
+          // Auto-add artifact for authenticated users when viewing results
+          if (isAuthenticated) {
+            setTimeout(() => {
+              handleAddArtifact();
+            }, 500);
+          }
+
           if (!hasCompletedFirstPoll && newVotedCount >= statements.length) {
             setShowPostPollPrompt(true);
             setHasCompletedFirstPoll(true);
@@ -265,12 +312,67 @@ const PolisMultiPoll = () => {
     setHasDemographics(true);
     setShowDemographicsForm(false);
     setActiveView('results');
-    
+
     const newVotedCount = Object.keys(votes).length;
     if (!hasCompletedFirstPoll && newVotedCount >= statements.length) {
       setShowPostPollPrompt(true);
       setHasCompletedFirstPoll(true);
     }
+  };
+
+  const handleAddArtifact = () => {
+    // Add the current insight as a new artifact
+    if (personalInsight && collectedArtifacts.length < 5 && isAuthenticated) {
+      const newArtifact: InsightArtifact = {
+        id: Date.now().toString(),
+        emoji: personalInsight.emoji,
+        profile: personalInsight.profile,
+        description: personalInsight.description,
+        pollTitle: currentPoll?.title || '',
+        earnedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        rarity: Math.random() > 0.7 ? 'rare' : Math.random() > 0.9 ? 'legendary' : 'common',
+      };
+
+      // Check if this profile already exists
+      const alreadyExists = collectedArtifacts.some(a => a.profile === newArtifact.profile);
+      if (!alreadyExists) {
+        setCollectedArtifacts([...collectedArtifacts, newArtifact]);
+        setNewlyEarnedArtifact(newArtifact.id);
+
+        // Auto-clear celebration after 5 seconds
+        setTimeout(() => {
+          setNewlyEarnedArtifact(null);
+        }, 5000);
+      }
+    }
+  };
+
+  const handleSignUp = () => {
+    alert('Sign up modal would open here!\n\nIn the real app, this would:\n- Open Clerk sign-up modal\n- Transfer anonymous votes to authenticated account\n- Unlock full collection features');
+  };
+
+  const handleShareArtifacts = () => {
+    const shareText = `I've collected ${collectedArtifacts.length}/5 voting profiles! ${collectedArtifacts.map(a => a.emoji).join(' ')}`;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'My Voting Profile Collection',
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {});
+    } else {
+      const fullText = `${shareText}\n${shareUrl}`;
+      navigator.clipboard.writeText(fullText).then(() => {
+        alert('✅ Collection link copied to clipboard!');
+      }).catch(() => {
+        alert('Collection: ' + shareText);
+      });
+    }
+  };
+
+  const handleEarnMore = () => {
+    handleBackToHome();
   };
 
   const allDemographicsComplete = Object.values(demographics).every(v => v !== null);
@@ -835,38 +937,19 @@ const PolisMultiPoll = () => {
               </div>
             )}
 
+            {/* Unified Insight Card with Collection */}
             {personalInsight && votedCount > 0 && (
-              <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 shadow-2xl text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-5xl">{personalInsight.emoji}</span>
-                    <div>
-                      <h3 className="text-sm font-medium text-purple-200 uppercase tracking-wide">Your Voting Profile</h3>
-                      <h2 className="text-3xl font-bold">{personalInsight.profile}</h2>
-                    </div>
-                  </div>
-                  
-                  <p className="text-lg text-purple-50 leading-relaxed mb-6">
-                    {personalInsight.description}
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={handleShareProfile}
-                      className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base"
-                    >
-                      <Share2 size={18} className="sm:w-5 sm:h-5" />
-                      Share My Profile
-                    </button>
-                    <button className="text-white/90 hover:text-white text-sm underline">
-                      💾 Sign up to save this profile
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <InsightCardWithCollection
+                insight={personalInsight}
+                isAuthenticated={isAuthenticated}
+                artifacts={collectedArtifacts}
+                newlyEarned={newlyEarnedArtifact}
+                onShare={handleShareProfile}
+                onShareCollection={handleShareArtifacts}
+                onSignUp={handleSignUp}
+                onEarnMore={handleEarnMore}
+                onDismissNewBadge={() => setNewlyEarnedArtifact(null)}
+              />
             )}
 
             {hasMoreBatches && (
@@ -978,6 +1061,17 @@ const PolisMultiPoll = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Floating Artifacts Badge - Authenticated users only */}
+        {currentView === 'poll' && isAuthenticated && (
+          <FloatingArtifactsBadge
+            artifacts={collectedArtifacts}
+            maxArtifacts={5}
+            onShare={handleShareArtifacts}
+            onEarnMore={handleEarnMore}
+            position="bottom-right"
+          />
         )}
       </div>
     </div>

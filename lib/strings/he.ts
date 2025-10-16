@@ -171,6 +171,19 @@ export const results = {
   insightSignUpLink: '💾 הירשמו לשמור פרופיל זה',
   insightLoadingError: 'לא ניתן לטעון תובנות',
 
+  // Artifact Collection
+  collectionTitle: 'אוסף',
+  artifacts: 'חפצים',
+  unlock: 'לפתוח',
+  earnMore: 'להשיג יותר',
+  newArtifactUnlocked: 'חפץ חדש נפתח!',
+  signUpToCollect: 'הירשמו לאסוף פרופילים',
+  artifactCount: (current: number, max: number) => `${current}/${max}`,
+  viewCollection: 'צפו באוסף',
+  rarityCommon: 'נפוץ',
+  rarityRare: 'נדיר',
+  rarityLegendary: 'אגדי',
+
   // More Statements Prompt
   moreStatementsTitle: 'יש עוד! 🎯',
   moreStatementsMessage: (count: number) => `יש עוד עמדות להצבעה. הצביעו על ${count} העמדות הבאות להמשך התרומה לשיחה.`,

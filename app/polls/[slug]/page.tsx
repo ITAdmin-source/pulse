@@ -45,10 +45,11 @@ import { getStatementBatchAction, getVotingProgressAction, getUserVotesForPollAc
 import { getApprovedStatementsByPollIdAction } from "@/actions/statements-actions";
 import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions/user-demographics-actions";
 import { ensureUserExistsAction } from "@/actions/users-actions";
-import { getUserPollInsightAction, generateAndSaveInsightAction } from "@/actions/user-poll-insights-actions";
+import { getUserPollInsightAction, generateAndSaveInsightAction, getUserArtifactCollectionAction, markArtifactAsSeenAction } from "@/actions/user-poll-insights-actions";
 import { getPollResultsAction } from "@/actions/poll-results-actions";
 import { getHeatmapDataAction } from "@/actions/heatmap-actions";
 import type { HeatmapStatementData } from "@/db/queries/demographic-analytics-queries";
+import type { ArtifactSlot } from "@/components/results-v2/minimal-collection-footer";
 
 // Services & Utils
 import { StatementManager } from "@/lib/services/statement-manager";
@@ -177,6 +178,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
+
+  // Artifact collection state
+  const [userArtifacts, setUserArtifacts] = useState<ArtifactSlot[]>([]);
+  const [newlyEarnedArtifact, setNewlyEarnedArtifact] = useState<{ emoji: string; profile: string } | null>(null);
 
   // Locks
   const isVotingRef = useRef(false);
@@ -592,6 +597,37 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     toast.success("ממשיך לעמדות נוספות");
   };
 
+  // Load user artifact collection (authenticated users only)
+  const loadUserArtifacts = useCallback(async () => {
+    if (!userId || !dbUser?.clerkUserId) return [];
+
+    try {
+      const result = await getUserArtifactCollectionAction(userId);
+      if (result.success && result.data) {
+        // Transform database insights into artifact slots
+        const artifacts: ArtifactSlot[] = result.data.map((insight) => {
+          // Extract emoji from title (client-side regex)
+          const emojiMatch = insight.title.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{27BF}]/u);
+          const emoji = emojiMatch ? emojiMatch[0] : "🌟";
+          const profile = insight.title.replace(emoji, "").trim();
+
+          return {
+            id: insight.pollId,
+            emoji,
+            profile,
+            rarity: insight.artifactRarity || 'common'
+          };
+        });
+
+        return artifacts;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error loading user artifacts:", error);
+      return [];
+    }
+  }, [userId, dbUser?.clerkUserId]);
+
   // Load results data
   const loadResultsData = useCallback(async (forceRefresh = false) => {
     if (!poll || !userId) return;
@@ -621,17 +657,22 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         setIsGeneratingInsight(true);
       }
 
-      const [insightResult, pollResultsResult, genderHeatmap, ageHeatmap, ethnicityHeatmap, politicsHeatmap] = await Promise.all([
+      const [insightResult, pollResultsResult, genderHeatmap, ageHeatmap, ethnicityHeatmap, politicsHeatmap, artifacts] = await Promise.all([
         getUserPollInsightAction(userId, poll.id),
         getPollResultsAction(poll.id),
         getHeatmapDataAction(poll.id, "gender", 3),
         getHeatmapDataAction(poll.id, "ageGroup", 3),
         getHeatmapDataAction(poll.id, "ethnicity", 3),
-        getHeatmapDataAction(poll.id, "politicalParty", 3)
+        getHeatmapDataAction(poll.id, "politicalParty", 3),
+        loadUserArtifacts()
       ]);
+
+      // Update artifacts state
+      setUserArtifacts(artifacts);
 
       // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
       let insight = null;
+      let isNewArtifact = false;
       if (insightFromStorage) {
         // ✅ Anonymous user with localStorage insight
         const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
@@ -644,6 +685,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       } else if (insightResult.success && insightResult.data) {
         // ✅ Insight exists in DB - use cached version
         const { title, body } = insightResult.data;
+        // @ts-ignore - New field from migration, TypeScript may not recognize yet
+        const dbIsNew = insightResult.data.isNewArtifact;
 
         // Extract emoji from title using regex: "🌟 משתנה חברתי" -> emoji: "🌟", profile: "משתנה חברתי"
         const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);
@@ -653,6 +696,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           profile: emojiMatch ? emojiMatch[2] : title,
           description: body
         };
+        isNewArtifact = dbIsNew || false;
         setIsGeneratingInsight(false); // Turn off since we have cached version
       } else {
         // ❌ No insight in DB/localStorage - generate using AIService and save
@@ -671,6 +715,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
               description: generateResult.data.body
             };
+
+            // Newly generated insights are always "new" for authenticated users
+            isNewArtifact = !isAnonymous;
 
             // Save to localStorage for anonymous users
             if (isAnonymous) {
@@ -693,6 +740,14 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         } finally {
           setIsGeneratingInsight(false);
         }
+      }
+
+      // Set newly earned artifact badge for authenticated users (first view only)
+      if (!isAnonymous && isNewArtifact && insight) {
+        setNewlyEarnedArtifact({
+          emoji: insight.emoji,
+          profile: insight.profile
+        });
       }
 
       // Process aggregate stats
@@ -726,7 +781,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     } finally {
       setIsLoadingResults(false);
     }
-  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight]);
+  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight, loadUserArtifacts]);
 
   // Handle tab change
   const handleTabChange = (tab: TabType) => {
@@ -772,6 +827,28 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       console.error("Error submitting demographics:", error);
       toast.error(pollPage.demographicsError);
     }
+  };
+
+  // Handle artifact badge dismissal
+  const handleDismissNewBadge = async () => {
+    setNewlyEarnedArtifact(null);
+
+    // Mark artifact as seen in database (fire and forget)
+    if (userId && poll) {
+      markArtifactAsSeenAction(userId, poll.id).catch((error) => {
+        console.error("Error marking artifact as seen:", error);
+      });
+    }
+  };
+
+  // Handle "Sign Up" button in collection footer (anonymous users)
+  const handleSignUpFromCollection = () => {
+    router.push("/signup");
+  };
+
+  // Handle "Earn More" button in collection footer (authenticated users)
+  const handleEarnMore = () => {
+    router.push("/polls");
   };
 
   // Loading state
@@ -965,6 +1042,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                       toast.success("קישור לשיתוף הועתק ללוח");
                     }}
                     showSignUpPrompt={!dbUser?.clerkUserId}
+                    isAuthenticated={!!dbUser?.clerkUserId}
+                    artifacts={userArtifacts}
+                    newlyEarned={newlyEarnedArtifact || undefined}
+                    onDismissNewBadge={handleDismissNewBadge}
+                    onSignUp={handleSignUpFromCollection}
+                    onEarnMore={handleEarnMore}
                   />
                 ) : null}
 
