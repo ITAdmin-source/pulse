@@ -1043,6 +1043,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                     showSignUpPrompt={!dbUser?.clerkUserId}
                     isAuthenticated={!!dbUser?.clerkUserId}
                     artifacts={userArtifacts}
+                    userId={userId || undefined}
+                    currentPollId={poll.id}
                     newlyEarned={newlyEarnedArtifact || undefined}
                     onDismissNewBadge={handleDismissNewBadge}
                     onSignUp={handleSignUpFromCollection}

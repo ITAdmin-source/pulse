@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles } from 'lucide-react';
 import { results } from '@/lib/strings/he';
+import InteractiveArtifactSlot from './interactive-artifact-slot';
 
 /**
  * Minimal Collection Footer Component
@@ -12,7 +13,7 @@ import { results } from '@/lib/strings/he';
  * Mobile-first design that adapts gracefully to all screen sizes.
  * Keeps focus on insight while teasing collection feature.
  *
- * @version 2.0
+ * @version 2.1
  * @date 2025-10-16
  */
 
@@ -30,8 +31,12 @@ interface MinimalCollectionFooterProps {
   currentEmoji: string;
   /** User's collected artifacts (authenticated only) */
   artifacts?: ArtifactSlot[];
+  /** User ID for fetching insights */
+  userId?: string;
   /** Maximum artifacts to display */
   maxArtifacts?: number;
+  /** Current poll ID to disable navigation */
+  currentPollId?: string;
   /** Callback for sign up (anonymous) */
   onSignUp?: () => void;
   /** Callback to earn more */
@@ -44,7 +49,9 @@ export default function MinimalCollectionFooter({
   isAuthenticated,
   currentEmoji,
   artifacts = [],
+  userId,
   maxArtifacts = 5,
+  currentPollId,
   onSignUp,
   onEarnMore,
   className = '',
@@ -79,37 +86,59 @@ export default function MinimalCollectionFooter({
         {/* Slots Row */}
         <div className="flex items-center justify-center gap-1.5 mb-3">
           {displaySlots.map((artifact, index) => (
-            <motion.div
-              key={artifact?.id || `empty-${index}`}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{
-                delay: 0.7 + index * 0.04,
-                type: 'spring',
-                stiffness: 300,
-                damping: 20,
-              }}
-            >
+            <React.Fragment key={artifact?.id || `empty-${index}`}>
               {artifact ? (
-                <div
-                  className={`
-                    w-8 h-8 rounded-lg flex items-center justify-center text-lg
-                    bg-gradient-to-br ${
-                      artifact.rarity
-                        ? rarityColors[artifact.rarity]
-                        : 'from-purple-400 to-pink-400'
-                    }
-                    shadow-md
-                  `}
-                >
-                  {artifact.emoji}
-                </div>
+                isAuthenticated && userId ? (
+                  <InteractiveArtifactSlot
+                    artifact={artifact}
+                    userId={userId}
+                    currentPollId={currentPollId}
+                    size="sm"
+                    index={index}
+                  />
+                ) : (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      delay: 0.7 + index * 0.04,
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 20,
+                    }}
+                  >
+                    <div
+                      className={`
+                        w-8 h-8 rounded-lg flex items-center justify-center text-lg
+                        bg-gradient-to-br ${
+                          artifact.rarity
+                            ? rarityColors[artifact.rarity]
+                            : 'from-purple-400 to-pink-400'
+                        }
+                        shadow-md
+                      `}
+                    >
+                      {artifact.emoji}
+                    </div>
+                  </motion.div>
+                )
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
-                  <Lock size={10} className="text-white/40" />
-                </div>
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{
+                    delay: 0.7 + index * 0.04,
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 20,
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
+                    <Lock size={10} className="text-white/40" />
+                  </div>
+                </motion.div>
               )}
-            </motion.div>
+            </React.Fragment>
           ))}
         </div>
 
@@ -143,37 +172,59 @@ export default function MinimalCollectionFooter({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             {displaySlots.map((artifact, index) => (
-              <motion.div
-                key={artifact?.id || `empty-${index}`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{
-                  delay: 0.7 + index * 0.04,
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 20,
-                }}
-              >
+              <React.Fragment key={artifact?.id || `empty-${index}`}>
                 {artifact ? (
-                  <div
-                    className={`
-                      w-9 h-9 rounded-lg flex items-center justify-center text-xl
-                      bg-gradient-to-br ${
-                        artifact.rarity
-                          ? rarityColors[artifact.rarity]
-                          : 'from-purple-400 to-pink-400'
-                      }
-                      shadow-md
-                    `}
-                  >
-                    {artifact.emoji}
-                  </div>
+                  isAuthenticated && userId ? (
+                    <InteractiveArtifactSlot
+                      artifact={artifact}
+                      userId={userId}
+                      currentPollId={currentPollId}
+                      size="md"
+                      index={index}
+                    />
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{
+                        delay: 0.7 + index * 0.04,
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 20,
+                      }}
+                    >
+                      <div
+                        className={`
+                          w-9 h-9 rounded-lg flex items-center justify-center text-xl
+                          bg-gradient-to-br ${
+                            artifact.rarity
+                              ? rarityColors[artifact.rarity]
+                              : 'from-purple-400 to-pink-400'
+                          }
+                          shadow-md
+                        `}
+                      >
+                        {artifact.emoji}
+                      </div>
+                    </motion.div>
+                  )
                 ) : (
-                  <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
-                    <Lock size={12} className="text-white/40" />
-                  </div>
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      delay: 0.7 + index * 0.04,
+                      type: 'spring',
+                      stiffness: 300,
+                      damping: 20,
+                    }}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
+                      <Lock size={12} className="text-white/40" />
+                    </div>
+                  </motion.div>
                 )}
-              </motion.div>
+              </React.Fragment>
             ))}
           </div>
           <span className="text-sm text-white/80 font-medium ms-1">

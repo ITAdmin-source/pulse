@@ -15,6 +15,8 @@ interface InsightCardProps {
   // Artifact Collection Props
   isAuthenticated?: boolean;
   artifacts?: ArtifactSlot[];
+  userId?: string;
+  currentPollId?: string;
   newlyEarned?: { emoji: string; profile: string };
   onDismissNewBadge?: () => void;
   onSignUp?: () => void;
@@ -29,6 +31,8 @@ export function InsightCard({
   showSignUpPrompt = false,
   isAuthenticated = false,
   artifacts = [],
+  userId,
+  currentPollId,
   newlyEarned,
   onDismissNewBadge,
   onSignUp,
@@ -94,6 +98,8 @@ export function InsightCard({
           isAuthenticated={isAuthenticated}
           currentEmoji={emoji}
           artifacts={artifacts}
+          userId={userId}
+          currentPollId={currentPollId}
           onSignUp={onSignUp}
           onEarnMore={onEarnMore}
         />

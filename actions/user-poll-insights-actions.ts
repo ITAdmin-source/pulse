@@ -105,6 +105,41 @@ export async function getUserPollInsightAction(userId: string, pollId: string) {
 }
 
 /**
+ * Fetch insight with poll details for modal display
+ */
+export async function getInsightWithPollDetailsAction(userId: string, pollId: string) {
+  try {
+    const insight = await getUserPollInsight(userId, pollId);
+
+    if (!insight) {
+      return { success: false, error: "Insight not found" };
+    }
+
+    // Fetch poll details
+    const { getPollById } = await import("@/db/queries/polls-queries");
+    const poll = await getPollById(pollId);
+
+    if (!poll) {
+      return { success: false, error: "Poll not found" };
+    }
+
+    return {
+      success: true,
+      data: {
+        insight,
+        poll: {
+          question: poll.question,
+          slug: poll.slug,
+        }
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching insight with poll details:", error);
+    return { success: false, error: "Failed to fetch insight details" };
+  }
+}
+
+/**
  * Generate insight using AIService and automatically save to database
  * This combines generation + persistence in one atomic operation (server-side)
  */
