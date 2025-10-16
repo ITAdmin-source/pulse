@@ -53,7 +53,7 @@ import type { HeatmapStatementData } from "@/db/queries/demographic-analytics-qu
 // Services & Utils
 import { StatementManager } from "@/lib/services/statement-manager";
 import { colors } from "@/lib/design-tokens-v2";
-import { pollPage } from "@/lib/strings/he";
+import { pollPage, results } from "@/lib/strings/he";
 import { getInsightFromStorage, saveInsightToStorage } from "@/lib/utils/insight-storage";
 
 interface Statement {
@@ -888,12 +888,22 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">הצבעת על הכל!</h3>
                   <p className="text-gray-600 mb-6">תודה על השתתפותך המלאה</p>
-                  <button
-                    onClick={() => handleTabChange("results")}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-xl transition-shadow"
-                  >
-                    צפו בתוצאות
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => handleTabChange("results")}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-xl transition-shadow"
+                    >
+                      צפו בתוצאות
+                    </button>
+                    {poll.allowUserStatements && (
+                      <button
+                        onClick={() => setShowStatementModal(true)}
+                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl hover:shadow-xl transition-all"
+                      >
+                        {results.addStatementButton}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div key="loading-next" className="bg-white rounded-3xl shadow-xl p-8 text-center">

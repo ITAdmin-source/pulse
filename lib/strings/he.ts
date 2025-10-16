@@ -180,6 +180,7 @@ export const results = {
   completeTitle: 'הצבעת על הכל!',
   completeMessage: 'תודה על השתתפותך המלאה',
   shareButton: 'שיתוף',
+  addStatementButton: 'הוסיפו עמדה',
 
   // Stats Grid - Section Title
   statsTitle: 'סטטיסטיקות דיון',
