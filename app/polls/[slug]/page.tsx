@@ -685,8 +685,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       } else if (insightResult.success && insightResult.data) {
         // ✅ Insight exists in DB - use cached version
         const { title, body } = insightResult.data;
-        // @ts-ignore - New field from migration, TypeScript may not recognize yet
-        const dbIsNew = insightResult.data.isNewArtifact;
+        const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
 
         // Extract emoji from title using regex: "🌟 משתנה חברתי" -> emoji: "🌟", profile: "משתנה חברתי"
         const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);

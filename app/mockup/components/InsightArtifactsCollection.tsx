@@ -54,9 +54,9 @@ export default function InsightArtifactsCollection({
   const progressPercent = (achievedCount / maxArtifacts) * 100;
 
   // Fill empty slots
-  const displayArtifacts = [...artifacts];
+  const displayArtifacts: (InsightArtifact | null)[] = [...artifacts];
   while (displayArtifacts.length < maxArtifacts) {
-    displayArtifacts.push(null as any);
+    displayArtifacts.push(null);
   }
 
   const rarityColors = {
@@ -229,7 +229,7 @@ export default function InsightArtifactsCollection({
               🎉 Collection Complete!
             </p>
             <p className="text-sm text-gray-600">
-              You've unlocked all 5 voting profiles!
+              You&apos;ve unlocked all 5 voting profiles!
             </p>
           </motion.div>
         ) : achievedCount === 0 ? (
