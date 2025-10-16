@@ -1,22 +1,29 @@
+"use client";
+
 import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown, HelpCircle, Plus, Users, TrendingUp, MessageSquare, Share2, ArrowLeft, Sparkles } from 'lucide-react';
 
 const PolisMultiPoll = () => {
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedPoll, setSelectedPoll] = useState(null);
-  const [activeView, setActiveView] = useState('vote');
+  const [currentView, setCurrentView] = useState<string>('home');
+  const [selectedPoll, setSelectedPoll] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<string>('vote');
   const [currentStatementIndex, setCurrentStatementIndex] = useState(0);
   const [currentBatch, setCurrentBatch] = useState(0);
-  const [votes, setVotes] = useState({});
-  const [showNewStatement, setShowNewStatement] = useState(false);
-  const [newStatement, setNewStatement] = useState('');
-  const [hoverSide, setHoverSide] = useState(null);
-  const [revealedStats, setRevealedStats] = useState({});
+  const [votes, setVotes] = useState<Record<number, string>>({});
+  const [showNewStatement, setShowNewStatement] = useState<boolean>(false);
+  const [newStatement, setNewStatement] = useState<string>('');
+  const [hoverSide, setHoverSide] = useState<string | null>(null);
+  const [revealedStats, setRevealedStats] = useState<Record<number, boolean>>({});
   const [dismissedHomeBanner, setDismissedHomeBanner] = useState(false);
   const [showPostPollPrompt, setShowPostPollPrompt] = useState(false);
   const [hasCompletedFirstPoll, setHasCompletedFirstPoll] = useState(false);
   const [showDemographicsForm, setShowDemographicsForm] = useState(false);
-  const [demographics, setDemographics] = useState({
+  const [demographics, setDemographics] = useState<{
+    gender: string | null;
+    ageGroup: string | null;
+    ethnicity: string | null;
+    politicalParty: string | null;
+  }>({
     gender: null,
     ageGroup: null,
     ethnicity: null,
@@ -123,7 +130,7 @@ const PolisMultiPoll = () => {
   const totalVotes = statements.reduce((sum, s) => sum + s.agree + s.disagree + s.pass, 0);
   const participantCount = currentPoll?.participants || 0;
 
-  const handleVote = (voteType) => {
+  const handleVote = (voteType: string) => {
     const newVotes = {...votes, [currentStatement.id]: voteType};
     setVotes(newVotes);
     setRevealedStats({...revealedStats, [currentStatement.id]: true});
@@ -162,14 +169,14 @@ const PolisMultiPoll = () => {
     }
   };
 
-  const handleSelectPoll = (pollId) => {
+  const handleSelectPoll = (pollId: string) => {
     setSelectedPoll(pollId);
     setCurrentView('poll');
     
     const poll = polls.find(p => p.id === pollId);
     const userVotedCount = Object.keys(votes).length;
-    
-    if (poll.isClosed) {
+
+    if (poll?.isClosed) {
       setActiveView('results');
     } else if (userVotedCount >= MIN_VOTES_REQUIRED) {
       setActiveView('results');
@@ -192,9 +199,9 @@ const PolisMultiPoll = () => {
     const userVotes = Object.entries(votes);
     if (userVotes.length === 0) return null;
 
-    const agreeCount = userVotes.filter(([_, vote]) => vote === 'agree').length;
-    const disagreeCount = userVotes.filter(([_, vote]) => vote === 'disagree').length;
-    const passCount = userVotes.filter(([_, vote]) => vote === 'pass').length;
+    const agreeCount = userVotes.filter(([, vote]) => vote === 'agree').length;
+    const disagreeCount = userVotes.filter(([, vote]) => vote === 'disagree').length;
+    const passCount = userVotes.filter(([, vote]) => vote === 'pass').length;
 
     const totalVotesCount = userVotes.length;
     const agreePercent = (agreeCount / totalVotesCount) * 100;
@@ -595,7 +602,7 @@ const PolisMultiPoll = () => {
         {currentPoll?.isClosed && (
           <div className="mb-4 sm:mb-6 bg-yellow-500/20 border-2 border-yellow-500/50 rounded-xl p-3 sm:p-4">
             <p className="text-yellow-100 text-center text-sm sm:text-base">
-              <strong>This poll closed on {currentPoll.closedDate}.</strong> You're viewing final results.
+              <strong>This poll closed on {currentPoll.closedDate}.</strong> You&apos;re viewing final results.
             </p>
           </div>
         )}
@@ -665,7 +672,7 @@ const PolisMultiPoll = () => {
               <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <div className="p-4 sm:p-6 bg-gray-50 border-b-4 border-purple-200">
                   <p className="text-lg sm:text-xl font-medium text-gray-800 text-center leading-relaxed">
-                    "{currentStatement.text}"
+                    &quot;{currentStatement.text}&quot;
                   </p>
                 </div>
 
@@ -794,7 +801,7 @@ const PolisMultiPoll = () => {
                   onChange={(e) => setNewStatement(e.target.value)}
                   placeholder="Example: We should have more flexible meeting schedules"
                   className="w-full p-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none resize-none mb-4"
-                  rows="4"
+                  rows={4}
                 />
                 <div className="flex gap-3">
                   <button
@@ -867,7 +874,7 @@ const PolisMultiPoll = () => {
                 <div className="flex items-start gap-4">
                   <MessageSquare size={32} className="flex-shrink-0 mt-1" />
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-2">There's More! 🎯</h3>
+                    <h3 className="text-xl font-bold mb-2">There&apos;s More! 🎯</h3>
                     <p className="text-purple-100 mb-4">
                       There are more statements to vote on. Vote on the next batch of 10 to continue contributing to the conversation.
                     </p>
@@ -888,7 +895,7 @@ const PolisMultiPoll = () => {
                   <div className="flex items-center gap-3">
                     <div className="text-4xl">🎉</div>
                     <div>
-                      <h3 className="text-xl font-bold">You've voted on all statements!</h3>
+                      <h3 className="text-xl font-bold">You&apos;ve voted on all statements!</h3>
                       <p className="text-green-100">Thank you for your complete participation.</p>
                     </div>
                   </div>
@@ -932,7 +939,7 @@ const PolisMultiPoll = () => {
                 {consensusStatements.map((stmt, i) => (
                   <div key={i} className="bg-green-50 border-2 border-green-500 rounded-lg p-3 sm:p-4">
                     <div className="flex items-start justify-between gap-3 sm:gap-4">
-                      <p className="text-gray-800 flex-1 text-sm sm:text-base">"{stmt.text}"</p>
+                      <p className="text-gray-800 flex-1 text-sm sm:text-base">&quot;{stmt.text}&quot;</p>
                       <div className="text-right flex-shrink-0">
                         <p className="text-xl sm:text-2xl font-bold text-green-600">{stmt.agreement}%</p>
                         <p className="text-xs text-green-700">agreement</p>
@@ -954,7 +961,7 @@ const PolisMultiPoll = () => {
                   
                   return (
                     <div key={stmt.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                      <p className="text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base">"{stmt.text}"</p>
+                      <p className="text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base">&quot;{stmt.text}&quot;</p>
                       <div className="flex gap-2 h-2 sm:h-3 rounded-full overflow-hidden">
                         <div style={{ width: `${agreePercent}%` }} className="bg-green-500"></div>
                         <div style={{ width: `${disagreePercent}%` }} className="bg-red-500"></div>

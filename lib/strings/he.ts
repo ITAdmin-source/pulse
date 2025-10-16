@@ -427,6 +427,47 @@ export const sharing = {
 } as const;
 
 // ============================================================================
+// FEEDBACK SYSTEM
+// ============================================================================
+
+export const feedback = {
+  // Floating Button
+  buttonLabel: 'משוב',
+  buttonTooltip: 'דווחו על בעיות או שתפו הצעות לשיפור',
+
+  // Modal
+  modalTitle: 'עזרו לנו להשתפר',
+  modalDescription: 'דווחו על באגים, שתפו הצעות לשיפור, או כל משוב אחר שיעזור לנו לשפר את המערכת',
+
+  // Form
+  placeholder: 'תארו את הבעיה או ההצעה שלכם...',
+  characterLimit: (remaining: number) => `${remaining} תווים נותרו`,
+  characterLimitExceeded: 'חרגתם ממספר התווים המותר',
+
+  // Buttons
+  submitButton: 'שליחת משוב',
+  submittingButton: 'שולח...',
+  cancelButton: 'ביטול',
+
+  // Messages
+  successMessage: 'תודה רבה על המשוב! אנחנו מעריכים את עזרתכם',
+  errorMessage: 'שגיאה בשליחת המשוב, נסו שוב',
+  requiredError: 'אנא כתבו את המשוב שלכם',
+  emptyError: 'המשוב לא יכול להיות ריק',
+
+  // Success Acknowledgement
+  acknowledgementTitle: 'המשוב התקבל בהצלחה! ✓',
+  acknowledgementMessage: 'תודה שעזרתם לנו להשתפר. אנחנו קוראים כל משוב ומשתמשים בו כדי לשפר את המערכת.',
+  closeButton: 'סגירה',
+
+  // Guidelines (optional, for future use)
+  guidelinesTitle: 'טיפים למשוב טוב:',
+  guideline1: 'תארו את הבעיה או ההצעה בבירור',
+  guideline2: 'ציינו באיזה עמוד או תכונה מדובר',
+  guideline3: 'הוסיפו צילומי מסך אם רלוונטי (בעתיד)',
+} as const;
+
+// ============================================================================
 // ADMIN & MANAGEMENT (Keep for reference, not redesigning yet)
 // ============================================================================
 
@@ -542,6 +583,7 @@ export default {
   auth,
   system,
   sharing,
+  feedback,
   admin,
   dateTime,
 } as const;
@@ -562,6 +604,7 @@ export const strings = {
   auth,
   system,
   sharing,
+  feedback,
   admin,
   dateTime,
 } as const;

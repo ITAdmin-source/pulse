@@ -11,3 +11,4 @@ export * from './statements';
 export * from './votes';
 export * from './user-poll-insights';
 export * from './poll-results-summaries';
+export * from './user-feedback';

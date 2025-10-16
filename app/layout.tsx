@@ -5,6 +5,7 @@ import { heIL } from "@clerk/localizations";
 import { UserProvider } from "@/contexts/user-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
+import { FeedbackButtonWrapper } from "@/components/feedback/feedback-button-wrapper";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -38,6 +39,7 @@ export default function RootLayout({
             <UserProvider>
               <AdaptiveHeader />
               {children}
+              <FeedbackButtonWrapper />
             </UserProvider>
           </Providers>
         </body>
