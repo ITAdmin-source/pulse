@@ -24,7 +24,7 @@ interface HeatmapControlsProps {
 const ATTRIBUTES: Array<{ value: DemographicAttribute; label: string }> = [
   { value: 'gender', label: 'מגדר' },
   { value: 'ageGroup', label: 'קבוצת גיל' },
-  { value: 'ethnicity', label: 'מוצא אתני' },
+  { value: 'ethnicity', label: 'מגזר' },
   { value: 'politicalParty', label: 'השתייכות פוליטית' },
 ];
 

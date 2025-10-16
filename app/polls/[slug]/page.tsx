@@ -30,7 +30,6 @@ import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
-import { DemographicsBanner } from "@/components/banners/demographics-banner";
 import { DemographicsModal, type DemographicsData } from "@/components/polls/demographics-modal";
 import { InsightCard } from "@/components/results-v2/insight-card";
 import { AggregateStats } from "@/components/results-v2/aggregate-stats";
@@ -219,6 +218,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       }
     }
   }, [currentStatement]);
+
+  // Auto-open demographics modal when Results tab is accessed without demographics
+  useEffect(() => {
+    if (activeTab === "results" && !resultsLocked && !hasDemographics) {
+      setShowDemographicsModal(true);
+    }
+  }, [activeTab, resultsLocked, hasDemographics]);
 
   // Auto-load results when Results tab becomes active
   useEffect(() => {
@@ -730,11 +736,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         return;
       }
 
-      // Check demographics before allowing results access
-      if (!hasDemographics) {
-        setShowDemographicsModal(true);
-        return;
-      }
+      // Allow switch to results tab even without demographics
+      // useEffect will automatically open the demographics modal
+      setActiveTab("results");
+      return;
     }
 
     // Switch tab (useEffect will handle loading results data)
@@ -910,9 +915,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 onGoToVote={() => setActiveTab("vote")}
               />
             ) : !hasDemographics ? (
-              <DemographicsBanner
-                onOpenModal={() => setShowDemographicsModal(true)}
-              />
+              <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+                <p className="text-gray-600">אנא מלא פרטים דמוגרפיים...</p>
+              </div>
             ) : isLoadingResults ? (
               <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />

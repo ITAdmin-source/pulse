@@ -217,8 +217,8 @@ export const results = {
   // Demographic Attributes
   heatmapGender: 'מגדר',
   heatmapAge: 'קבוצת גיל',
-  heatmapEthnicity: 'מוצא אתני',
-  heatmapPolitics: 'מפלגה',
+  heatmapEthnicity: 'מגזר',
+  heatmapPolitics: 'נטייה פוליטית',
 } as const;
 
 // ============================================================================
@@ -256,14 +256,14 @@ export const demographics = {
   // Field Labels
   genderLabel: 'מגדר',
   ageLabel: 'קבוצת גיל',
-  ethnicityLabel: 'מוצא אתני',
-  politicsLabel: 'מפלגה',
+  ethnicityLabel: 'מגזר',
+  politicsLabel: 'נטייה פוליטית',
 
   // Field Placeholders
   genderPlaceholder: 'בחרו מגדר',
   agePlaceholder: 'בחרו קבוצת גיל',
-  ethnicityPlaceholder: 'בחרו מוצא אתני',
-  politicsPlaceholder: 'בחרו מפלגה',
+  ethnicityPlaceholder: 'בחרו מגזר',
+  politicsPlaceholder: 'בחרו נטייה פוליטית',
 
   // Options
   preferNotToSay: 'מעדיף/ה לא לציין',

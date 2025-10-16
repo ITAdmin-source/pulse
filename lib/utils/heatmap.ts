@@ -72,7 +72,7 @@ export function getDemographicAttributeName(attribute: string): string {
     case 'gender':
       return 'מגדר';
     case 'ethnicity':
-      return 'מוצא אתני';
+      return 'מגזר';
     case 'politicalParty':
       return 'השתייכות פוליטית';
     default:
