@@ -31,6 +31,8 @@ import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
+import { ClosedPollBanner } from "@/components/banners/closed-poll-banner";
+import { PartialParticipationBanner } from "@/components/banners/partial-participation-banner";
 import { DemographicsModal, type DemographicsData } from "@/components/polls/demographics-modal";
 import { InsightCard } from "@/components/results-v2/insight-card";
 import { AggregateStats } from "@/components/results-v2/aggregate-stats";
@@ -147,6 +149,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSavingVote, setIsSavingVote] = useState(false);
+  const [isPollClosed, setIsPollClosed] = useState(false);
+  const [inGracePeriod, setInGracePeriod] = useState(false);
 
   // Voting state
   const [currentStatement, setCurrentStatement] = useState<Statement | null>(null);
@@ -227,15 +231,22 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   }, [currentStatement]);
 
   // Auto-open demographics modal when Results tab is accessed without demographics
+  // Skip this for closed polls (no demographics required)
   useEffect(() => {
-    if (activeTab === "results" && !resultsLocked && !hasDemographics) {
+    if (activeTab === "results" && !resultsLocked && !hasDemographics && !isPollClosed) {
       setShowDemographicsModal(true);
     }
-  }, [activeTab, resultsLocked, hasDemographics]);
+  }, [activeTab, resultsLocked, hasDemographics, isPollClosed]);
 
   // Auto-load results when Results tab becomes active
+  // For closed polls, skip the results locked and demographics checks
+  // Also allow results loading without userId for closed polls (anonymous users without DB entry)
   useEffect(() => {
-    if (activeTab === "results" && !resultsLocked && hasDemographics && poll && userId) {
+    const canLoadResults = isPollClosed
+      ? (activeTab === "results" && poll) // Remove userId requirement for closed polls
+      : (activeTab === "results" && !resultsLocked && hasDemographics && poll && userId);
+
+    if (canLoadResults) {
       // Load results data when switching to results tab
       loadResultsData().catch((error) => {
         console.error("Error loading results:", error);
@@ -243,10 +254,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, resultsLocked, hasDemographics, poll?.id, userId]);
+  }, [activeTab, resultsLocked, hasDemographics, poll?.id, userId, isPollClosed]);
 
   // Auto-load next batch when Vote tab becomes active with no current statement
   useEffect(() => {
+    // Skip if poll is closed and past grace period
+    if (isPollClosed && !inGracePeriod) return;
+
     // Only trigger if:
     // 1. Vote tab is active
     // 2. No current statement showing
@@ -286,7 +300,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       loadNextBatchForVoting();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, currentStatement, hasMoreStatements]);
+  }, [activeTab, currentStatement, hasMoreStatements, isPollClosed, inGracePeriod]);
 
   // Initialize poll and user data
   useEffect(() => {
@@ -305,28 +319,43 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
         const fetchedPoll = pollResult.data;
 
-        // Check poll status
-        if (fetchedPoll.status !== "published") {
+        // Allow both published and closed polls to be viewed
+        if (fetchedPoll.status !== "published" && fetchedPoll.status !== "closed") {
           toast.error(pollPage.pollNotActive);
           router.push("/polls");
           return;
         }
 
-        // Check if poll is closed with grace period
-        if (fetchedPoll.endTime) {
-          const endTime = new Date(fetchedPoll.endTime);
-          const now = new Date();
-          const gracePeriodMs = 10 * 60 * 1000; // 10 minutes
-          const graceEndTime = new Date(endTime.getTime() + gracePeriodMs);
+        // Detect if poll is closed (either by status or endTime)
+        const isPollClosedByStatus = fetchedPoll.status === "closed";
+        const isPollClosedByTime = fetchedPoll.endTime && new Date() > new Date(fetchedPoll.endTime);
 
-          if (now > graceEndTime) {
-            // Past grace period - redirect to closed page
-            toast.error("הסקר נסגר");
-            router.push(`/polls/${resolvedParams.slug}/closed`);
-            return;
-          } else if (now > endTime) {
-            // Within grace period - show warning
-            toast.warning("הסקר נסגר, אך תוכלו לסיים את ההצבעה הנוכחית");
+        if (isPollClosedByStatus || isPollClosedByTime) {
+          // Poll is closed - determine if within grace period
+          if (fetchedPoll.endTime) {
+            const endTime = new Date(fetchedPoll.endTime);
+            const now = new Date();
+            const gracePeriodMs = 10 * 60 * 1000; // 10 minutes
+            const graceEndTime = new Date(endTime.getTime() + gracePeriodMs);
+
+            if (now <= graceEndTime && now > endTime) {
+              // Within grace period - allow finishing current vote session
+              setIsPollClosed(true);
+              setInGracePeriod(true);
+              toast.warning("הסקר נסגר, אך תוכלו לסיים את ההצבעה הנוכחית");
+            } else {
+              // Past grace period or closed by status
+              setIsPollClosed(true);
+              setInGracePeriod(false);
+              setActiveTab("results");
+              toast.info("הסקר נסגר");
+            }
+          } else {
+            // Closed by status but no endTime specified
+            setIsPollClosed(true);
+            setInGracePeriod(false);
+            setActiveTab("results");
+            toast.info("הסקר נסגר");
           }
         }
 
@@ -451,7 +480,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
       if (now > graceEndTime) {
         toast.error("הסקר נסגר ולא ניתן להצביע יותר");
-        router.push(`/polls/${poll.slug}/closed`);
+        setActiveTab("results");
         return;
       }
     }
@@ -632,7 +661,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Load results data
   const loadResultsData = useCallback(async (forceRefresh = false) => {
-    if (!poll || !userId) return;
+    // For closed polls, allow loading without userId (anonymous users without DB entry)
+    if (!poll) return;
+    if (!isPollClosed && !userId) return;
 
     // Skip if already loaded and not forcing refresh (caching)
     if (resultsData.insight && !forceRefresh) {
@@ -645,28 +676,38 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       // Check if user is anonymous (no Clerk ID)
       const isAnonymous = !dbUser?.clerkUserId;
 
+      // Check if user has reached the threshold for insight generation
+      // Threshold is 10 votes OR all statements if poll has fewer than 10
+      // Also require at least 1 vote (prevent edge case where totalStatements = 0)
+      const insightThreshold = Math.min(10, totalStatements);
+      const hasReachedInsightThreshold = votedCount > 0 && votedCount >= insightThreshold;
+
       // For anonymous users, check localStorage first (synchronous)
       let insightFromStorage = null;
-      if (isAnonymous) {
+      if (isAnonymous && hasReachedInsightThreshold) {
         insightFromStorage = getInsightFromStorage(poll.id);
       }
 
       // Quick check: Do we need to generate insight?
       // Set generating state BEFORE waiting for async calls
-      if (!insightFromStorage) {
+      // Only generate if user has reached threshold
+      if (!insightFromStorage && hasReachedInsightThreshold) {
         // Optimistically assume we'll need to generate
         // Will be corrected if DB has cached version
         setIsGeneratingInsight(true);
       }
 
+      // For users below threshold, don't fetch insight (but still fetch aggregate stats for closed polls)
+      // For closed polls, always fetch aggregate stats/heatmap regardless of vote count
+      const shouldFetchInsight = hasReachedInsightThreshold && userId;
       const [insightResult, pollResultsResult, genderHeatmap, ageHeatmap, ethnicityHeatmap, politicsHeatmap, artifacts] = await Promise.all([
-        getUserPollInsightAction(userId, poll.id),
+        shouldFetchInsight ? getUserPollInsightAction(userId, poll.id) : Promise.resolve({ success: false, data: null }),
         getPollResultsAction(poll.id),
         getHeatmapDataAction(poll.id, "gender", 3),
         getHeatmapDataAction(poll.id, "ageGroup", 3),
         getHeatmapDataAction(poll.id, "ethnicity", 3),
         getHeatmapDataAction(poll.id, "politicalParty", 3),
-        loadUserArtifacts()
+        userId ? loadUserArtifacts() : Promise.resolve([])
       ]);
 
       // Update artifacts state
@@ -699,8 +740,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
         isNewArtifact = dbIsNew || false;
         setIsGeneratingInsight(false); // Turn off since we have cached version
-      } else {
+      } else if (userId && hasReachedInsightThreshold) {
         // ❌ No insight in DB/localStorage - generate using AIService and save
+        // Only attempt if user has userId (skip for anonymous without DB entry)
         // isGeneratingInsight already set to true above
         setInsightError(null);
 
@@ -782,19 +824,26 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     } finally {
       setIsLoadingResults(false);
     }
-  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight, loadUserArtifacts]);
+  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
 
   // Handle tab change
   const handleTabChange = (tab: TabType) => {
     if (tab === "results") {
-      if (resultsLocked) {
+      // For closed polls, always allow viewing results
+      if (!isPollClosed && resultsLocked) {
         toast.warning(pollPage.resultsLockedToast);
         return;
       }
 
       // Allow switch to results tab even without demographics
-      // useEffect will automatically open the demographics modal
+      // useEffect will automatically open the demographics modal (unless closed)
       setActiveTab("results");
+      return;
+    }
+
+    // Prevent switching to vote tab if poll is closed (after grace period)
+    if (tab === "vote" && isPollClosed && !inGracePeriod) {
+      toast.error("הסקר נסגר ולא ניתן להצביע יותר");
       return;
     }
 
@@ -898,22 +947,29 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         {/* Poll Header - Question and Description */}
         <div className="text-center mb-6">
           <div className="text-4xl sm:text-5xl mb-2 sm:mb-3">📊</div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">{poll.question}</h1>
+          <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
+            {isPollClosed && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">CLOSED</span>
+            )}
+          </div>
           {poll.description && (
             <p className="text-purple-200 text-sm sm:text-base">{poll.description}</p>
           )}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <TabNavigation
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            resultsLocked={resultsLocked}
-            votesCompleted={votedCount}
-            votesRequired={votesRequiredForResults}
-          />
-        </div>
+        {/* Tab Navigation - show during grace period, hide after */}
+        {(!isPollClosed || inGracePeriod) && (
+          <div className="mb-8">
+            <TabNavigation
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              resultsLocked={resultsLocked}
+              votesCompleted={votedCount}
+              votesRequired={votesRequiredForResults}
+            />
+          </div>
+        )}
 
         {/* Vote Tab */}
         {activeTab === "vote" && (
@@ -996,13 +1052,27 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         {/* Results Tab */}
         {activeTab === "results" && (
           <div className="space-y-6">
-            {resultsLocked ? (
+            {/* Closed Poll Banner - show first if poll is closed */}
+            {isPollClosed && (
+              <ClosedPollBanner closedDate={poll.endTime?.toString()} />
+            )}
+
+            {/* Partial Participation Banner - show if user voted on some but not all statements */}
+            {isPollClosed && votedCount > 0 && votedCount < totalStatements && (
+              <PartialParticipationBanner
+                votedCount={votedCount}
+                totalStatements={totalStatements}
+              />
+            )}
+
+            {/* Results locked banner - skip if poll is closed */}
+            {!isPollClosed && resultsLocked ? (
               <ResultsLockedBanner
                 votesCompleted={votedCount}
                 votesRequired={votesRequiredForResults}
                 onGoToVote={() => setActiveTab("vote")}
               />
-            ) : !hasDemographics ? (
+            ) : !isPollClosed && !hasDemographics ? (
               <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
                 <p className="text-gray-600">אנא מלא פרטים דמוגרפיים...</p>
@@ -1052,17 +1122,21 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   />
                 ) : null}
 
-                {/* More Statements or Voting Complete */}
-                {hasMoreStatements ? (
-                  <MoreStatementsPrompt
-                    remainingStatements={totalStatements - votedCount}
-                    onContinue={handleContinueBatch}
-                  />
-                ) : (
-                  <VotingCompleteBanner
-                    pollSlug={poll.slug}
-                    pollQuestion={poll.question}
-                  />
+                {/* More Statements or Voting Complete - hide for closed polls */}
+                {!isPollClosed && (
+                  <>
+                    {hasMoreStatements ? (
+                      <MoreStatementsPrompt
+                        remainingStatements={totalStatements - votedCount}
+                        onContinue={handleContinueBatch}
+                      />
+                    ) : (
+                      <VotingCompleteBanner
+                        pollSlug={poll.slug}
+                        pollQuestion={poll.question}
+                      />
+                    )}
+                  </>
                 )}
 
                 {/* Aggregate Stats */}
