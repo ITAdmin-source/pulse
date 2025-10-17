@@ -163,6 +163,17 @@ export const voting = {
   // Batch Completion
   batchCompleteTitle: 'עבודה מצוינת!',
   batchCompleteMessage: (count: number) => `השלמתם קבוצה של ${count} עמדות`,
+
+  // Gamification - Milestone Encouragement (Dynamic)
+  milestone30Percent: 'כל הכבוד! 📊',
+  milestone50Percent: 'אתם בדרך! 🚀',
+  milestone70Percent: 'עוד קצת! 💪',
+  milestoneInsightTeaser: (remaining: number) =>
+    remaining === 1
+      ? 'עוד הצבעה אחת לפרופיל ההשפעה שלך! 🎁'
+      : `עוד ${remaining} הצבעות לפרופיל ההשפעה שלך! 🎁`,
+  milestoneThresholdReached: 'מדהים! פתחת את התוצאות! 🎉',
+  milestoneAlmostThere: 'כמעט שם! ⭐',
 } as const;
 
 // ============================================================================

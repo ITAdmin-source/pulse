@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, HelpCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { voting } from "@/lib/strings/he";
+import { AddStatementPulse } from "@/components/gamification/add-statement-pulse";
 
 interface SplitVoteCardProps {
   statementText: string;
@@ -15,6 +16,7 @@ interface SplitVoteCardProps {
   passPercent?: number;
   disabled?: boolean;
   allowAddStatement?: boolean;
+  showAddButtonPulse?: boolean;
 }
 
 export function SplitVoteCard({
@@ -25,7 +27,8 @@ export function SplitVoteCard({
   agreePercent = 0,
   disagreePercent = 0,
   disabled = false,
-  allowAddStatement = true
+  allowAddStatement = true,
+  showAddButtonPulse = false
 }: SplitVoteCardProps) {
   const [hoveredButton, setHoveredButton] = useState<"agree" | "disagree" | null>(null);
 
@@ -142,13 +145,15 @@ export function SplitVoteCard({
 
           {/* Add Statement Button */}
           {allowAddStatement && onAddStatement && (
-            <button
-              onClick={onAddStatement}
-              className="flex-1 py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
-            >
-              <Plus size={18} className="sm:w-5 sm:h-5" />
-              <span>{voting.addPositionButton}</span>
-            </button>
+            <AddStatementPulse shouldPulse={showAddButtonPulse}>
+              <button
+                onClick={onAddStatement}
+                className="w-full py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+              >
+                <Plus size={18} className="sm:w-5 sm:h-5" />
+                <span>{voting.addPositionButton}</span>
+              </button>
+            </AddStatementPulse>
           )}
         </div>
       </motion.div>

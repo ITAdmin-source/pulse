@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 // v2.0 Components
 import { TabNavigation } from "@/components/polls-v2/tab-navigation";
@@ -40,6 +41,7 @@ import { DemographicHeatmap } from "@/components/results-v2/demographic-heatmap"
 import { MoreStatementsPrompt } from "@/components/results-v2/more-statements-prompt";
 import { VotingCompleteBanner } from "@/components/results-v2/voting-complete-banner";
 import { StatementSubmissionModal } from "@/components/voting/statement-submission-modal";
+import { EncouragementToast } from "@/components/gamification/encouragement-toast";
 // Note: NextBatchPrompt removed - using MoreStatementsPrompt in Results tab instead
 
 // Actions
@@ -57,7 +59,7 @@ import type { ArtifactSlot } from "@/components/results-v2/minimal-collection-fo
 // Services & Utils
 import { StatementManager } from "@/lib/services/statement-manager";
 import { colors } from "@/lib/design-tokens-v2";
-import { pollPage, results } from "@/lib/strings/he";
+import { pollPage, results, voting } from "@/lib/strings/he";
 import { getInsightFromStorage, saveInsightToStorage } from "@/lib/utils/insight-storage";
 
 interface Statement {
@@ -156,6 +158,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [currentStatement, setCurrentStatement] = useState<Statement | null>(null);
   const [showVoteStats, setShowVoteStats] = useState(false);
   const [voteStats, setVoteStats] = useState<{ agreePercent: number; disagreePercent: number; passPercent: number } | null>(null);
+
+  // Gamification state
+  const [encouragementMessage, setEncouragementMessage] = useState<string>("");
+  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [showAddButtonPulse, setShowAddButtonPulse] = useState(false);
+  const [triggeredMilestones, setTriggeredMilestones] = useState<Set<number>>(new Set());
 
   // Demographics state
   const [hasDemographics, setHasDemographics] = useState(false);
@@ -301,6 +309,105 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, currentStatement, hasMoreStatements, isPollClosed, inGracePeriod]);
+
+  // Gamification: Calculate dynamic milestones based on poll size
+  const calculateMilestones = () => {
+    const threshold = votesRequiredForResults;
+
+    // Calculate percentage-based milestones
+    const milestone30 = Math.max(2, Math.round(threshold * 0.3));
+    const milestone50 = Math.max(3, Math.round(threshold * 0.5));
+    const milestone70 = Math.max(4, Math.round(threshold * 0.7));
+    const milestoneAddButton = 4; // Fixed at vote 4
+    const milestoneInsightTeaser = Math.max(threshold - 2, milestone70 + 1);
+    const milestoneAlmostThere = threshold > 6 ? threshold - 1 : null; // Only for larger polls
+    const milestoneFinal = threshold;
+
+    return {
+      milestone30,
+      milestone50,
+      milestone70,
+      milestoneAddButton,
+      milestoneInsightTeaser,
+      milestoneAlmostThere,
+      milestoneFinal,
+    };
+  };
+
+  // Gamification: Check if vote count hits a milestone
+  const checkMilestone = (voteCount: number): string | null => {
+    // Only trigger each milestone once
+    if (triggeredMilestones.has(voteCount)) return null;
+
+    const milestones = calculateMilestones();
+
+    if (voteCount === milestones.milestone30) return '30percent';
+    if (voteCount === milestones.milestoneAddButton) return 'addButton';
+    if (voteCount === milestones.milestone50) return '50percent';
+    if (voteCount === milestones.milestone70) return '70percent';
+    if (voteCount === milestones.milestoneInsightTeaser) return 'insightTeaser';
+    if (milestones.milestoneAlmostThere && voteCount === milestones.milestoneAlmostThere) return 'almostThere';
+    if (voteCount === milestones.milestoneFinal) return 'final';
+
+    return null;
+  };
+
+  // Gamification: Handle milestone effects
+  const handleMilestone = (milestoneType: string, voteCount: number) => {
+    // Mark milestone as triggered
+    setTriggeredMilestones((prev) => new Set(prev).add(voteCount));
+
+    const threshold = votesRequiredForResults;
+    const remainingVotes = threshold - voteCount;
+
+    switch (milestoneType) {
+      case '30percent':
+        setEncouragementMessage(voting.milestone30Percent);
+        setShowEncouragement(true);
+        break;
+
+      case 'addButton':
+        // Trigger add button pulse animation
+        if (poll?.allowUserStatements) {
+          setShowAddButtonPulse(true);
+          // Stop pulse after 3 seconds
+          setTimeout(() => setShowAddButtonPulse(false), 3000);
+        }
+        break;
+
+      case '50percent':
+        setEncouragementMessage(voting.milestone50Percent);
+        setShowEncouragement(true);
+        break;
+
+      case '70percent':
+        setEncouragementMessage(voting.milestone70Percent);
+        setShowEncouragement(true);
+        break;
+
+      case 'insightTeaser':
+        setEncouragementMessage(voting.milestoneInsightTeaser(remainingVotes));
+        setShowEncouragement(true);
+        break;
+
+      case 'almostThere':
+        setEncouragementMessage(voting.milestoneAlmostThere);
+        setShowEncouragement(true);
+        break;
+
+      case 'final':
+        // Big celebration with confetti
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#9333ea', '#db2777', '#ec4899', '#a855f7'],
+        });
+        setEncouragementMessage(voting.milestoneThresholdReached);
+        setShowEncouragement(true);
+        break;
+    }
+  };
 
   // Initialize poll and user data
   useEffect(() => {
@@ -547,6 +654,14 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         ).catch(() => {
           // Silent fail - cache update is not critical
         });
+
+        // Gamification: Check for milestones
+        const newVotedCount = votedCount + 1;
+        const milestoneType = checkMilestone(newVotedCount);
+
+        if (milestoneType) {
+          handleMilestone(milestoneType, newVotedCount);
+        }
 
         // Show stats for 1.5 seconds, then advance
         setTimeout(() => {
@@ -928,6 +1043,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   return (
     <div className={`min-h-screen ${colors.background.page.className}`}>
+      {/* Gamification: Encouragement Toast */}
+      <EncouragementToast
+        message={encouragementMessage}
+        isVisible={showEncouragement}
+        onDismiss={() => setShowEncouragement(false)}
+      />
+
       {/* Sticky Back Button Header */}
       <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-900/80 via-purple-800/60 to-purple-900/80 backdrop-blur-md border-b border-purple-500/20">
         <div className="container mx-auto px-4 py-3">
@@ -1013,6 +1135,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   passPercent={voteStats?.passPercent}
                   disabled={isSavingVote}
                   allowAddStatement={poll?.allowUserStatements || false}
+                  showAddButtonPulse={showAddButtonPulse}
                 />
               ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
