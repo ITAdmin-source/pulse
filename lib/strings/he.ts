@@ -257,10 +257,11 @@ export const banners = {
   partialIcon: 'ℹ️',
 
   // Sign Up Banner (Home Page - Dismissible)
-  signUpBannerHeadline: 'הירשמו לשמור את פרופילי ההשפעה שלכם',
-  signUpBannerCTA: 'הרשמה',
+  signUpBannerTitle: 'לעולם לא לפספס דיון',
+  signUpBannerBody: 'הירשמו כדי לקבל התראות על דיונים חדשים ולשמור את תובנות ההצבעה שלכם',
+  signUpBannerCTA: 'הרשמה חינם',
   signUpBannerDismiss: 'אולי מאוחר יותר',
-  signUpBannerIcon: '✨',
+  signUpBannerIcon: '💡',
 } as const;
 
 // ============================================================================

@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedPollsAction } from "@/actions/polls-actions";
 import { toast } from "sonner";
 import { PollCardGradient } from "@/components/polls-v2/poll-card-gradient";
+import { SignUpBanner } from "@/components/banners/sign-up-banner";
 import { pollsList } from "@/lib/strings/he";
 import { colors } from "@/lib/design-tokens-v2";
 
@@ -42,6 +43,15 @@ export default function PollsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+
+  // Load banner dismissal state from localStorage
+  useEffect(() => {
+    const dismissed = localStorage.getItem('signUpBannerDismissed');
+    if (dismissed === 'true') {
+      setDismissedBanner(true);
+    }
+  }, []);
 
   // Fetch polls on mount
   useEffect(() => {
@@ -268,6 +278,20 @@ export default function PollsPage() {
             </SignedIn>
           </div>
         )}
+
+        {/* Sign Up Banner */}
+        <SignedOut>
+          {!dismissedBanner && (
+            <section className="mt-8 sm:mt-12">
+              <SignUpBanner
+                onDismiss={() => {
+                  setDismissedBanner(true);
+                  localStorage.setItem('signUpBannerDismissed', 'true');
+                }}
+              />
+            </section>
+          )}
+        </SignedOut>
       </main>
     </div>
   );

@@ -19,6 +19,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight } from "lucide-react";
@@ -135,6 +136,7 @@ function calculateOptimisticDistribution(
 
 export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const router = useRouter();
+  const { openSignUp } = useClerk();
   const { user: dbUser, sessionId: contextSessionId, isLoading: isUserLoading } = useCurrentUser();
 
   // Core state
@@ -842,7 +844,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Handle "Sign Up" button in collection footer (anonymous users)
   const handleSignUpFromCollection = () => {
-    router.push("/signup");
+    openSignUp();
   };
 
   // Handle "Earn More" button in collection footer (authenticated users)
