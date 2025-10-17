@@ -83,7 +83,6 @@ export default function InteractiveArtifactSlot({
           description: result.data.insight.body,
           pollQuestion: result.data.poll.question,
           pollSlug: result.data.poll.slug,
-          rarity: result.data.insight.artifactRarity || artifact.rarity,
         });
       } else {
         console.error('[InteractiveArtifact] Failed to fetch insight:', result.error);

@@ -1,20 +1,22 @@
 "use client";
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
-import { X, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { X, ExternalLink, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { results } from '@/lib/strings/he';
+import { InsightCard } from './insight-card';
 
 /**
- * Insight Detail Modal Component
+ * Insight Detail Modal Component (v2.0)
  *
- * Displays a user's insight from their artifact collection without navigation.
- * Shows the insight in the same style as the results tab for familiarity.
+ * Displays a user's insight from their artifact collection.
+ * Uses the same InsightCard component from results page for consistency.
+ * Shows poll context above the card for user orientation.
  *
- * @version 1.0
- * @date 2025-10-16
+ * @version 2.0
+ * @date 2025-10-17
  */
 
 export interface InsightDetailData {
@@ -27,8 +29,6 @@ export interface InsightDetailData {
   pollQuestion: string;
   /** Poll slug for "View Full Discussion" link */
   pollSlug: string;
-  /** Artifact rarity for styling */
-  rarity?: 'common' | 'rare' | 'legendary';
 }
 
 interface InsightDetailModalProps {
@@ -48,98 +48,73 @@ export default function InsightDetailModal({
   insight,
   isLoading = false,
 }: InsightDetailModalProps) {
-  const rarityColors = {
-    common: 'from-gray-400 to-gray-500',
-    rare: 'from-purple-500 to-pink-500',
-    legendary: 'from-yellow-400 to-orange-500',
-  };
-
-  const rarityLabels = {
-    common: 'שכיח',
-    rare: 'נדיר',
-    legendary: 'אגדי',
-  };
-
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-lg w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-none p-0 max-h-[90vh] overflow-y-auto"
+        showCloseButton={false}
+        className="max-w-2xl w-full bg-white border-none p-0"
         dir="rtl"
       >
         {isLoading ? (
           <div className="p-8 flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              <p className="text-sm">טוען תובנה...</p>
+            <div className="text-gray-800 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-sm">{results.loadingInsightModal}</p>
             </div>
           </div>
         ) : insight ? (
-          <div className="relative">
+          <div className="relative p-6 sm:p-8">
+            {/* Visually Hidden Title for Accessibility */}
+            <DialogTitle className="sr-only">
+              {results.insightFromDiscussion} {insight.pollQuestion}
+            </DialogTitle>
+
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 left-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute top-4 left-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               aria-label="סגור"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5 text-gray-600" />
             </button>
 
-            {/* Header */}
-            <div className="p-6 pb-4">
-              <div className="flex items-center gap-3 mb-2">
-                {/* Emoji with rarity background */}
-                <div
-                  className={`
-                    w-14 h-14 rounded-xl flex items-center justify-center text-3xl
-                    bg-gradient-to-br ${insight.rarity ? rarityColors[insight.rarity] : rarityColors.rare}
-                    shadow-lg
-                  `}
-                >
-                  {insight.emoji}
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-white" dir="auto">
-                    {insight.profile}
-                  </h2>
-                  {insight.rarity && (
-                    <p className="text-xs text-purple-200">
-                      {rarityLabels[insight.rarity]}
-                    </p>
-                  )}
-                </div>
-              </div>
+            {/* Poll Context - Above the card */}
+            <div className="flex items-center gap-2 mb-4 text-purple-600 text-sm">
+              <MessageSquare className="w-4 h-4" />
+              <span>{results.insightFromDiscussion}</span>
+            </div>
+            <p className="text-gray-800 text-base sm:text-lg font-medium mb-6" dir="auto">
+              {insight.pollQuestion}
+            </p>
 
-              {/* Poll Question */}
-              <p className="text-sm text-purple-200 mt-3" dir="auto">
-                {insight.pollQuestion}
-              </p>
+            {/* Insight Card - Same component as results page */}
+            <div className="mb-6">
+              <InsightCard
+                emoji={insight.emoji}
+                profile={insight.profile}
+                description={insight.description}
+                showSignUpPrompt={false}
+                isAuthenticated={true}
+                hideCollectionFooter={true}
+              />
             </div>
 
-            {/* Insight Card - Same styling as results tab */}
-            <div className="px-6 pb-6">
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <p className="text-gray-800 leading-relaxed text-base" dir="auto">
-                  {insight.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Footer with View Discussion Link */}
-            <div className="px-6 pb-6">
+            {/* Footer with View Discussion Link - Secondary style */}
+            <div className="flex justify-center">
               <Link href={`/polls/${insight.pollSlug}`} onClick={onClose}>
                 <Button
-                  variant="outline"
-                  className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30"
+                  variant="ghost"
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 gap-2"
                 >
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                  צפה בדיון המלא
+                  <ExternalLink className="w-4 h-4" />
+                  {results.viewFullDiscussion}
                 </Button>
               </Link>
             </div>
           </div>
         ) : (
-          <div className="p-8 text-center text-white">
-            <p>לא נמצאה תובנה</p>
+          <div className="p-8 text-center text-gray-800">
+            <p>{results.insightNotFound}</p>
           </div>
         )}
       </DialogContent>

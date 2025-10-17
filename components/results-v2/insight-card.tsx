@@ -21,6 +21,8 @@ interface InsightCardProps {
   onDismissNewBadge?: () => void;
   onSignUp?: () => void;
   onEarnMore?: () => void;
+  // Display Options
+  hideCollectionFooter?: boolean;
 }
 
 export function InsightCard({
@@ -37,6 +39,7 @@ export function InsightCard({
   onDismissNewBadge,
   onSignUp,
   onEarnMore,
+  hideCollectionFooter = false,
 }: InsightCardProps) {
   return (
     <motion.div
@@ -94,15 +97,17 @@ export function InsightCard({
         </div>
 
         {/* Minimal Collection Footer (Both Anonymous and Authenticated) */}
-        <MinimalCollectionFooter
-          isAuthenticated={isAuthenticated}
-          currentEmoji={emoji}
-          artifacts={artifacts}
-          userId={userId}
-          currentPollId={currentPollId}
-          onSignUp={onSignUp}
-          onEarnMore={onEarnMore}
-        />
+        {!hideCollectionFooter && (
+          <MinimalCollectionFooter
+            isAuthenticated={isAuthenticated}
+            currentEmoji={emoji}
+            artifacts={artifacts}
+            userId={userId}
+            currentPollId={currentPollId}
+            onSignUp={onSignUp}
+            onEarnMore={onEarnMore}
+          />
+        )}
       </div>
     </motion.div>
   );

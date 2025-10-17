@@ -184,6 +184,12 @@ export const results = {
   rarityRare: 'נדיר',
   rarityLegendary: 'אגדי',
 
+  // Insight Detail Modal
+  insightFromDiscussion: 'תובנה מהדיון:',
+  viewFullDiscussion: 'צפו בדיון המלא',
+  loadingInsightModal: 'טוען תובנה...',
+  insightNotFound: 'לא נמצאה תובנה',
+
   // More Statements Prompt
   moreStatementsTitle: 'יש עוד! 🎯',
   moreStatementsMessage: (count: number) => `יש עוד עמדות להצבעה. הצביעו על ${count} העמדות הבאות להמשך התרומה לשיחה.`,
