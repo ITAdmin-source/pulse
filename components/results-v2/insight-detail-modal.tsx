@@ -93,6 +93,8 @@ export default function InsightDetailModal({
                 emoji={insight.emoji}
                 profile={insight.profile}
                 description={insight.description}
+                pollSlug={insight.pollSlug}
+                pollQuestion={insight.pollQuestion}
                 showSignUpPrompt={false}
                 isAuthenticated={true}
                 hideCollectionFooter={true}

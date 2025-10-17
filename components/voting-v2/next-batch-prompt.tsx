@@ -4,13 +4,12 @@ import { motion } from "framer-motion";
 import { voting } from "@/lib/strings/he";
 
 interface NextBatchPromptProps {
-  batchNumber: number;
   statementsCompleted: number;
   remainingStatements: number;
   onContinue: () => void;
 }
 
-export function NextBatchPrompt({ batchNumber, statementsCompleted, remainingStatements, onContinue }: NextBatchPromptProps) {
+export function NextBatchPrompt({ statementsCompleted, remainingStatements, onContinue }: NextBatchPromptProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

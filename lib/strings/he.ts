@@ -443,6 +443,15 @@ export const sharing = {
   pollShareMessage: (title: string) => `בואו להצביע בדיון: "${title}"`,
   insightShareMessage: (profile: string) => `הפרופיל שלי: ${profile}`,
   resultsShareMessage: (title: string) => `תוצאות הדיון: "${title}"`,
+
+  // Share Success/Error Messages
+  shareSuccess: 'שותף בהצלחה!',
+  shareImageDownloaded: 'התמונה הורדה וקישור הועתק ללוח',
+  shareError: 'נכשל לשתף',
+  shareImageError: 'לא ניתן ליצור תמונה, קישור הועתק ללוח',
+
+  // Voting Complete Share Text
+  votingCompleteShareText: (pollQuestion: string) => `סיימתי להצביע על כל העמדות ב-"${pollQuestion}"! הצטרפו אליי 🎉`,
 } as const;
 
 // ============================================================================

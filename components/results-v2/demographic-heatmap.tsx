@@ -37,7 +37,7 @@ const attributeConfig = {
   }
 };
 
-export function DemographicHeatmap({ pollId, data, isLoading = false }: DemographicHeatmapProps) {
+export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatmapProps) {
   const [activeAttribute, setActiveAttribute] = useState<DemographicAttribute>("ethnicity");
 
   if (isLoading) {

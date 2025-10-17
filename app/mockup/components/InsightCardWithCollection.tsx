@@ -54,7 +54,6 @@ export default function InsightCardWithCollection({
   artifacts = [],
   newlyEarned,
   onShare,
-  onShareCollection,
   onSignUp,
   onEarnMore,
   onDismissNewBadge,

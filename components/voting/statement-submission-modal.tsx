@@ -23,7 +23,6 @@ export function StatementSubmissionModal({
   open,
   onOpenChange,
   pollId,
-  pollTitle,
   userId,
   autoApprove,
   onUserCreated,

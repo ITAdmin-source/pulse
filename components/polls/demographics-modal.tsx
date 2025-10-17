@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -17,7 +16,6 @@ import { getAgeGroupsAction } from "@/actions/age-groups-actions";
 import { getGendersAction } from "@/actions/genders-actions";
 import { getEthnicitiesAction } from "@/actions/ethnicities-actions";
 import { getPoliticalPartiesAction } from "@/actions/political-parties-actions";
-import { components } from "@/lib/design-tokens-v2";
 import { demographics as demographicsStrings } from "@/lib/strings/he";
 
 interface DemographicsModalProps {

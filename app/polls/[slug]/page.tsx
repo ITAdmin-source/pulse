@@ -1036,10 +1036,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                     profile={resultsData.insight.profile}
                     emoji={resultsData.insight.emoji}
                     description={resultsData.insight.description}
-                    onShare={() => {
-                      // TODO: Implement share functionality
-                      toast.success("קישור לשיתוף הועתק ללוח");
-                    }}
+                    pollSlug={poll.slug}
+                    pollQuestion={poll.question}
                     showSignUpPrompt={!dbUser?.clerkUserId}
                     isAuthenticated={!!dbUser?.clerkUserId}
                     artifacts={userArtifacts}
@@ -1060,9 +1058,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   />
                 ) : (
                   <VotingCompleteBanner
-                    onShare={() => {
-                      toast.success("קישור לשיתוף הועתק ללוח");
-                    }}
+                    pollSlug={poll.slug}
+                    pollQuestion={poll.question}
                   />
                 )}
 

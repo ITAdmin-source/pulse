@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Plus, HelpCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { voting } from "@/lib/strings/he";
 
@@ -24,7 +24,6 @@ export function SplitVoteCard({
   showStats = false,
   agreePercent = 0,
   disagreePercent = 0,
-  passPercent = 0,
   disabled = false,
   allowAddStatement = true
 }: SplitVoteCardProps) {

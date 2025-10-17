@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown, HelpCircle, Plus, Users, TrendingUp, MessageSquare, Share2, ArrowLeft, Sparkles } from 'lucide-react';
-import InsightArtifactsCollection, { InsightArtifact } from './components/InsightArtifactsCollection';
+import { InsightArtifact } from './components/InsightArtifactsCollection';
 import FloatingArtifactsBadge from './components/FloatingArtifactsBadge';
 import InsightCardWithCollection from './components/InsightCardWithCollection';
 

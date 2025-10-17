@@ -9,19 +9,12 @@ import { Menu } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
 import { ShareButton } from "./share-button";
 import { getPollBySlugAction } from "@/actions/polls-actions";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 type HeaderVariant = "cross-poll" | "poll-specific" | "management" | "admin" | null;
 
 export function AdaptiveHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pollTitle, setPollTitle] = useState<string | null>(null);
-  const [pollSlug, setPollSlug] = useState<string | null>(null);
   const { signOut } = useClerk();
   const pathname = usePathname();
 
@@ -34,7 +27,6 @@ export function AdaptiveHeader() {
       const slugMatch = pathname.match(/\/polls\/([^\/]+)/);
       if (slugMatch && slugMatch[1]) {
         const slug = slugMatch[1];
-        setPollSlug(slug);
 
         // Fetch poll data
         getPollBySlugAction(slug).then((result) => {
@@ -47,7 +39,6 @@ export function AdaptiveHeader() {
       }
     } else {
       setPollTitle(null);
-      setPollSlug(null);
     }
   }, [pathname, variant]);
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { components } from "@/lib/design-tokens-v2";
 import { pollPage } from "@/lib/strings/he";
 
 type TabType = "vote" | "results";
