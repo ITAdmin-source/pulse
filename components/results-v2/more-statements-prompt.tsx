@@ -14,7 +14,7 @@ export function MoreStatementsPrompt({ remainingStatements, onContinue }: MoreSt
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 shadow-lg text-white"
+      className="bg-gradient-poll-header rounded-xl p-6 shadow-lg text-white"
     >
       <div className="flex items-start gap-4">
         <MessageSquare size={32} className="flex-shrink-0 mt-1" />
@@ -25,7 +25,7 @@ export function MoreStatementsPrompt({ remainingStatements, onContinue }: MoreSt
           </p>
           <button
             onClick={onContinue}
-            className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+            className="bg-white text-primary-600 px-6 py-2 rounded-lg font-semibold hover:bg-primary-50 transition-colors"
           >
             {results.moreStatementsButton(remainingStatements)}
           </button>

@@ -6,6 +6,8 @@ import { UserProvider } from "@/contexts/user-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
 import { FeedbackButtonWrapper } from "@/components/feedback/feedback-button-wrapper";
+import "./theme-variables.css";
+import "./theme-utilities.css";
 import "./globals.css";
 
 const rubik = Rubik({

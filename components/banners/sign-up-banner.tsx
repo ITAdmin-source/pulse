@@ -15,7 +15,7 @@ export function SignUpBanner({ onDismiss }: SignUpBannerProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl"
+      className="bg-gradient-signup-banner rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl"
     >
       <div className="flex items-start gap-3 sm:gap-4">
         <div className="text-3xl sm:text-4xl flex-shrink-0">
@@ -31,7 +31,7 @@ export function SignUpBanner({ onDismiss }: SignUpBannerProps) {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <SignUpButton mode="modal">
               <motion.button
-                className="bg-white text-purple-600 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-purple-50 transition-colors text-sm sm:text-base"
+                className="bg-white text-primary-600 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-primary-50 transition-colors text-sm sm:text-base"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -40,7 +40,7 @@ export function SignUpBanner({ onDismiss }: SignUpBannerProps) {
             </SignUpButton>
             <motion.button
               onClick={onDismiss}
-              className="bg-white/20 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-white/30 transition-colors text-sm sm:text-base"
+              className="bg-white-20 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-white-20 transition-colors text-sm sm:text-base"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >

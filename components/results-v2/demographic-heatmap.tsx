@@ -23,7 +23,7 @@ const attributeConfig = {
   politicalParty: {
     icon: Flag,
     label: results.heatmapPolitics,
-    color: "text-purple-600"
+    color: "text-primary-600"
   },
   ageGroup: {
     icon: Calendar,
@@ -77,7 +77,7 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
               onClick={() => setActiveAttribute(attr)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isActive
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                  ? "bg-gradient-poll-header text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -97,14 +97,14 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
       ) : (
         <div className="overflow-x-auto -mx-4 sm:mx-0" dir="rtl">
           <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden border-2 border-purple-200 rounded-xl">
-              <table className="min-w-full divide-y divide-purple-200">
+            <div className="overflow-hidden border-2 border-primary-200 rounded-xl">
+              <table className="min-w-full divide-y divide-primary-200">
                 {/* Header */}
-                <thead className="bg-gradient-to-r from-purple-50 to-pink-50">
+                <thead className="bg-gradient-header-light">
                   <tr>
                     <th
                       scope="col"
-                      className="px-3 sm:px-4 py-3 text-right text-xs font-bold text-purple-900 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-purple-50 to-pink-50 border-l-2 border-purple-200"
+                      className="px-3 sm:px-4 py-3 text-right text-xs font-bold text-primary-900 uppercase tracking-wider sticky right-0 bg-gradient-header-light border-l-2 border-primary-200"
                       style={{ minWidth: '200px', maxWidth: '350px' }}
                     >
                       עמדה
@@ -113,11 +113,11 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
                       <th
                         key={group.groupId}
                         scope="col"
-                        className="px-2 py-3 text-center text-xs font-bold text-purple-900 uppercase tracking-wider"
+                        className="px-2 py-3 text-center text-xs font-bold text-primary-900 uppercase tracking-wider"
                         style={{ minWidth: '90px' }}
                       >
                         <div>{group.groupLabel}</div>
-                        <div className="text-xs text-purple-700 font-normal mt-0.5">
+                        <div className="text-xs text-primary-700 font-normal mt-0.5">
                           ({group.totalResponses})
                         </div>
                       </th>
@@ -126,15 +126,15 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
                 </thead>
 
                 {/* Body */}
-                <tbody className="bg-white divide-y divide-purple-100">
+                <tbody className="bg-white divide-y divide-primary-100">
                   {activeData.map((statement, idx) => (
                     <tr
                       key={statement.statementId}
-                      className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'}
+                      className={idx % 2 === 0 ? 'bg-white' : 'bg-primary-50-30'}
                     >
                       {/* Statement text */}
                       <td
-                        className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-gray-900 sticky right-0 bg-inherit border-l-2 border-purple-200"
+                        className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-gray-900 sticky right-0 bg-inherit border-l-2 border-primary-200"
                         style={{ minWidth: '200px', maxWidth: '350px' }}
                       >
                         <div className="line-clamp-2" dir="auto">
@@ -177,7 +177,7 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
       )}
 
       {/* Legend */}
-      <div className="mt-6 pt-4 border-t border-purple-200" dir="rtl">
+      <div className="mt-6 pt-4 border-t border-primary-200" dir="rtl">
         <div className="flex items-center justify-center gap-6 flex-wrap text-xs sm:text-sm">
           <div className="flex items-center gap-2">
             <div className="w-8 h-6 rounded bg-red-500"></div>

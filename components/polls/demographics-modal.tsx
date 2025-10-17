@@ -144,7 +144,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
 
           {isLoading ? (
             <div className="py-8 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
             </div>
           ) : (
             <div className="space-y-4 mb-6">
@@ -153,7 +153,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.genderLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={genderId} onValueChange={setGenderId} required>
-                  <SelectTrigger id="gender" className="w-full border-2 border-gray-300 rounded-lg focus:border-purple-500">
+                  <SelectTrigger id="gender" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.genderPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -171,7 +171,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.ageLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ageGroupId} onValueChange={setAgeGroupId} required>
-                  <SelectTrigger id="age" className="w-full border-2 border-gray-300 rounded-lg focus:border-purple-500">
+                  <SelectTrigger id="age" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.agePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -189,7 +189,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.ethnicityLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ethnicityId} onValueChange={setEthnicityId} required>
-                  <SelectTrigger id="ethnicity" className="w-full border-2 border-gray-300 rounded-lg focus:border-purple-500">
+                  <SelectTrigger id="ethnicity" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.ethnicityPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -207,7 +207,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.politicsLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={politicalPartyId} onValueChange={setPoliticalPartyId} required>
-                  <SelectTrigger id="party" className="w-full border-2 border-gray-300 rounded-lg focus:border-purple-500">
+                  <SelectTrigger id="party" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.politicsPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,7 +228,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
               disabled={!isFormComplete || isSubmitting}
               className={`w-full font-semibold py-3 sm:py-3.5 rounded-lg transition-colors text-sm sm:text-base ${
                 isFormComplete && !isSubmitting
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer'
+                  ? 'btn-primary text-white cursor-pointer'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -276,7 +276,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
 
             <Button
               onClick={() => setShowWhyWeAsk(false)}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-colors"
+              className="w-full btn-primary text-white font-semibold py-3 rounded-lg transition-colors"
             >
               {demographicsStrings.whyModalClose}
             </Button>

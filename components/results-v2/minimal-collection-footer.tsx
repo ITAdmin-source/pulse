@@ -79,7 +79,7 @@ export default function MinimalCollectionFooter({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6, duration: 0.3 }}
-      className={`mt-6 pt-4 border-t border-white/20 ${className}`}
+      className={`mt-6 pt-4 border-t border-white-20 ${className}`}
     >
       {/* Mobile Layout (< 640px): Stacked */}
       <div className="sm:hidden">
@@ -133,8 +133,8 @@ export default function MinimalCollectionFooter({
                     damping: 20,
                   }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
-                    <Lock size={10} className="text-white/40" />
+                  <div className="w-8 h-8 rounded-lg bg-white-10 border border-white-20 flex items-center justify-center">
+                    <Lock size={10} className="text-white-40" />
                   </div>
                 </motion.div>
               )}
@@ -150,14 +150,14 @@ export default function MinimalCollectionFooter({
           {isAuthenticated ? (
             <button
               onClick={onEarnMore}
-              className="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-md text-xs font-semibold transition-colors backdrop-blur-sm border border-white/20"
+              className="bg-white-20 hover-bg-white-30 text-white px-3 py-1.5 rounded-md text-xs font-semibold transition-colors backdrop-blur-sm border border-white-20"
             >
               {results.earnMore}
             </button>
           ) : (
             <button
               onClick={onSignUp}
-              className="bg-white text-purple-600 px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-purple-50 transition-colors flex items-center gap-1 shadow-lg"
+              className="bg-white text-primary-600 px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-primary-50 transition-colors flex items-center gap-1 shadow-lg"
             >
               <Sparkles size={12} />
               {results.signUpToCollect}
@@ -219,8 +219,8 @@ export default function MinimalCollectionFooter({
                       damping: 20,
                     }}
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
-                      <Lock size={12} className="text-white/40" />
+                    <div className="w-9 h-9 rounded-lg bg-white-10 border border-white-20 flex items-center justify-center">
+                      <Lock size={12} className="text-white-40" />
                     </div>
                   </motion.div>
                 )}
@@ -241,14 +241,14 @@ export default function MinimalCollectionFooter({
           {isAuthenticated ? (
             <button
               onClick={onEarnMore}
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors backdrop-blur-sm border border-white/20"
+              className="bg-white-20 hover-bg-white-30 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors backdrop-blur-sm border border-white-20"
             >
               {results.earnMore}
             </button>
           ) : (
             <button
               onClick={onSignUp}
-              className="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-50 transition-colors flex items-center gap-1.5 shadow-lg"
+              className="bg-white text-primary-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-50 transition-colors flex items-center gap-1.5 shadow-lg"
             >
               <Sparkles size={14} />
               {results.signUpToCollect}

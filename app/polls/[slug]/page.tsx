@@ -401,7 +401,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#9333ea', '#db2777', '#ec4899', '#a855f7'],
+          colors: [
+            getComputedStyle(document.documentElement).getPropertyValue('--confetti-purple-600').trim() || '#9333ea',
+            getComputedStyle(document.documentElement).getPropertyValue('--confetti-pink-600').trim() || '#db2777',
+            getComputedStyle(document.documentElement).getPropertyValue('--confetti-pink-500').trim() || '#ec4899',
+            getComputedStyle(document.documentElement).getPropertyValue('--confetti-purple-500').trim() || '#a855f7',
+          ],
         });
         setEncouragementMessage(voting.milestoneThresholdReached);
         setShowEncouragement(true);
@@ -1033,7 +1038,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       <div className={`min-h-screen flex items-center justify-center ${colors.background.page.className}`}>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">{pollPage.pollNotFound}</h1>
-          <Button asChild className="bg-white text-purple-900 hover:bg-white/90">
+          <Button asChild className="bg-white text-primary-900 hover:bg-white-90">
             <Link href="/polls">{pollPage.backToPolls}</Link>
           </Button>
         </div>
@@ -1051,13 +1056,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       />
 
       {/* Sticky Back Button Header */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-900/80 via-purple-800/60 to-purple-900/80 backdrop-blur-md border-b border-purple-500/20">
+      <header className="sticky top-0 z-50 bg-gradient-header backdrop-blur-md border-b border-primary-500-20">
         <div className="container mx-auto px-4 py-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/polls")}
-            className="text-white hover:bg-purple-700/50 hover:text-white flex items-center gap-2"
+            className="text-white hover-bg-primary-700 hover:text-white flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
             חזרה לכל הסקרים
@@ -1072,11 +1077,11 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
             {isPollClosed && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
+              <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
             )}
           </div>
           {poll.description && (
-            <p className="text-purple-200 text-sm sm:text-base">{poll.description}</p>
+            <p className="text-primary-200 text-sm sm:text-base">{poll.description}</p>
           )}
         </div>
 
@@ -1139,7 +1144,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 />
               ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 mx-auto bg-gradient-completion rounded-full flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -1149,14 +1154,14 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={() => handleTabChange("results")}
-                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-xl transition-shadow"
+                      className="px-6 py-3 bg-gradient-poll-header text-white font-bold rounded-xl hover:shadow-xl transition-shadow"
                     >
                       צפו בתוצאות
                     </button>
                     {poll.allowUserStatements && (
                       <button
                         onClick={() => setShowStatementModal(true)}
-                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl hover:shadow-xl transition-all"
+                        className="px-6 py-3 btn-primary text-white font-bold rounded-xl hover:shadow-xl transition-all"
                       >
                         {results.addStatementButton}
                       </button>
@@ -1165,7 +1170,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 </div>
               ) : (
                 <div key="loading-next" className="bg-white rounded-3xl shadow-xl p-8 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
                   <p className="text-gray-600">טוען עמדות...</p>
                 </div>
               )}
@@ -1198,31 +1203,31 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               />
             ) : !isPollClosed && !hasDemographics ? (
               <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
                 <p className="text-gray-600">אנא מלא פרטים דמוגרפיים...</p>
               </div>
             ) : isLoadingResults ? (
               <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
                 <p className="text-gray-600">טוען תוצאות...</p>
               </div>
             ) : (
               <>
                 {/* Personal Insight Card - with loading and error states */}
                 {isGeneratingInsight ? (
-                  <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                  <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
                     <p className="text-lg font-medium">מייצר לך תובנה אישית...</p>
-                    <p className="text-sm text-purple-200 mt-2">זה יכול לקחת כמה שניות</p>
+                    <p className="text-sm text-primary-200 mt-2">זה יכול לקחת כמה שניות</p>
                   </div>
                 ) : insightError ? (
-                  <div className="bg-gradient-to-br from-red-600 via-rose-600 to-pink-600 rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                  <div className="bg-gradient-error rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
                     <div className="text-5xl mb-4">⚠️</div>
                     <h3 className="text-xl font-bold mb-2">שגיאה ביצירת תובנה</h3>
-                    <p className="text-purple-100 mb-6">{insightError}</p>
+                    <p className="text-white-80 mb-6">{insightError}</p>
                     <button
                       onClick={() => loadResultsData()}
-                      className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors shadow-lg"
+                      className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-white-95 transition-colors shadow-lg"
                     >
                       נסה שוב
                     </button>

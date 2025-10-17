@@ -42,7 +42,7 @@ export function SplitVoteCard({
         className="bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Statement Text Header */}
-        <div className="p-4 sm:p-6 bg-gray-50 border-b-4 border-purple-200">
+        <div className="p-4 sm:p-6 bg-gray-50 border-b-4 border-primary-200">
           <p
             className="text-lg sm:text-xl font-medium text-gray-800 text-center leading-relaxed"
             dir="auto"
@@ -61,11 +61,12 @@ export function SplitVoteCard({
             disabled={disabled}
             className={`flex-1 flex flex-col items-center justify-center transition-all relative overflow-hidden ${
               showStats
-                ? "bg-red-500 cursor-default"
+                ? "bg-voting-disagree cursor-default"
                 : hoveredButton === "disagree"
-                ? "flex-[1.2] bg-red-500"
-                : "bg-red-400"
+                ? "flex-[1.2] bg-voting-disagree"
+                : "bg-voting-disagree"
             }`}
+            style={{ opacity: hoveredButton === "disagree" && !showStats ? 1 : showStats ? 1 : 0.9 }}
           >
             <div
               className={`flex flex-col items-center transition-all duration-300 ${
@@ -101,11 +102,12 @@ export function SplitVoteCard({
             disabled={disabled}
             className={`flex-1 flex flex-col items-center justify-center transition-all relative overflow-hidden ${
               showStats
-                ? "bg-green-500 cursor-default"
+                ? "bg-voting-agree cursor-default"
                 : hoveredButton === "agree"
-                ? "flex-[1.2] bg-green-500"
-                : "bg-green-400"
+                ? "flex-[1.2] bg-voting-agree"
+                : "bg-voting-agree"
             }`}
+            style={{ opacity: hoveredButton === "agree" && !showStats ? 1 : showStats ? 1 : 0.9 }}
           >
             <div
               className={`flex flex-col items-center transition-all duration-300 ${
@@ -137,7 +139,7 @@ export function SplitVoteCard({
           <button
             onClick={() => !disabled && onVote(0)}
             disabled={disabled}
-            className="flex-1 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+            className="flex-1 py-2.5 sm:py-3 bg-voting-pass hover:bg-voting-pass text-voting-pass rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
           >
             <HelpCircle size={18} className="sm:w-5 sm:h-5" />
             <span>{voting.passButton}</span>
@@ -148,7 +150,7 @@ export function SplitVoteCard({
             <AddStatementPulse shouldPulse={showAddButtonPulse}>
               <button
                 onClick={onAddStatement}
-                className="w-full py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+                className="w-full py-2.5 sm:py-3 btn-primary text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={18} className="sm:w-5 sm:h-5" />
                 <span>{voting.addPositionButton}</span>

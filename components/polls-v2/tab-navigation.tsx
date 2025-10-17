@@ -27,14 +27,14 @@ export function TabNavigation({
   votesRequired
 }: TabNavigationProps) {
   return (
-    <div className="flex gap-2 bg-white/20 backdrop-blur-sm p-1.5 rounded-xl border border-white/30">
+    <div className="flex gap-2 bg-white-20 backdrop-blur-sm p-1.5 rounded-xl border border-white-20">
       {/* Vote Tab */}
       <button
         onClick={() => onTabChange("vote")}
         className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
           activeTab === "vote"
-            ? "text-purple-900"
-            : "text-white hover:text-white/90"
+            ? "text-primary-900"
+            : "text-white hover:text-white-80"
         }`}
         disabled={false}
       >
@@ -55,10 +55,10 @@ export function TabNavigation({
             onClick={() => !resultsLocked && onTabChange("results")}
             className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
               resultsLocked
-                ? "text-white/60 cursor-not-allowed"
+                ? "text-white-60 cursor-not-allowed"
                 : activeTab === "results"
-                ? "text-purple-900"
-                : "text-white hover:text-white/90"
+                ? "text-primary-900"
+                : "text-white hover:text-white-80"
             }`}
             disabled={resultsLocked}
           >
@@ -81,7 +81,7 @@ export function TabNavigation({
           </button>
         </TooltipTrigger>
         {resultsLocked && (
-          <TooltipContent side="bottom" className="bg-purple-900 text-white border-purple-700">
+          <TooltipContent side="bottom" className="bg-primary-900 text-white border-primary-700">
             {pollPage.tabResultsLockedTooltip(votesRequired)}
           </TooltipContent>
         )}

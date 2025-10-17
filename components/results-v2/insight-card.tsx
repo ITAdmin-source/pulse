@@ -71,18 +71,18 @@ export function InsightCard({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-6 sm:p-8 shadow-2xl text-white relative overflow-hidden"
+        className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white relative overflow-hidden"
       >
         {/* Decorative background circles */}
-        <div className="absolute top-0 end-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 start-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div className="absolute top-0 end-0 w-64 h-64 bg-white-10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 start-0 w-48 h-48 bg-white-10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
 
         <div className="relative z-10">
           {/* Profile Header */}
           <div className="flex items-center gap-3 mb-4">
             <span className="text-5xl">{emoji}</span>
             <div>
-              <h3 className="text-sm font-medium text-purple-200 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-primary-200 uppercase tracking-wide">
                 {results.insightLabel}
               </h3>
               <h2 className="text-2xl sm:text-3xl font-bold">{profile}</h2>
@@ -90,7 +90,7 @@ export function InsightCard({
           </div>
 
           {/* Description */}
-          <p className="text-base sm:text-lg text-purple-50 leading-relaxed mb-6" dir="auto">
+          <p className="text-base sm:text-lg text-white-95 leading-relaxed mb-6" dir="auto">
             {description}
           </p>
 
@@ -108,7 +108,7 @@ export function InsightCard({
             <button
               onClick={onShareClick}
               disabled={isSharing}
-              className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSharing ? (
                 <>
@@ -124,7 +124,7 @@ export function InsightCard({
             </button>
 
             {showSignUpPrompt && (
-              <button className="text-white/90 hover:text-white text-sm underline">
+              <button className="text-white-80 hover:text-white text-sm underline">
                 {results.insightSignUpLink}
               </button>
             )}

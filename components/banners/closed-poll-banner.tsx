@@ -39,7 +39,7 @@ export function ClosedPollBanner({ closedDate }: ClosedPollBannerProps) {
       transition={{ duration: 0.3 }}
       className="bg-yellow-500/20 border-2 border-yellow-500/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
     >
-      <p className="text-yellow-100 text-center text-sm sm:text-base">
+      <p className="text-white-95 text-center text-sm sm:text-base">
         <strong>{headlineText}.</strong> {banners.closedPollBody}
       </p>
     </motion.div>

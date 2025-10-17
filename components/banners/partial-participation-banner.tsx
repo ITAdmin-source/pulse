@@ -15,7 +15,7 @@ export function PartialParticipationBanner({ votedCount, totalStatements }: Part
       transition={{ duration: 0.3 }}
       className="bg-blue-500/20 border-2 border-blue-500/50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
     >
-      <p className="text-blue-100 text-center text-sm sm:text-base">
+      <p className="text-white-95 text-center text-sm sm:text-base">
         הצבעתם על <strong>{votedCount} מתוך {totalStatements} עמדות</strong> לפני שהדיון נסגר.
       </p>
     </motion.div>

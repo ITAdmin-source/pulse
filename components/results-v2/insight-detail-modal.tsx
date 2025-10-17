@@ -58,7 +58,7 @@ export default function InsightDetailModal({
         {isLoading ? (
           <div className="p-8 flex items-center justify-center">
             <div className="text-gray-800 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
               <p className="text-sm">{results.loadingInsightModal}</p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function InsightDetailModal({
             </button>
 
             {/* Poll Context - Above the card */}
-            <div className="flex items-center gap-2 mb-4 text-purple-600 text-sm">
+            <div className="flex items-center gap-2 mb-4 text-primary-600 text-sm">
               <MessageSquare className="w-4 h-4" />
               <span>{results.insightFromDiscussion}</span>
             </div>
@@ -106,7 +106,7 @@ export default function InsightDetailModal({
               <Link href={`/polls/${insight.pollSlug}`} onClick={onClose}>
                 <Button
                   variant="ghost"
-                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 gap-2"
+                  className="text-primary-600 hover-text-primary-700 hover:bg-primary-50 gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
                   {results.viewFullDiscussion}

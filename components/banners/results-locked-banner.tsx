@@ -23,9 +23,9 @@ export function ResultsLockedBanner({
       className="w-full max-w-2xl mx-auto"
     >
       <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-        <div className="w-20 h-20 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 mx-auto bg-primary-50 rounded-full flex items-center justify-center mb-6">
           <svg
-            className="w-10 h-10 text-purple-600"
+            className="w-10 h-10 text-primary-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -49,7 +49,7 @@ export function ResultsLockedBanner({
 
         <div className="mb-6">
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <span className="font-semibold text-purple-600">{votesCompleted}</span>
+            <span className="font-semibold text-primary-600">{votesCompleted}</span>
             <span>/</span>
             <span>{votesRequired}</span>
             <span>{pollPage.votesLabel}</span>
@@ -61,14 +61,14 @@ export function ResultsLockedBanner({
               initial={{ width: 0 }}
               animate={{ width: `${(votesCompleted / votesRequired) * 100}%` }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+              className="h-full bg-gradient-poll-header"
             />
           </div>
         </div>
 
         <motion.button
           onClick={onGoToVote}
-          className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+          className="w-full py-4 bg-gradient-poll-header text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >

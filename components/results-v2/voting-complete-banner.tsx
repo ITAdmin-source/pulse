@@ -33,21 +33,21 @@ export function VotingCompleteBanner({ pollSlug, pollQuestion, onShare: legacyOn
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-6 shadow-lg text-white"
+      className="bg-gradient-completion rounded-xl p-6 shadow-lg text-white"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="text-4xl">🎉</div>
           <div>
             <h3 className="text-xl font-bold">{results.completeTitle}</h3>
-            <p className="text-green-100">{results.completeMessage}</p>
+            <p className="text-white-95">{results.completeMessage}</p>
           </div>
         </div>
 
         <button
           onClick={onShareClick}
           disabled={isSharing}
-          className="bg-white text-green-600 px-5 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-white text-status-success px-5 py-2 rounded-lg font-semibold hover-bg-status-success-50 transition-colors flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSharing ? (
             <>

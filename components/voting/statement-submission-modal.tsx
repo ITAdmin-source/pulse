@@ -112,7 +112,7 @@ export function StatementSubmissionModal({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="לדוגמה: אנחנו צריכים זמני פגישה גמישים יותר"
-        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base"
+        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-primary-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base"
         rows={4}
         disabled={isSubmitting}
         dir="auto"
@@ -149,7 +149,7 @@ export function StatementSubmissionModal({
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || isSubmitting}
-          className="flex-1 py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 sm:py-3 btn-primary text-white rounded-xl font-semibold transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             <>

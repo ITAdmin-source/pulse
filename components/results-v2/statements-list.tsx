@@ -39,24 +39,24 @@ export function StatementsList({
       {showConsensus && consensusStatements.length > 0 && (
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
           <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
-            <TrendingUp className="text-green-600" size={20} />
+            <TrendingUp className="text-status-success" size={20} />
             {results.consensusTitle}
           </h3>
           <div className="space-y-3">
             {consensusStatements.map((stmt) => (
               <div
                 key={stmt.id}
-                className="bg-green-50 border-2 border-green-500 rounded-lg p-3 sm:p-4"
+                className="bg-voting-agree-light border-2 border-voting-agree rounded-lg p-3 sm:p-4"
               >
                 <div className="flex items-start justify-between gap-3 sm:gap-4">
                   <p className="text-gray-800 flex-1 text-sm sm:text-base" dir="auto">
                     &ldquo;{stmt.text}&rdquo;
                   </p>
                   <div className="text-end flex-shrink-0">
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">
+                    <p className="text-xl sm:text-2xl font-bold text-status-success">
                       {Math.round(stmt.agreePercent)}%
                     </p>
-                    <p className="text-xs text-green-700">{results.agreementLabel}</p>
+                    <p className="text-xs text-voting-agree-dark">{results.agreementLabel}</p>
                   </div>
                 </div>
               </div>
@@ -88,32 +88,32 @@ export function StatementsList({
                   {agreePercent > 0 && (
                     <div
                       style={{ width: `${agreePercent}%` }}
-                      className="bg-green-500"
+                      className="bg-voting-agree"
                     />
                   )}
                   {disagreePercent > 0 && (
                     <div
                       style={{ width: `${disagreePercent}%` }}
-                      className="bg-red-500"
+                      className="bg-voting-disagree"
                     />
                   )}
                   {passPercent > 0 && (
                     <div
                       style={{ width: `${passPercent}%` }}
-                      className="bg-gray-400"
+                      className="bg-voting-pass"
                     />
                   )}
                 </div>
 
                 {/* Vote Counts */}
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-green-700 font-medium">
+                  <span className="text-voting-agree-dark font-medium">
                     {stmt.agreeCount} {results.agreeLabel}
                   </span>
-                  <span className="text-red-700 font-medium">
+                  <span className="text-voting-disagree-dark font-medium">
                     {stmt.disagreeCount} {results.disagreeLabel}
                   </span>
-                  <span className="text-gray-600 font-medium">
+                  <span className="text-voting-pass-dark font-medium">
                     {stmt.passCount} {results.passLabel}
                   </span>
                 </div>

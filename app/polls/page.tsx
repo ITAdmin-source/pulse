@@ -140,18 +140,18 @@ export default function PollsPage() {
   return (
     <div className={`min-h-screen ${colors.background.page.className}`}>
       {/* Sticky Auth Header */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-900/80 via-purple-800/60 to-purple-900/80 backdrop-blur-md border-b border-purple-500/20">
+      <header className="sticky top-0 z-50 bg-gradient-header backdrop-blur-md border-b border-primary-500-20">
         <div className="container mx-auto px-4 py-3 flex justify-end items-center">
           {/* Auth Controls */}
           <SignedOut>
             <div className="flex gap-2">
               <SignInButton mode="modal">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-purple-700/50 hover:text-white">
+                <Button variant="ghost" size="sm" className="text-white hover-bg-primary-700 hover:text-white">
                   כניסה
                 </Button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <Button variant="outline" size="sm" className="bg-white/95 border-purple-400/40 text-purple-700 hover:bg-purple-700/50 hover:text-white hover:border-purple-400/60">
+                <Button variant="outline" size="sm" className="bg-white-95 border-primary-400-40 text-primary-700 hover-bg-primary-700 hover:text-white hover:border-primary-400-60">
                   הצטרפות
                 </Button>
               </SignUpButton>
@@ -179,7 +179,7 @@ export default function PollsPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
             {pollsList.appTitle}
           </h1>
-          <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto font-light">
+          <p className="text-lg sm:text-xl text-white-80 max-w-2xl mx-auto font-light">
             {pollsList.heroHeadline}
           </p>
         </section>
@@ -191,7 +191,7 @@ export default function PollsPage() {
               variant={statusFilter === "active" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("active")}
-              className={statusFilter === "active" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
+              className={statusFilter === "active" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
             >
               {pollsList.filterActive}
             </Button>
@@ -199,7 +199,7 @@ export default function PollsPage() {
               variant={statusFilter === "closed" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("closed")}
-              className={statusFilter === "closed" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
+              className={statusFilter === "closed" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
             >
               {pollsList.filterClosed}
             </Button>
@@ -207,7 +207,7 @@ export default function PollsPage() {
               variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("all")}
-              className={statusFilter === "all" ? "bg-purple-600 hover:bg-purple-700" : "bg-transparent border-white/20 text-white hover:bg-white/10"}
+              className={statusFilter === "all" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
             >
               {pollsList.filterAll}
             </Button>
@@ -217,12 +217,12 @@ export default function PollsPage() {
             <Input
               type="search"
               placeholder={pollsList.searchPlaceholder}
-              className="w-full md:w-64 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              className="w-full md:w-64 bg-white-10 border-white-20 text-white placeholder-white-60"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-              <SelectTrigger className="w-full sm:w-40 bg-white/10 border-white/20 text-white">
+              <SelectTrigger className="w-full sm:w-40 bg-white-10 border-white-20 text-white">
                 <SelectValue placeholder={pollsList.sortByLabel} />
               </SelectTrigger>
               <SelectContent>
@@ -239,7 +239,7 @@ export default function PollsPage() {
           <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="w-full h-80">
-                <Skeleton className="w-full h-full rounded-2xl bg-white/10" />
+                <Skeleton className="w-full h-full rounded-2xl bg-white-10" />
               </div>
             ))}
           </section>
@@ -269,11 +269,11 @@ export default function PollsPage() {
         {!isLoading && filteredPolls.length === 0 && (
           <div className="text-center py-16">
             <p className="text-xl text-white mb-4">{pollsList.emptyStateTitle}</p>
-            <p className="text-white/70 mb-6">
+            <p className="text-white-70 mb-6">
               {searchQuery ? pollsList.emptyStateSearchHint : pollsList.emptyStateFilterHint}
             </p>
             <SignedIn>
-              <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" asChild className="border-white-20 text-white hover-bg-white-10">
                 <Link href="/polls/create">{pollsList.createPollCta}</Link>
               </Button>
             </SignedIn>

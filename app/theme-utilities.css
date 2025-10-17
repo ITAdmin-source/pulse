@@ -1,0 +1,165 @@
+/**
+ * Theme Utility Classes
+ *
+ * Common utility classes that use CSS variables from theme-variables.css
+ * These can be used directly in className props throughout the app
+ */
+
+/* Background Gradients */
+.bg-gradient-header {
+  background: linear-gradient(to right, var(--gradient-header-from), var(--gradient-header-via), var(--gradient-header-to));
+}
+
+.bg-gradient-poll-header {
+  background: linear-gradient(to bottom right, var(--gradient-poll-header-from), var(--gradient-poll-header-to));
+}
+
+.bg-gradient-insight {
+  background: linear-gradient(to bottom right, var(--gradient-insight-from), var(--gradient-insight-via), var(--gradient-insight-to));
+}
+
+.bg-gradient-error {
+  background: linear-gradient(to bottom right, var(--gradient-error-from), var(--gradient-error-via), var(--gradient-error-to));
+}
+
+.bg-gradient-completion {
+  background: linear-gradient(to bottom right, var(--gradient-completion-from), var(--gradient-completion-to));
+}
+
+.bg-gradient-question {
+  background: linear-gradient(to right, var(--gradient-question-from), var(--gradient-question-to));
+}
+
+.bg-gradient-signup-banner {
+  background: linear-gradient(to right, var(--gradient-signup-banner-from), var(--gradient-signup-banner-to));
+}
+
+.bg-gradient-header-light {
+  background: linear-gradient(to right, var(--gradient-header-light-from), var(--gradient-header-light-to));
+}
+
+/* Primary Colors */
+.bg-primary-900 { background-color: var(--color-primary-900); }
+.bg-primary-800 { background-color: var(--color-primary-800); }
+.bg-primary-700 { background-color: var(--color-primary-700); }
+.bg-primary-600 { background-color: var(--color-primary-600); }
+.bg-primary-500 { background-color: var(--color-primary-500); }
+.bg-primary-400 { background-color: var(--color-primary-400); }
+.bg-primary-300 { background-color: var(--color-primary-300); }
+.bg-primary-200 { background-color: var(--color-primary-200); }
+.bg-primary-100 { background-color: var(--color-primary-100); }
+.bg-primary-50 { background-color: var(--color-primary-50); }
+.bg-primary-50-30 { background-color: var(--color-primary-50-30); }
+
+.text-primary-900 { color: var(--color-primary-900); }
+.text-primary-800 { color: var(--color-primary-800); }
+.text-primary-700 { color: var(--color-primary-700); }
+.text-primary-600 { color: var(--color-primary-600); }
+.text-primary-500 { color: var(--color-primary-500); }
+.text-primary-400 { color: var(--color-primary-400); }
+.text-primary-300 { color: var(--color-primary-300); }
+.text-primary-200 { color: var(--color-primary-200); }
+
+.border-primary-900 { border-color: var(--color-primary-900); }
+.border-primary-700 { border-color: var(--color-primary-700); }
+.border-primary-500-20 { border-color: var(--border-purple-500-20); }
+.border-primary-500 { border-color: var(--color-primary-500); }
+.border-primary-400-40 { border-color: var(--border-purple-400-40); }
+.border-primary-400-60 { border-color: var(--border-purple-400-60); }
+.border-primary-200 { border-color: var(--border-purple-200); }
+
+/* Hover States */
+.hover-bg-primary-700:hover {
+  background-color: var(--color-primary-700);
+  color: #ffffff !important;
+}
+.hover-bg-primary-600:hover { background-color: var(--color-primary-600); }
+
+/* White Overlays */
+.bg-white-5 { background-color: var(--white-overlay-5); }
+.bg-white-10 { background-color: var(--white-overlay-10); }
+.bg-white-20 { background-color: var(--white-overlay-20); }
+.bg-white-40 { background-color: var(--white-overlay-40); }
+.bg-white-60 { background-color: var(--white-overlay-60); }
+.bg-white-80 { background-color: var(--white-overlay-80); }
+.bg-white-95 { background-color: var(--white-overlay-95); }
+
+.hover-bg-white-10:hover { background-color: var(--white-overlay-10); }
+.hover-bg-white-20:hover { background-color: var(--white-overlay-20); }
+.hover-bg-white-30:hover { background-color: var(--white-overlay-30); }
+
+/* Borders with white overlays */
+.border-white-10 { border-color: var(--border-white-10); }
+.border-white-20 { border-color: var(--border-white-20); }
+.border-white-30 { border-color: var(--white-overlay-30); }
+
+/* Text Colors */
+.text-white { color: var(--text-white); }
+.text-white-95 { color: var(--white-overlay-95); }
+.text-white-80 { color: var(--text-white-80); }
+.text-white-70 { color: var(--text-white-70); }
+.text-white-60 { color: var(--text-white-60); }
+.text-white-40 { color: var(--white-overlay-40); }
+.text-purple-100 { color: var(--text-purple-100); }
+
+/* Placeholder Colors */
+.placeholder-white-60::placeholder { color: var(--text-white-60); }
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--button-primary);
+}
+.btn-primary:hover {
+  background-color: var(--button-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--button-secondary);
+}
+.btn-secondary:hover {
+  background-color: var(--button-secondary-hover);
+}
+
+/* Status Colors */
+.bg-status-success { background-color: var(--status-success); }
+.text-status-success { color: var(--status-success); }
+.bg-status-success-50 { background-color: var(--status-success-50); }
+.hover-bg-status-success-50:hover { background-color: var(--status-success-50); }
+.bg-status-error { background-color: var(--status-error); }
+.bg-status-error-10 { background-color: var(--status-error-10); }
+.bg-status-error-20 { background-color: var(--status-error-20); }
+.border-status-error-20 { border-color: var(--status-error-20); }
+.text-status-error-light { color: var(--status-error-light); }
+.bg-status-warning { background-color: var(--status-warning); }
+.bg-status-info { background-color: var(--status-info); }
+
+/* Voting Colors */
+.bg-voting-agree { background-color: var(--voting-agree); }
+.bg-voting-agree:hover { background-color: var(--voting-agree-hover); }
+.bg-voting-agree-light { background-color: var(--voting-agree-light); }
+.text-voting-agree-dark { color: var(--voting-agree-dark); }
+.bg-voting-disagree { background-color: var(--voting-disagree); }
+.bg-voting-disagree:hover { background-color: var(--voting-disagree-hover); }
+.bg-voting-disagree-light { background-color: var(--voting-disagree-light); }
+.text-voting-disagree-dark { color: var(--voting-disagree-dark); }
+.bg-voting-pass { background-color: var(--voting-pass); }
+.bg-voting-pass:hover { background-color: var(--voting-pass-hover); }
+.bg-voting-pass-light { background-color: var(--voting-pass-light); }
+.text-voting-pass { color: var(--voting-pass-text); }
+.text-voting-pass-dark { color: var(--voting-pass-dark); }
+
+/* Gray Colors */
+.text-gray-900 { color: var(--color-gray-900); }
+.text-gray-600 { color: var(--color-gray-600); }
+.text-gray-500 { color: var(--color-gray-500); }
+
+.bg-gray-600 { background-color: var(--color-gray-600); }
+.bg-gray-700 { background-color: var(--color-gray-700); }
+.hover-bg-gray-700:hover { background-color: var(--color-gray-700); }
+
+/* Divider utilities */
+.divide-primary-200 > * + * { border-color: var(--border-purple-200); }
+.divide-primary-100 > * + * { border-color: var(--color-primary-100); }
+
+/* Hover text colors */
+.hover-text-primary-700:hover { color: var(--color-primary-700); }

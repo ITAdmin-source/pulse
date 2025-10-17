@@ -1,0 +1,203 @@
+/**
+ * Theme Variables - Purple/Pink Color System
+ *
+ * This file defines all color variables for the Pulse app using the current purple/pink theme.
+ *
+ * To change the app's brand colors:
+ * 1. Update the CSS variable values below
+ * 2. No code changes needed - all components reference these variables
+ * 3. See .claude/misc/THEME_CHANGE_GUIDE.md for detailed instructions
+ *
+ * @version 1.0 - Current Purple Theme
+ * @date 2025-10-17
+ */
+
+:root {
+  /* ============================================================================
+   * PRIMARY BRAND COLORS
+   * ============================================================================ */
+
+  /* Purple Scale (Primary) */
+  --color-primary-900: #581c87;      /* purple-900 - Darkest purple for backgrounds */
+  --color-primary-800: #6b21a8;      /* purple-800 - Dark purple for backgrounds */
+  --color-primary-700: #7e22ce;      /* purple-700 - Hover states */
+  --color-primary-600: #9333ea;      /* purple-600 - Main purple for buttons/CTAs */
+  --color-primary-500: #a855f7;      /* purple-500 - Borders, accents */
+  --color-primary-400: #c084fc;      /* purple-400 - Borders */
+  --color-primary-300: #d8b4fe;      /* purple-300 - Light borders */
+  --color-primary-200: #e9d5ff;      /* purple-200 - Text on dark backgrounds */
+  --color-primary-100: #f3e8ff;      /* purple-100 - Very light purple for table backgrounds */
+  --color-primary-50: #faf5ff;       /* purple-50 - Very light purple for selected states */
+  --color-primary-50-30: rgba(250, 245, 255, 0.3);  /* purple-50 with 30% opacity */
+
+  /* Pink Scale (Secondary) */
+  --color-secondary-600: #db2777;    /* pink-600 - Secondary accent */
+  --color-secondary-500: #ec4899;    /* pink-500 - Secondary accent light */
+
+  /* Indigo (for insights) */
+  --color-indigo-600: #4f46e5;       /* indigo-600 - Insight gradients */
+
+  /* ============================================================================
+   * BACKGROUND GRADIENTS
+   * ============================================================================ */
+
+  /* Page Background - Dark Purple Gradient */
+  --gradient-page-from: #0f172a;     /* slate-900 */
+  --gradient-page-via: #581c87;      /* purple-900 */
+  --gradient-page-to: #0f172a;       /* slate-900 */
+
+  /* Header Gradient (with opacity) */
+  --gradient-header-from: rgba(88, 28, 135, 0.8);      /* purple-900/80 */
+  --gradient-header-via: rgba(107, 33, 168, 0.6);      /* purple-800/60 */
+  --gradient-header-to: rgba(88, 28, 135, 0.8);        /* purple-900/80 */
+
+  /* Poll Card Header Gradient */
+  --gradient-poll-header-from: #9333ea;    /* purple-600 */
+  --gradient-poll-header-to: #db2777;      /* pink-600 */
+
+  /* Insight Card Gradient */
+  --gradient-insight-from: #4f46e5;   /* indigo-600 */
+  --gradient-insight-via: #9333ea;    /* purple-600 */
+  --gradient-insight-to: #db2777;     /* pink-600 */
+
+  /* Error Gradient */
+  --gradient-error-from: #dc2626;     /* red-600 */
+  --gradient-error-via: #f43f5e;      /* rose-600 */
+  --gradient-error-to: #db2777;       /* pink-600 */
+
+  /* Completion Gradient */
+  --gradient-completion-from: #22c55e;   /* green-500 */
+  --gradient-completion-to: #10b981;     /* emerald-500 */
+
+  /* Question Pill Gradient */
+  --gradient-question-from: #2563eb;   /* blue-600 */
+  --gradient-question-to: #3b82f6;     /* blue-500 */
+
+  /* SignUp Banner Gradient */
+  --gradient-signup-banner-from: #4f46e5;   /* indigo-600 */
+  --gradient-signup-banner-to: #9333ea;     /* purple-600 */
+
+  /* Light Header Gradient (for table headers) */
+  --gradient-header-light-from: #faf5ff;    /* purple-50 */
+  --gradient-header-light-to: #fdf2f8;      /* pink-50 */
+
+  /* ============================================================================
+   * WHITE OVERLAY PATTERNS (for dark backgrounds)
+   * ============================================================================ */
+
+  --white-overlay-5: rgba(255, 255, 255, 0.05);
+  --white-overlay-10: rgba(255, 255, 255, 0.1);
+  --white-overlay-20: rgba(255, 255, 255, 0.2);
+  --white-overlay-30: rgba(255, 255, 255, 0.3);
+  --white-overlay-40: rgba(255, 255, 255, 0.4);
+  --white-overlay-50: rgba(255, 255, 255, 0.5);
+  --white-overlay-60: rgba(255, 255, 255, 0.6);
+  --white-overlay-70: rgba(255, 255, 255, 0.7);
+  --white-overlay-80: rgba(255, 255, 255, 0.8);
+  --white-overlay-90: rgba(255, 255, 255, 0.9);
+  --white-overlay-95: rgba(255, 255, 255, 0.95);
+
+  /* ============================================================================
+   * TEXT COLORS
+   * ============================================================================ */
+
+  --text-white: #ffffff;
+  --text-white-80: rgba(255, 255, 255, 0.8);
+  --text-white-70: rgba(255, 255, 255, 0.7);
+  --text-white-60: rgba(255, 255, 255, 0.6);
+  --text-purple-100: #f3e8ff;         /* purple-100 - Very light purple for text on purple backgrounds */
+  --text-purple-200: #e9d5ff;         /* purple-200 - Light text on dark */
+  --text-purple-700: #7e22ce;         /* purple-700 - Dark purple text */
+  --text-purple-900: #581c87;         /* purple-900 - Very dark text */
+  --text-gray-900: #111827;           /* gray-900 - Main text */
+  --text-gray-600: #4b5563;           /* gray-600 - Secondary text */
+  --text-gray-500: #6b7280;           /* gray-500 - Muted text */
+
+  /* ============================================================================
+   * STATUS COLORS
+   * ============================================================================ */
+
+  --status-success: #22c55e;          /* green-500 - Success states */
+  --status-success-50: #f0fdf4;       /* green-50 - Very light green for hover */
+  --status-error: #ef4444;            /* red-500 - Error/closed states */
+  --status-error-10: rgba(239, 68, 68, 0.1);   /* red-500/10 - Error background overlay */
+  --status-error-20: rgba(239, 68, 68, 0.2);   /* red-500/20 - Error border */
+  --status-error-light: #fecaca;      /* red-100 - Light error text */
+  --status-warning: #eab308;          /* yellow-500 - Warning states */
+  --status-info: #3b82f6;             /* blue-500 - Info states */
+
+  /* ============================================================================
+   * VOTING COLORS (Standard)
+   * ============================================================================ */
+
+  --voting-agree: #22c55e;            /* green-500 - Agree button */
+  --voting-agree-hover: #16a34a;      /* green-600 - Agree hover */
+  --voting-agree-light: #dcfce7;      /* green-100 - Agree badge background */
+  --voting-agree-dark: #166534;       /* green-800 - Agree badge text */
+  --voting-disagree: #ef4444;         /* red-500 - Disagree button */
+  --voting-disagree-hover: #dc2626;   /* red-600 - Disagree hover */
+  --voting-disagree-light: #fee2e2;   /* red-100 - Disagree badge background */
+  --voting-disagree-dark: #991b1b;    /* red-800 - Disagree badge text */
+  --voting-pass: #f3f4f6;             /* gray-100 - Pass button */
+  --voting-pass-hover: #e5e7eb;       /* gray-200 - Pass hover */
+  --voting-pass-text: #374151;        /* gray-700 - Pass text */
+  --voting-pass-light: #f3f4f6;       /* gray-100 - Pass badge background */
+  --voting-pass-dark: #374151;        /* gray-700 - Pass badge text */
+
+  /* ============================================================================
+   * NEUTRAL COLORS
+   * ============================================================================ */
+
+  --color-white: #ffffff;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* ============================================================================
+   * BORDER COLORS
+   * ============================================================================ */
+
+  --border-purple-500-20: rgba(168, 85, 247, 0.2);    /* purple-500/20 */
+  --border-purple-400-40: rgba(192, 132, 252, 0.4);   /* purple-400/40 */
+  --border-purple-400-60: rgba(192, 132, 252, 0.6);   /* purple-400/60 */
+  --border-purple-200: #e9d5ff;                       /* purple-200 - Light border */
+  --border-gray-200: #e5e7eb;                         /* gray-200 */
+  --border-white-10: rgba(255, 255, 255, 0.1);
+  --border-white-20: rgba(255, 255, 255, 0.2);
+
+  /* ============================================================================
+   * BUTTON COLORS
+   * ============================================================================ */
+
+  --button-primary: var(--color-primary-600);
+  --button-primary-hover: var(--color-primary-700);
+  --button-secondary: var(--color-gray-600);
+  --button-secondary-hover: var(--color-gray-700);
+
+  /* ============================================================================
+   * CONFETTI COLORS (for celebrations)
+   * ============================================================================ */
+
+  --confetti-purple-600: #9333ea;
+  --confetti-pink-600: #db2777;
+  --confetti-pink-500: #ec4899;
+  --confetti-purple-500: #a855f7;
+}
+
+/* ============================================================================
+ * DARK MODE SUPPORT (if needed in future)
+ * ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Currently using same colors for dark mode since app is already dark-themed */
+    /* Add different values here if you want OS-level dark mode to change colors */
+  }
+}

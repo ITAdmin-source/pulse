@@ -62,7 +62,7 @@ export function PollCardGradient({
           {/* Status Badge - Top right corner */}
           {!isActive && (
             <div className="absolute top-3 right-3 z-20">
-              <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+              <div className="bg-status-error text-white px-2 py-1 rounded text-xs font-bold">
                 {pollCard.statusClosed}
               </div>
             </div>
@@ -87,8 +87,8 @@ export function PollCardGradient({
           <motion.button
             className={`w-full font-semibold py-2.5 sm:py-3 rounded-lg transition-colors text-sm sm:text-base ${
               isActive
-                ? "bg-purple-600 hover:bg-purple-700 text-white"
-                : "bg-gray-600 hover:bg-gray-700 text-white"
+                ? "btn-primary text-white"
+                : "btn-secondary text-white"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

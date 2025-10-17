@@ -61,7 +61,7 @@ export default function NewArtifactBadge({
             stiffness: 300,
             damping: 25,
           }}
-          className={`bg-white/20 backdrop-blur border border-white/30 rounded-xl p-3 mb-4 ${className}`}
+          className={`bg-white-20 backdrop-blur border border-white-30 rounded-xl p-3 mb-4 ${className}`}
         >
           <div className="flex items-center gap-3">
             {/* Animated Emoji */}
@@ -89,7 +89,7 @@ export default function NewArtifactBadge({
                   {results.newArtifactUnlocked}
                 </p>
               </div>
-              <p className="text-white/80 text-xs truncate" dir="auto">
+              <p className="text-white-80 text-xs truncate" dir="auto">
                 {profileName}
               </p>
             </div>
@@ -100,7 +100,7 @@ export default function NewArtifactBadge({
                 setIsVisible(false);
                 setTimeout(() => onDismiss?.(), 300);
               }}
-              className="flex-shrink-0 text-white/60 hover:text-white transition-colors p-1"
+              className="flex-shrink-0 text-white-60 hover:text-white transition-colors p-1"
               aria-label="Dismiss"
             >
               <svg
@@ -124,7 +124,7 @@ export default function NewArtifactBadge({
           {/* Animated Progress Bar (shows time remaining) */}
           {autoDismiss && (
             <motion.div
-              className="h-1 bg-white/20 rounded-full mt-2 overflow-hidden"
+              className="h-1 bg-white-20 rounded-full mt-2 overflow-hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
