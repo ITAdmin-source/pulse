@@ -15,7 +15,7 @@
 
 export const pollsList = {
   // Hero Section
-  appTitle: 'דיוני דעת',
+  appTitle: 'דיונים ציבוריים',
   heroHeadline: 'בחרו נושא והשפיעו עליו',
   heroSubheading: 'שתפו את נקודת המבט שלכם בנושאים חשובים',
 
@@ -60,9 +60,13 @@ export const pollCard = {
 
   // Stats Labels
   participants: 'משתתפים',
+  participantsVoted: 'הצביעו',  // for closed polls (past tense)
+  participantsActive: 'משתתפים',  // for active polls (present tense)
   voters: 'מצביעים',
   positions: 'עמדות',
+  statements: 'עמדות',
   votes: 'הצבעות',
+  totalVotes: 'הצבעות',  // for total vote count
 
   // Helper Functions
   participantCount: (count: number) => `${count} משתתפים`,

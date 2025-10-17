@@ -950,7 +950,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
             {isPollClosed && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">CLOSED</span>
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
             )}
           </div>
           {poll.description && (

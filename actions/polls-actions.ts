@@ -11,6 +11,7 @@ import {
   getPollsByCreator,
   getPublishedPolls,
   getVisiblePolls,
+  getVisiblePollsWithStats,
   getActivePolls,
   updatePoll,
   publishPoll,
@@ -187,7 +188,7 @@ export async function getPollsByCreatorAction(createdBy: string) {
 
 export async function getPublishedPollsAction() {
   try {
-    const polls = await getVisiblePolls();
+    const polls = await getVisiblePollsWithStats();
     return { success: true, data: polls };
   } catch (error) {
     console.error("Error fetching published polls:", error);

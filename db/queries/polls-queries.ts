@@ -1,6 +1,8 @@
-import { eq, desc, and, isNull, or, lte, gt, inArray } from "drizzle-orm";
+import { eq, desc, and, isNull, or, lte, gt, inArray, sql, count } from "drizzle-orm";
 import { db } from "../db";
 import { polls, type Poll, type NewPoll } from "../schema/polls";
+import { statements } from "../schema/statements";
+import { votes } from "../schema/votes";
 import { userRoles } from "../schema/user-roles";
 
 export async function getPollById(id: string): Promise<Poll | undefined> {
@@ -60,6 +62,57 @@ export async function getVisiblePolls(): Promise<Poll[]> {
     .from(polls)
     .where(or(eq(polls.status, "published"), eq(polls.status, "closed")))
     .orderBy(desc(polls.createdAt));
+}
+
+/**
+ * Get visible polls with aggregate statistics (voter count, total votes)
+ * Used for poll listing pages
+ */
+export async function getVisiblePollsWithStats(): Promise<Array<Poll & { totalVoters: number; totalVotes: number }>> {
+  // First get all visible polls
+  const visiblePolls = await db
+    .select()
+    .from(polls)
+    .where(or(eq(polls.status, "published"), eq(polls.status, "closed")))
+    .orderBy(desc(polls.createdAt));
+
+  // For each poll, calculate stats
+  const pollsWithStats = await Promise.all(
+    visiblePolls.map(async (poll) => {
+      // Count unique voters (distinct users who voted on approved statements)
+      const voterCountResult = await db
+        .select({ userId: votes.userId })
+        .from(votes)
+        .innerJoin(statements, eq(votes.statementId, statements.id))
+        .where(and(
+          eq(statements.pollId, poll.id),
+          eq(statements.approved, true)
+        ))
+        .groupBy(votes.userId);
+
+      const totalVoters = voterCountResult.length;
+
+      // Count total votes (all votes on approved statements)
+      const totalVotesResult = await db
+        .select({ count: count() })
+        .from(votes)
+        .innerJoin(statements, eq(votes.statementId, statements.id))
+        .where(and(
+          eq(statements.pollId, poll.id),
+          eq(statements.approved, true)
+        ));
+
+      const totalVotes = totalVotesResult[0]?.count || 0;
+
+      return {
+        ...poll,
+        totalVoters,
+        totalVotes: Number(totalVotes),
+      };
+    })
+  );
+
+  return pollsWithStats;
 }
 
 export async function getActivePolls(): Promise<Poll[]> {
