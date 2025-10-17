@@ -978,7 +978,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
             {progress && (
               <ProgressSegments
                 total={progress.statementsInCurrentBatch}
-                current={progress.positionInBatch - 1}
+                current={progress.positionInBatch}
+                showStats={showVoteStats}
               />
             )}
 
