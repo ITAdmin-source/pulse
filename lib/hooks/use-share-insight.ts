@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { toPng } from "html-to-image";
 
 interface ShareInsightOptions {
   pollSlug: string;
@@ -15,7 +14,6 @@ interface ShareInsightOptions {
 
 export function useShareInsight() {
   const [isSharing, setIsSharing] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
 
   const handleShare = useCallback(async (options: ShareInsightOptions) => {
     const {
@@ -28,119 +26,80 @@ export function useShareInsight() {
     } = options;
 
     setIsSharing(true);
+    console.log("[useShareInsight] Starting share flow with options:", options);
 
     try {
       // Generate poll URL
       const pollUrl = `${window.location.origin}/polls/${pollSlug}`;
+      console.log("[useShareInsight] Generated poll URL:", pollUrl);
 
       // Determine share text
       let text: string;
       if (shareText) {
         // Custom share text (e.g., from VotingCompleteBanner)
         text = `${shareText}\n\n${pollUrl}`;
+        console.log("[useShareInsight] Using custom share text");
       } else if (insightProfile) {
         // Insight-based share text
         text = `גיליתי את פרופיל ההשפעה שלי: ${insightEmoji || ""} ${insightProfile}!\n\nגלה את שלך ב-"${pollQuestion}" 📊\n\n${pollUrl}`;
+        console.log("[useShareInsight] Using insight-based share text");
       } else {
         // Generic share text
         text = `הצטרפו אליי ב-"${pollQuestion}" 📊\n\n${pollUrl}`;
+        console.log("[useShareInsight] Using generic share text");
       }
+      console.log("[useShareInsight] Final share text:", text);
 
-      // If we have insight data and export ref, generate image
-      if (insightEmoji && insightProfile && insightDescription && exportRef.current) {
-        try {
-          // Small delay to ensure component is fully rendered
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          // Get the card element (first child)
-          const cardElement = exportRef.current.firstChild as HTMLElement;
-          if (!cardElement) {
-            throw new Error("Card element not found");
-          }
-
-          // Generate image from card
-          const dataUrl = await toPng(cardElement, {
-            quality: 1,
-            pixelRatio: 2,
-            cacheBust: true,
-          });
-
-          // Convert data URL to blob
-          const response = await fetch(dataUrl);
-          const blob = await response.blob();
-
-          if (!blob || blob.size === 0) {
-            throw new Error("Failed to generate image blob");
-          }
-
-          const file = new File([blob], "pulse-insight.png", { type: "image/png" });
-
-          // Try Web Share API with image (mobile-friendly)
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                files: [file],
-                title: `${insightEmoji} ${insightProfile}`,
-                text,
-              });
-              toast.success("שותף בהצלחה!");
-              setIsSharing(false);
-              return;
-            } catch (error) {
-              // User cancelled or share failed
-              if ((error as Error).name === "AbortError") {
-                setIsSharing(false);
-                return; // User cancelled, don't show error
-              }
-              console.error("Error sharing with image:", error);
-              // Continue to fallback
-            }
-          }
-
-          // Fallback: Download image and copy full share text with URL
-          const downloadUrl = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.download = "pulse-insight.png";
-          link.href = downloadUrl;
-          link.click();
-          URL.revokeObjectURL(downloadUrl);
-
-          // Copy full share text (with URL) to clipboard
-          await navigator.clipboard.writeText(text);
-          toast.success("התמונה הורדה וטקסט לשיתוף הועתק ללוח");
-          setIsSharing(false);
-          return;
-        } catch (imageError) {
-          console.error("Error generating image:", imageError);
-          // Continue to text-only fallback
-        }
-      }
-
-      // Text-only fallback (no image or image generation failed)
+      // TEXT-ONLY SHARE (No image generation - more reliable for WhatsApp/Instagram)
       // Try Web Share API for text only
+      console.log("[useShareInsight] Using text-only share for better compatibility");
       if (navigator.share) {
+        console.log("[useShareInsight] Web Share API available, attempting share");
         try {
           await navigator.share({
             title: pollQuestion,
             text,
           });
+          console.log("[useShareInsight] Text share succeeded via Web Share API");
           toast.success("שותף בהצלחה!");
           setIsSharing(false);
           return;
         } catch (error) {
           // User cancelled or share failed
           if ((error as Error).name === "AbortError") {
+            console.log("[useShareInsight] User cancelled share");
             setIsSharing(false);
             return; // User cancelled, don't show error
           }
-          console.error("Error sharing:", error);
+          console.error("[useShareInsight] Web Share API error:", error);
           // Continue to clipboard fallback
         }
+      } else {
+        console.log("[useShareInsight] Web Share API not available on this browser");
       }
 
-      // Final fallback: Copy URL to clipboard
-      await navigator.clipboard.writeText(pollUrl);
-      toast.success("קישור לשיתוף הועתק ללוח");
+      // Clipboard fallback: Copy full text with URL to clipboard
+      console.log("[useShareInsight] Attempting clipboard fallback");
+
+      // Check if clipboard API is available (requires HTTPS or localhost)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          console.log("[useShareInsight] Text copied to clipboard successfully");
+          toast.success("טקסט והקישור הועתקו ללוח!");
+          setIsSharing(false);
+          return;
+        } catch (clipboardError) {
+          console.error("[useShareInsight] Clipboard write failed:", clipboardError);
+        }
+      } else {
+        console.log("[useShareInsight] Clipboard API not available (requires HTTPS)");
+      }
+
+      // Final fallback: Show error with helpful message
+      toast.error("לא ניתן לשתף בדפדפן זה. נסה דרך HTTPS או localhost");
+      console.log("📋 SHARE TEXT (copy manually):", text);
+      setIsSharing(false);
     } catch (error) {
       console.error("Error in share flow:", error);
       toast.error("נכשל לשתף");
@@ -152,6 +111,5 @@ export function useShareInsight() {
   return {
     handleShare,
     isSharing,
-    exportRef,
   };
 }

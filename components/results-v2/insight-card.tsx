@@ -6,7 +6,6 @@ import { results } from "@/lib/strings/he";
 import MinimalCollectionFooter, { type ArtifactSlot } from "./minimal-collection-footer";
 import NewArtifactBadge from "./new-artifact-badge";
 import { useShareInsight } from "@/lib/hooks/use-share-insight";
-import { InsightShareExport } from "./insight-share-export";
 
 interface InsightCardProps {
   profile: string;
@@ -49,10 +48,10 @@ export function InsightCard({
   onEarnMore,
   hideCollectionFooter = false,
 }: InsightCardProps) {
-  const { handleShare, isSharing, exportRef } = useShareInsight();
+  const { handleShare, isSharing } = useShareInsight();
 
   const onShareClick = async () => {
-    // Use new share functionality
+    // Use new share functionality (text + URL only, no image)
     await handleShare({
       pollSlug,
       pollQuestion,
@@ -69,26 +68,6 @@ export function InsightCard({
 
   return (
     <>
-      {/* Hidden export card for image capture */}
-      <div
-        ref={exportRef}
-        style={{
-          position: 'fixed',
-          left: '0',
-          top: '0',
-          zIndex: -9999,
-          opacity: 0,
-          pointerEvents: 'none',
-        }}
-      >
-        <InsightShareExport
-          emoji={emoji}
-          profile={profile}
-          description={description}
-          pollQuestion={pollQuestion}
-        />
-      </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
