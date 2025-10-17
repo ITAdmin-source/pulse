@@ -68,12 +68,12 @@ export const colors = {
 
   // Background Gradients
   background: {
-    // Page background - dark gradient
+    // Page background - dark gradient (now uses CSS variables!)
     page: {
       from: '#0f172a',    // slate-900
       via: '#581c87',     // purple-900
       to: '#0f172a',      // slate-900
-      className: 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900',
+      className: 'bg-gradient-page',
     },
 
     // Card backgrounds
@@ -82,11 +82,11 @@ export const colors = {
       gray: '#f9fafb',    // gray-50
     },
 
-    // Poll card header gradient
+    // Poll card header gradient (now uses CSS variables!)
     pollHeader: {
       from: '#9333ea',    // purple-600
       to: '#db2777',      // pink-600
-      className: 'bg-gradient-to-br from-purple-600 to-pink-600',
+      className: 'bg-gradient-poll-header',
     },
 
     // Insight card gradient

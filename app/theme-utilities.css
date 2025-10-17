@@ -38,6 +38,11 @@
   background: linear-gradient(to right, var(--gradient-header-light-from), var(--gradient-header-light-to));
 }
 
+/* Page background gradient - main app background */
+.bg-gradient-page {
+  background: linear-gradient(to bottom right, var(--gradient-page-from), var(--gradient-page-via), var(--gradient-page-to));
+}
+
 /* Primary Colors */
 .bg-primary-900 { background-color: var(--color-primary-900); }
 .bg-primary-800 { background-color: var(--color-primary-800); }

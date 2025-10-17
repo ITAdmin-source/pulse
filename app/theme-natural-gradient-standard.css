@@ -1,0 +1,162 @@
+/**
+ * Natural Gradient Theme - Standard Voting Colors
+ * Sophisticated & Warm
+ *
+ * Brand Colors:
+ * - Basic Blue: #042e5f
+ * - Daily Gray: #6294bf
+ * - Beige: #cfcfa3
+ * - Tomorrow Cyan: #16c3ea
+ * - Medium Base Green: #8dc63f
+ */
+
+:root {
+  /* Primary Colors - Daily Gray/Cyan blend */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #6294bf;      /* Daily Gray */
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+
+  /* Secondary Colors */
+  --color-secondary-600: #16c3ea;    /* Tomorrow Cyan */
+
+  /* Page Background - Basic Blue to Daily Gray to Beige gradient */
+  --gradient-page-from: #042e5f;     /* Basic Blue */
+  --gradient-page-via: #6294bf;      /* Daily Gray */
+  --gradient-page-to: #cfcfa3;       /* Beige */
+
+  /* Poll Header Gradient - Daily Gray to Tomorrow Cyan */
+  --gradient-poll-header-from: #6294bf;
+  --gradient-poll-header-to: #16c3ea;
+
+  /* Insight Card Gradient - Basic Blue to Tomorrow Cyan to Medium Base Green */
+  --gradient-insight-from: #042e5f;
+  --gradient-insight-via: #16c3ea;
+  --gradient-insight-to: #8dc63f;
+
+  /* Question Pill Gradient - Tomorrow Cyan to Medium Base Green */
+  --gradient-question-from: #16c3ea;
+  --gradient-question-to: #8dc63f;
+
+  /* Progress Bar */
+  --color-progress: #8dc63f;
+
+  /* Tab Navigation */
+  --tab-active-bg: #ffffff;
+  --tab-active-text: #042e5f;
+
+  /* Voting Buttons - Standard Colors */
+  --voting-agree: #22c55e;            /* green-500 - Agree button */
+  --voting-agree-hover: #16a34a;      /* green-600 - Agree hover */
+  --voting-agree-light: #dcfce7;      /* green-100 - Agree badge background */
+  --voting-agree-dark: #166534;       /* green-800 - Agree badge text */
+  --voting-disagree: #ef4444;         /* red-500 - Disagree button */
+  --voting-disagree-hover: #dc2626;   /* red-600 - Disagree hover */
+  --voting-disagree-light: #fee2e2;   /* red-100 - Disagree badge background */
+  --voting-disagree-dark: #991b1b;    /* red-800 - Disagree badge text */
+  --voting-pass: #f3f4f6;             /* gray-100 - Pass button */
+  --voting-pass-hover: #e5e7eb;       /* gray-200 - Pass hover */
+  --voting-pass-text: #374151;        /* gray-700 - Pass text */
+  --voting-pass-light: #f3f4f6;       /* gray-100 - Pass badge background */
+  --voting-pass-dark: #374151;        /* gray-700 - Pass badge text */
+
+  /* Secondary/Indigo Colors */
+  --color-secondary-500: #0ea5e9;
+  --color-indigo-600: #042e5f;
+
+  /* Additional Gradients */
+  --gradient-header-from: rgba(4, 46, 95, 0.8);
+  --gradient-header-via: rgba(98, 148, 191, 0.6);
+  --gradient-header-to: rgba(207, 207, 163, 0.8);
+  --gradient-error-from: #dc2626;
+  --gradient-error-via: #f43f5e;
+  --gradient-error-to: #ef4444;
+  --gradient-completion-from: #8dc63f;
+  --gradient-completion-to: #10b981;
+  --gradient-signup-banner-from: #6294bf;
+  --gradient-signup-banner-to: #16c3ea;
+
+  /* White Overlays */
+  --white-overlay-5: rgba(255, 255, 255, 0.05);
+  --white-overlay-10: rgba(255, 255, 255, 0.1);
+  --white-overlay-20: rgba(255, 255, 255, 0.2);
+  --white-overlay-30: rgba(255, 255, 255, 0.3);
+  --white-overlay-40: rgba(255, 255, 255, 0.4);
+  --white-overlay-50: rgba(255, 255, 255, 0.5);
+  --white-overlay-60: rgba(255, 255, 255, 0.6);
+  --white-overlay-70: rgba(255, 255, 255, 0.7);
+  --white-overlay-80: rgba(255, 255, 255, 0.8);
+  --white-overlay-90: rgba(255, 255, 255, 0.9);
+  --white-overlay-95: rgba(255, 255, 255, 0.95);
+
+  /* Primary Overlays */
+  --color-primary-50-30: rgba(240, 249, 255, 0.3);
+
+  /* Text Colors */
+  --text-white: #ffffff;
+  --text-white-80: rgba(255, 255, 255, 0.8);
+  --text-white-70: rgba(255, 255, 255, 0.7);
+  --text-white-60: rgba(255, 255, 255, 0.6);
+  --text-purple-100: #e0f2fe;
+  --text-purple-200: #bae6fd;
+  --text-purple-700: #0369a1;
+  --text-purple-900: #0c4a6e;
+  --text-gray-900: #111827;
+  --text-gray-600: #4b5563;
+  --text-gray-500: #6b7280;
+
+  /* Status Colors */
+  --status-success: #22c55e;
+  --status-success-50: #f0fdf4;
+  --status-error: #ef4444;
+  --status-error-10: rgba(239, 68, 68, 0.1);
+  --status-error-20: rgba(239, 68, 68, 0.2);
+  --status-error-light: #fecaca;
+  --status-warning: #eab308;
+  --status-info: #16c3ea;
+
+  /* Neutral Colors */
+  --color-white: #ffffff;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Border Colors */
+  --border-purple-500-20: rgba(14, 165, 233, 0.2);
+  --border-purple-400-40: rgba(56, 189, 248, 0.4);
+  --border-purple-400-60: rgba(56, 189, 248, 0.6);
+  --border-purple-200: #bae6fd;
+  --border-gray-200: #e5e7eb;
+  --border-white-10: rgba(255, 255, 255, 0.1);
+  --border-white-20: rgba(255, 255, 255, 0.2);
+  --border-white-30: rgba(255, 255, 255, 0.3);
+
+  /* Button Colors */
+  --button-primary: var(--color-primary-600);
+  --button-primary-hover: var(--color-primary-700);
+  --button-secondary: var(--color-gray-600);
+  --button-secondary-hover: var(--color-gray-700);
+
+  /* Confetti Colors */
+  --confetti-purple-600: #6294bf;
+  --confetti-pink-600: #16c3ea;
+  --confetti-pink-500: #8dc63f;
+  --confetti-purple-500: #cfcfa3;
+
+  /* Light Header Gradient (for tables/sections) */
+  --gradient-header-light-from: #f0f9ff;
+  --gradient-header-light-to: #e0f2fe;
+}

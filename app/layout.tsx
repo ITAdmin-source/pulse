@@ -6,9 +6,18 @@ import { UserProvider } from "@/contexts/user-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
 import { FeedbackButtonWrapper } from "@/components/feedback/feedback-button-wrapper";
-import "./theme-variables.css";
 import "./theme-utilities.css";
 import "./globals.css";
+
+// import "./theme-variables.css";  // Original purple
+// import "./theme-blue-foundation-standard.css";
+// import "./theme-blue-foundation-brand.css";
+// import "./theme-vibrant-spectrum-standard.css";
+// import "./theme-vibrant-spectrum-brand.css";
+// import "./theme-cyan-centric-standard.css";
+ import "./theme-cyan-centric-brand.css";
+// import "./theme-natural-gradient-standard.css";
+// import "./theme-natural-gradient-brand.css";
 
 const rubik = Rubik({
   variable: "--font-rubik",
