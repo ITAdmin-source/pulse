@@ -353,8 +353,16 @@ export class VotingService {
 
   /**
    * Get next batch of statements for user (10 at a time)
-   * Returns up to 10 approved statements the user hasn't voted on yet
-   * Uses voted statement IDs to exclude, avoiding offset issues
+   *
+   * IMPORTANT: Applies ordering strategy to ALL approved statements BEFORE filtering and batching.
+   * This ensures true randomization - any statement can appear in any batch.
+   *
+   * Flow:
+   * 1. Fetch ALL approved statements (no limit)
+   * 2. Get voted statement IDs
+   * 3. Apply ordering strategy (sequential/random/weighted) to ALL statements
+   * 4. Filter out already-voted statements (maintains order from step 3)
+   * 5. Return first 10 (current batch)
    */
   static async getStatementBatch(
     pollId: string,
@@ -365,20 +373,8 @@ export class VotingService {
       throw new Error("Batch number must be at least 1");
     }
 
-    // Get all statement IDs the user has already voted on for this poll
-    const votedStatementIds = await db
-      .select({ statementId: votes.statementId })
-      .from(votes)
-      .innerJoin(statements, eq(votes.statementId, statements.id))
-      .where(and(
-        eq(votes.userId, userId),
-        eq(statements.pollId, pollId)
-      ));
-
-    const votedIds = votedStatementIds.map(v => v.statementId);
-
-    // Get next 10 unvoted statements (excluding voted ones)
-    const unvotedStatements = await db
+    // 1. Fetch ALL approved statements for this poll (no limit!)
+    const allStatements = await db
       .select({
         id: statements.id,
         createdAt: statements.createdAt,
@@ -392,13 +388,55 @@ export class VotingService {
       .from(statements)
       .where(and(
         eq(statements.pollId, pollId),
-        eq(statements.approved, true),
-        votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
+        eq(statements.approved, true)
       ))
-      .orderBy(statements.createdAt) // Consistent ordering
-      .limit(10);
+      .orderBy(statements.createdAt); // Consistent base ordering for sequential mode
 
-    return unvotedStatements;
+    // 2. Get all statement IDs the user has already voted on for this poll
+    const votedStatementIds = await db
+      .select({ statementId: votes.statementId })
+      .from(votes)
+      .innerJoin(statements, eq(votes.statementId, statements.id))
+      .where(and(
+        eq(votes.userId, userId),
+        eq(statements.pollId, pollId)
+      ));
+
+    const votedIds = votedStatementIds.map(v => v.statementId);
+
+    // 3. Get poll configuration for ordering strategy
+    const poll = await db
+      .select({
+        id: polls.id,
+        statementOrderMode: polls.statementOrderMode,
+        randomSeed: polls.randomSeed,
+      })
+      .from(polls)
+      .where(eq(polls.id, pollId))
+      .limit(1);
+
+    // 4. Apply ordering strategy to ALL statements (before filtering)
+    const { StatementOrderingService } = await import("./statement-ordering-service");
+    const orderedStatements = await StatementOrderingService.orderStatements(
+      allStatements,
+      {
+        userId,
+        pollId,
+        batchNumber,
+        pollConfig: {
+          orderMode: (poll[0]?.statementOrderMode as "sequential" | "random" | "weighted") || "random",
+          randomSeed: poll[0]?.randomSeed || null,
+        },
+      }
+    );
+
+    // 5. Filter out voted statements (maintains order from step 4)
+    const unvotedOrdered = orderedStatements.filter(
+      s => !votedIds.includes(s.id)
+    );
+
+    // 6. Return first 10 (current batch)
+    return unvotedOrdered.slice(0, 10) as typeof statements.$inferSelect[];
   }
 
   /**

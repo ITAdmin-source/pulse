@@ -50,6 +50,13 @@
       "when": 1760620779929,
       "tag": "0006_late_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1760718581053,
+      "tag": "0007_modern_nicolaos",
+      "breakpoints": true
     }
   ]
 }

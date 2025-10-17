@@ -11,6 +11,9 @@ export const createPollSchema = z.object({
   supportButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
   opposeButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
   unsureButtonLabel: z.string().max(10, "תווית ארוכה מדי").optional(),
+  // Statement ordering configuration
+  statementOrderMode: z.enum(["sequential", "random", "weighted"]).default("random"),
+  randomSeed: z.string().optional(), // Override seed for testing
 }).refine(
   (data) => {
     if (data.startTime && data.endTime) {

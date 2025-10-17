@@ -27,6 +27,10 @@ export const polls = pgTable("polls", {
 
   // Visual customization
   emoji: varchar("emoji", { length: 10 }),
+
+  // Statement ordering configuration
+  statementOrderMode: text("statement_order_mode").notNull().default("random"), // "sequential" | "random" | "weighted"
+  randomSeed: text("random_seed"), // Optional: Override seed for testing
 });
 
 export type Poll = typeof polls.$inferSelect;
