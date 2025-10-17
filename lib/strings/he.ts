@@ -90,6 +90,7 @@ export const pollPage = {
   // Tab States
   tabResultsLocked: (current: number, total: number) => `תוצאות (${current}/${total})`,
   tabResultsUnlocked: 'תוצאות',
+  tabResultsLockedTooltip: (required: number) => `הצביעו על ${required} עמדות לפחות כדי לפתוח את התוצאות`,
 
   // Loading States
   loading: 'טוען...',

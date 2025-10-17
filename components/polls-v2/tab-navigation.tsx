@@ -1,7 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Lock } from "lucide-react";
 import { pollPage } from "@/lib/strings/he";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type TabType = "vote" | "results";
 
@@ -43,31 +49,43 @@ export function TabNavigation({
       </button>
 
       {/* Results Tab */}
-      <button
-        onClick={() => !resultsLocked && onTabChange("results")}
-        className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
-          resultsLocked
-            ? "text-white/60 cursor-not-allowed"
-            : activeTab === "results"
-            ? "text-purple-900"
-            : "text-white hover:text-white/90"
-        }`}
-        disabled={resultsLocked}
-      >
-        {activeTab === "results" && !resultsLocked && (
-          <motion.div
-            layoutId="activeTab"
-            className="absolute inset-0 bg-white rounded-lg shadow-lg"
-            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-          />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => !resultsLocked && onTabChange("results")}
+            className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
+              resultsLocked
+                ? "text-white/60 cursor-not-allowed"
+                : activeTab === "results"
+                ? "text-purple-900"
+                : "text-white hover:text-white/90"
+            }`}
+            disabled={resultsLocked}
+          >
+            {activeTab === "results" && !resultsLocked && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-white rounded-lg shadow-lg"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center justify-center gap-1.5">
+              {resultsLocked && (
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              {pollPage.tabResults}
+              {resultsLocked && (
+                <span className="text-xs">({votesCompleted}/{votesRequired})</span>
+              )}
+            </span>
+          </button>
+        </TooltipTrigger>
+        {resultsLocked && (
+          <TooltipContent side="bottom" className="bg-purple-900 text-white border-purple-700">
+            {pollPage.tabResultsLockedTooltip(votesRequired)}
+          </TooltipContent>
         )}
-        <span className="relative z-10">
-          {pollPage.tabResults}
-          {resultsLocked && (
-            <span className="ms-1 text-xs">({votesCompleted}/{votesRequired})</span>
-          )}
-        </span>
-      </button>
+      </Tooltip>
     </div>
   );
 }
