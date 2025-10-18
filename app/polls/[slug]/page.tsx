@@ -383,7 +383,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       loadNextBatchForVoting();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, currentStatement, hasMoreStatements, isPollClosed, inGracePeriod]);
+  }, [activeTab, currentStatement, hasMoreStatements, isPollClosed, inGracePeriod, statementManager]);
 
   // Gamification: Calculate dynamic milestones based on poll size
   const calculateMilestones = () => {

@@ -1,4 +1,4 @@
-import { eq, and, count, notInArray, sql } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
@@ -422,12 +422,18 @@ export class VotingService {
           approvedAt: statements.approvedAt,
         })
         .from(statements)
-        .where(and(
-          eq(statements.pollId, pollId),
-          eq(statements.approved, true),
-          // SQL-level filtering: exclude voted statements
-          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
-        ))
+        .where(
+          votedIds.length > 0
+            ? and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true),
+                sql`${statements.id} NOT IN (${sql.join(votedIds.map(id => sql`${id}`), sql`, `)})`
+              )
+            : and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true)
+              )
+        )
         // Hash-based deterministic random: md5(statement_id || seed) creates unique "random" value per statement
         // Same seed → same order (deterministic), different users → different order
         .orderBy(sql`md5(${statements.id}::text || ${seedString})`)
@@ -450,11 +456,18 @@ export class VotingService {
           approvedAt: statements.approvedAt,
         })
         .from(statements)
-        .where(and(
-          eq(statements.pollId, pollId),
-          eq(statements.approved, true),
-          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
-        ))
+        .where(
+          votedIds.length > 0
+            ? and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true),
+                sql`${statements.id} NOT IN (${sql.join(votedIds.map(id => sql`${id}`), sql`, `)})`
+              )
+            : and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true)
+              )
+        )
         .orderBy(statements.createdAt); // Base ordering for consistency
 
       // Apply weighted ordering strategy
@@ -485,11 +498,18 @@ export class VotingService {
           approvedAt: statements.approvedAt,
         })
         .from(statements)
-        .where(and(
-          eq(statements.pollId, pollId),
-          eq(statements.approved, true),
-          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
-        ))
+        .where(
+          votedIds.length > 0
+            ? and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true),
+                sql`${statements.id} NOT IN (${sql.join(votedIds.map(id => sql`${id}`), sql`, `)})`
+              )
+            : and(
+                eq(statements.pollId, pollId),
+                eq(statements.approved, true)
+              )
+        )
         .orderBy(statements.createdAt)
         .limit(10);
 

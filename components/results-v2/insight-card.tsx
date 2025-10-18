@@ -57,7 +57,6 @@ export function InsightCard({
       pollQuestion,
       insightEmoji: emoji,
       insightProfile: profile,
-      insightDescription: description,
     });
 
     // Also call legacy onShare if provided (for backward compatibility)

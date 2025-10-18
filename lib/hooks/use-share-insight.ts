@@ -8,7 +8,6 @@ interface ShareInsightOptions {
   pollQuestion: string;
   insightEmoji?: string;
   insightProfile?: string;
-  insightDescription?: string;
   shareText?: string; // Custom share text (for VotingCompleteBanner)
 }
 
@@ -21,7 +20,6 @@ export function useShareInsight() {
       pollQuestion,
       insightEmoji,
       insightProfile,
-      insightDescription,
       shareText
     } = options;
 

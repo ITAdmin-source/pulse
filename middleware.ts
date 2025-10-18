@@ -1,20 +1,23 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/polls/(.*)",
-  "/api/polls/(.*)",
-  "/login(.*)",
-  "/signup(.*)",
-  "/api/anonymous-users/(.*)",
-  // Test interface routes - make all test pages public
+// Test routes - blocked in production
+const isTestRoute = createRouteMatcher([
   "/test-auth",
   "/test-admin/(.*)",
   "/test-polls/(.*)",
   "/test-dashboard",
   "/test-analytics",
   "/test-services/(.*)"
+]);
+
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/polls/(.*)",
+  "/api/polls/(.*)",
+  "/login(.*)",
+  "/signup(.*)",
+  "/api/anonymous-users/(.*)"
 ]);
 
 const isProtectedRoute = createRouteMatcher([
@@ -24,6 +27,12 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Block test routes in production
+  if (isTestRoute(req) && process.env.NODE_ENV === 'production') {
+    const unauthorizedUrl = new URL('/unauthorized', req.url);
+    return NextResponse.redirect(unauthorizedUrl);
+  }
+
   // Skip auth check for public routes to avoid hanging
   if (isPublicRoute(req)) {
     return NextResponse.next();
