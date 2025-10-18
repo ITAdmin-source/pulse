@@ -2,10 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { VotingService } from "@/lib/services/voting-service";
 import { getOrCreateSessionId } from "@/lib/utils/session";
+import { voteLimiter } from "@/lib/utils/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth();
+    const sessionId = await getOrCreateSessionId();
+    const identifier = clerkUserId || sessionId;
+
+    // Rate limit: max 20 votes per minute per user
+    const { success } = await voteLimiter.check(identifier, 20);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please slow down." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { statementId, value } = body;
 
@@ -24,10 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let sessionId: string | undefined;
+    let anonymousSessionId: string | undefined;
     if (!clerkUserId) {
-      // Anonymous user - get session ID
-      sessionId = await getOrCreateSessionId();
+      // Anonymous user - use session ID
+      anonymousSessionId = sessionId;
     }
 
     // Cast vote with automatic user creation
@@ -35,7 +48,7 @@ export async function POST(request: NextRequest) {
       statementId,
       value,
       clerkUserId || undefined,
-      sessionId
+      anonymousSessionId
     );
 
     return NextResponse.json({ vote, success: true });

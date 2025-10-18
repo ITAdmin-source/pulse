@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import {
   createPoll,
   deletePoll,
@@ -55,6 +56,27 @@ export async function createPollAction(data: NewPoll) {
 
 export async function updatePollAction(id: string, data: Partial<NewPoll>) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can update polls
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === id);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === id);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to modify this poll" };
+    }
+
     const updatedPoll = await updatePoll(id, data);
     if (!updatedPoll) {
       return { success: false, error: "Poll not found" };
@@ -71,6 +93,29 @@ export async function updatePollAction(id: string, data: Partial<NewPoll>) {
 
 export async function deletePollAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner or system admin can delete polls
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Check if user is poll owner or system admin
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === id);
+
+    if (!isSystemAdmin && !isPollOwner) {
+      return { success: false, error: "Only poll owners and system administrators can delete polls" };
+    }
+
+    // Log this critical operation
+    console.warn(`POLL DELETION: User ${currentUser.id} (${isPollOwner ? 'owner' : 'admin'}) deleted poll ${id}`);
+
     const success = await deletePoll(id);
     if (!success) {
       return { success: false, error: "Poll not found" };
@@ -86,6 +131,27 @@ export async function deletePollAction(id: string) {
 
 export async function publishPollAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can publish polls
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === id);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === id);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to publish this poll" };
+    }
+
     const publishedPoll = await publishPoll(id);
     if (!publishedPoll) {
       return { success: false, error: "Poll not found" };
@@ -102,6 +168,27 @@ export async function publishPollAction(id: string) {
 
 export async function unpublishPollAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can unpublish polls
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === id);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === id);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to unpublish this poll" };
+    }
+
     const unpublishedPoll = await unpublishPoll(id);
     if (!unpublishedPoll) {
       return { success: false, error: "Poll not found" };
@@ -118,6 +205,27 @@ export async function unpublishPollAction(id: string) {
 
 export async function closePollAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can close polls
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === id);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === id);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to close this poll" };
+    }
+
     const { PollService } = await import("@/lib/services/poll-service");
     const closedPoll = await PollService.closePoll(id);
     revalidatePath("/polls");

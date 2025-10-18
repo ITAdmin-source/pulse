@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import {
   createVote,
   deleteVote,
@@ -15,6 +16,7 @@ import {
   hasUserMetVotingThreshold,
 } from "@/db/queries/votes-queries";
 import { type NewVote } from "@/db/schema/votes";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createVoteAction(data: NewVote) {
   try {
@@ -47,6 +49,29 @@ export async function upsertVoteAction(userId: string, statementId: string, valu
 
 export async function deleteVoteAction(id: string) {
   try {
+    // CRITICAL: Votes are immutable per business rules
+    // Only allow system admins to delete votes (emergency operations only)
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow system admins to delete votes
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (!isAdmin) {
+      return { success: false, error: "Only system administrators can delete votes" };
+    }
+
+    // Log this critical operation
+    console.warn(`ADMIN VOTE DELETION: Admin ${currentUser.id} deleted vote ${id}`);
+
     const success = await deleteVote(id);
     if (!success) {
       return { success: false, error: "Vote not found" };
@@ -81,6 +106,25 @@ export async function getVotesByStatementIdAction(statementId: string) {
 
 export async function getVotesByUserIdAction(userId: string) {
   try {
+    // ADD PERMISSION CHECK: Only allow users to access their own votes OR system admins
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own votes OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user votes" };
+    }
+
     const votes = await getVotesByUserId(userId);
     return { success: true, data: votes };
   } catch (error) {
@@ -114,6 +158,25 @@ export async function getVoteByUserAndStatementAction(userId: string, statementI
 
 export async function getUserVoteCountForPollAction(userId: string, pollId: string) {
   try {
+    // ADD PERMISSION CHECK: Only allow users to access their own vote counts OR system admins
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own data OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user vote data" };
+    }
+
     const count = await getUserVoteCountForPoll(userId, pollId);
     return { success: true, data: count };
   } catch (error) {

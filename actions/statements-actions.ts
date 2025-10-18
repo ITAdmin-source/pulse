@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import {
   createStatement,
   deleteStatement,
@@ -12,6 +13,7 @@ import {
   updateStatement,
 } from "@/db/queries/statements-queries";
 import { type NewStatement } from "@/db/schema/statements";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createStatementAction(data: NewStatement) {
   try {
@@ -27,6 +29,33 @@ export async function createStatementAction(data: NewStatement) {
 
 export async function updateStatementAction(id: string, data: Partial<NewStatement>) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can update statements
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the statement to find its poll
+    const statement = await getStatementById(id);
+    if (!statement || !statement.pollId) {
+      return { success: false, error: "Statement not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === statement.pollId);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === statement.pollId);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to modify this statement" };
+    }
+
     const updatedStatement = await updateStatement(id, data);
     if (!updatedStatement) {
       return { success: false, error: "Statement not found" };
@@ -42,6 +71,33 @@ export async function updateStatementAction(id: string, data: Partial<NewStateme
 
 export async function deleteStatementAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can delete statements
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the statement to find its poll
+    const statement = await getStatementById(id);
+    if (!statement || !statement.pollId) {
+      return { success: false, error: "Statement not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === statement.pollId);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === statement.pollId);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to delete this statement" };
+    }
+
     const success = await deleteStatement(id);
     if (!success) {
       return { success: false, error: "Statement not found" };
@@ -117,6 +173,33 @@ export async function getStatementByIdAction(id: string) {
 
 export async function rejectStatementAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can reject statements
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the statement to find its poll
+    const statement = await getStatementById(id);
+    if (!statement || !statement.pollId) {
+      return { success: false, error: "Statement not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === statement.pollId);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === statement.pollId);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to reject this statement" };
+    }
+
     const success = await deleteStatement(id);
     if (!success) {
       return { success: false, error: "Statement not found" };
@@ -132,6 +215,33 @@ export async function rejectStatementAction(id: string) {
 
 export async function approveStatementAction(id: string) {
   try {
+    // AUTHORIZATION: Only poll owner, poll manager, or system admin can approve statements
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the statement to find its poll
+    const statement = await getStatementById(id);
+    if (!statement || !statement.pollId) {
+      return { success: false, error: "Statement not found" };
+    }
+
+    // Get user's roles to check permissions
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isSystemAdmin = roles.some(r => r.role === 'system_admin');
+    const isPollOwner = roles.some(r => r.role === 'poll_owner' && r.pollId === statement.pollId);
+    const isPollManager = roles.some(r => r.role === 'poll_manager' && r.pollId === statement.pollId);
+
+    if (!isSystemAdmin && !isPollOwner && !isPollManager) {
+      return { success: false, error: "You do not have permission to approve this statement" };
+    }
+
     const updatedStatement = await updateStatement(id, { approved: true });
     if (!updatedStatement) {
       return { success: false, error: "Statement not found" };

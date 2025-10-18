@@ -2,10 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { StatementService } from "@/lib/services/statement-service";
 import { getOrCreateSessionId } from "@/lib/utils/session";
+import { statementLimiter } from "@/lib/utils/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth();
+    const sessionId = await getOrCreateSessionId();
+    const identifier = clerkUserId || sessionId;
+
+    // Rate limit: max 5 statements per hour per user
+    const { success } = await statementLimiter.check(identifier, 5);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. You can only submit 5 statements per hour." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { pollId, text } = body;
 
@@ -31,10 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let sessionId: string | undefined;
+    let anonymousSessionId: string | undefined;
     if (!clerkUserId) {
-      // Anonymous user - get session ID
-      sessionId = await getOrCreateSessionId();
+      // Anonymous user - use session ID
+      anonymousSessionId = sessionId;
     }
 
     // Create statement with automatic user creation
@@ -42,7 +55,7 @@ export async function POST(request: NextRequest) {
       pollId,
       text.trim(),
       clerkUserId || undefined,
-      sessionId
+      anonymousSessionId
     );
 
     return NextResponse.json({ statement, success: true });

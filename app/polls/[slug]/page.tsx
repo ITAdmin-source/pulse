@@ -572,8 +572,42 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     loadData();
   }, [params, router, dbUser, contextSessionId, isUserLoading]);
 
+  // Advance to next statement
+  const handleNextStatement = useCallback(async () => {
+    if (!statementManager) return;
+
+    setShowVoteStats(false);
+    setVoteStats(null);
+
+    statementManager.advanceIndex();
+    const newProgress = statementManager.getProgress();
+
+    // Check if batch is complete
+    const isBatchComplete = newProgress.positionInBatch >= newProgress.statementsInCurrentBatch;
+
+    if (isBatchComplete) {
+      // Batch complete - ALWAYS switch to Results tab
+      setCurrentStatement(null);
+
+      // Preload next batch in background for smoother UX (fire and forget)
+      if (!statementManager.hasVotedOnAll()) {
+        statementManager.loadNextBatch().catch(() => {
+          // Silent fail - batch will load when user clicks continue
+        });
+      }
+
+      // Switch to Results tab immediately
+      setActiveTab("results");
+      toast.success("סיימת סבב! צפה בתוצאות");
+    } else {
+      // More statements in current batch
+      const nextStmt = statementManager.getNextStatement();
+      setCurrentStatement(nextStmt);
+    }
+  }, [statementManager]);
+
   // Handle vote
-  const handleVote = async (value: 1 | -1 | 0) => {
+  const handleVote = useCallback(async (value: 1 | -1 | 0) => {
     if (isVotingRef.current || !currentStatement || !poll) return;
 
     // Check for duplicate vote (prevent accidental double-votes)
@@ -691,45 +725,11 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       isVotingRef.current = false;
       setIsSavingVote(false);
     }
-  };
-
-  // Advance to next statement
-  const handleNextStatement = useCallback(async () => {
-    if (!statementManager) return;
-
-    setShowVoteStats(false);
-    setVoteStats(null);
-
-    statementManager.advanceIndex();
-    const newProgress = statementManager.getProgress();
-
-    // Check if batch is complete
-    const isBatchComplete = newProgress.positionInBatch >= newProgress.statementsInCurrentBatch;
-
-    if (isBatchComplete) {
-      // Batch complete - ALWAYS switch to Results tab
-      setCurrentStatement(null);
-
-      // Preload next batch in background for smoother UX (fire and forget)
-      if (!statementManager.hasVotedOnAll()) {
-        statementManager.loadNextBatch().catch(() => {
-          // Silent fail - batch will load when user clicks continue
-        });
-      }
-
-      // Switch to Results tab immediately
-      setActiveTab("results");
-      toast.success("סיימת סבב! צפה בתוצאות");
-    } else {
-      // More statements in current batch
-      const nextStmt = statementManager.getNextStatement();
-      setCurrentStatement(nextStmt);
-    }
-  }, [statementManager]);
+  }, [currentStatement, poll, statementManager, userId, dbUser?.clerkUserId, sessionId, votedCount, votesRequiredForResults, checkMilestone, handleMilestone, handleNextStatement]);
 
   // Continue to next batch (called from Results tab "More Statements" prompt)
   // Just switches to Vote tab - useEffect handles retrieving/loading batch
-  const handleContinueBatch = async () => {
+  const handleContinueBatch = useCallback(async () => {
     // Reset results cache to force fresh load after user votes more
     setResultsData({
       insight: null,
@@ -746,7 +746,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     // Switch to vote tab - useEffect will handle getting statement from preloaded batch
     setActiveTab("vote");
     toast.success("ממשיך לעמדות נוספות");
-  };
+  }, []);
 
   // Load user artifact collection (authenticated users only)
   const loadUserArtifacts = useCallback(async () => {
@@ -947,7 +947,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
 
   // Handle tab change
-  const handleTabChange = (tab: TabType) => {
+  const handleTabChange = useCallback((tab: TabType) => {
     if (tab === "results") {
       // For closed polls, always allow viewing results
       if (!isPollClosed && resultsLocked) {
@@ -969,10 +969,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
     // Switch tab (useEffect will handle loading results data)
     setActiveTab(tab);
-  };
+  }, [isPollClosed, resultsLocked, inGracePeriod]);
 
   // Handle demographics submission
-  const handleDemographicsSubmit = async (demographics: DemographicsData) => {
+  const handleDemographicsSubmit = useCallback(async (demographics: DemographicsData) => {
     try {
       const result = await saveDemographicsAction({
         clerkUserId: dbUser?.clerkUserId || undefined,
@@ -997,10 +997,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       console.error("Error submitting demographics:", error);
       toast.error(pollPage.demographicsError);
     }
-  };
+  }, [dbUser?.clerkUserId, sessionId, userId]);
 
   // Handle artifact badge dismissal
-  const handleDismissNewBadge = async () => {
+  const handleDismissNewBadge = useCallback(async () => {
     setNewlyEarnedArtifact(null);
 
     // Mark artifact as seen in database (fire and forget)
@@ -1009,17 +1009,17 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         console.error("Error marking artifact as seen:", error);
       });
     }
-  };
+  }, [userId, poll]);
 
   // Handle "Sign Up" button in collection footer (anonymous users)
-  const handleSignUpFromCollection = () => {
+  const handleSignUpFromCollection = useCallback(() => {
     openSignUp();
-  };
+  }, [openSignUp]);
 
   // Handle "Earn More" button in collection footer (authenticated users)
-  const handleEarnMore = () => {
+  const handleEarnMore = useCallback(() => {
     router.push("/polls");
-  };
+  }, [router]);
 
   // Loading state
   if (isLoading) {

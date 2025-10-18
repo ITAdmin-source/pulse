@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import type { User, UserRole } from "@/db/schema";
@@ -107,7 +107,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clerkUser]);
 
-  const contextValue: UserContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue: UserContextType = useMemo(() => ({
     user,
     sessionId,
     userRoles,
@@ -115,7 +116,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!clerkUser?.id && !!user?.clerkUserId,
     isAnonymous: !clerkUser?.id && !user?.clerkUserId,
     refresh: fetchUserData,
-  };
+  }), [user, sessionId, userRoles, isLoading, clerkLoaded, clerkUser?.id, user?.clerkUserId]);
 
   return (
     <UserContext.Provider value={contextValue}>
