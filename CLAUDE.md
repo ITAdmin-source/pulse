@@ -129,13 +129,27 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 The project includes a comprehensive service layer in `lib/services/` that provides business logic and data access:
 
 ### Core Services
+
+**User Management:**
 - **UserService** (`lib/services/user-service.ts`) - User creation, authentication, role management, JIT user creation from Clerk
 - **UserProfileService** (`lib/services/user-profile-service.ts`) - Clerk profile caching, display name management, social profiles
+- **UserManagementService** (`lib/services/user-management-service.ts`) - Enhanced user management operations and workflows
+
+**Polling & Voting:**
 - **PollService** (`lib/services/poll-service.ts`) - Poll lifecycle, statistics, slug generation
 - **VotingService** (`lib/services/voting-service.ts`) - Vote recording, progress tracking, distribution analysis
 - **StatementService** (`lib/services/statement-service.ts`) - Statement CRUD, approval workflow, moderation
-- **PollResultsService** (`lib/services/poll-results-service.ts`) - Aggregate results, vote distributions, demographic breakdowns (planned)
+- **StatementManager** (`lib/services/statement-manager.ts`) - Core statement batching, vote tracking, and progress management
+- **StatementOrderingService** (`lib/services/statement-ordering-service.ts`) - Random and weighted statement ordering for fair distribution
+- **PollResultsService** (`lib/services/poll-results-service.ts`) - Aggregate results, vote distributions, demographic breakdowns
+
+**Gamification & Engagement:**
+- **ArtifactRarityService** (`lib/services/artifact-rarity-service.ts`) - Artifact/profile collection rarity calculations and unlocking
+- **FeedbackService** (`lib/services/feedback-service.ts`) - User feedback submission and management
+
+**System Services:**
 - **AIService** (`lib/services/ai-service.ts`) - Mock AI-generated insights and summaries (ready for API integration)
+- **AdminService** (`lib/services/admin-service.ts`) - Admin functionality and system management
 
 ### Service Layer Benefits
 - **Business logic centralization** - All core logic in services, not scattered in actions
@@ -259,7 +273,7 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - Only approved statements visible to voters
 - **Minimum 6 statements required** to create a poll (mandatory, not just recommended)
 
-### UX/UI Design Principles (v2.0 - 2025-10-15)
+### UX/UI Design Principles (v2.0 - Production)
 - **Statement-based voting** - Direct voting on positions with split-screen Agree/Disagree buttons
 - **Stories-style progress bar** - Shows position in current batch (Instagram Stories style)
 - **User creation timing** - User record created on demographics save OR first vote (whichever first)
@@ -269,7 +283,7 @@ Roles are managed in the database (not by Clerk) for fine-grained poll-specific 
 - **Single-page architecture** - Combined Vote/Results views with tab navigation (no separate routes)
 - **Results unlocking** - Results tab locked until 10 votes completed
 
-### Design System & Look-and-Feel (v2.0 - 2025-10-15)
+### Design System & Look-and-Feel (v2.0 - Production)
 
 **Philosophy:** Dark gradient background with vibrant purple/pink accents for modern, social-first aesthetic
 
@@ -453,20 +467,22 @@ All test pages are publicly accessible in development:
 - **Supabase pooler connections** - Using connection pooling for better IPv4 compatibility and performance
 - **Type-first development** - Zod validation schemas drive TypeScript types and runtime validation
 - **Context-based state** - UserContext and HeaderContext for global state management
-- **Single-page architecture (v2.0)** - Combined Vote/Results views with tab navigation instead of separate routes
-- **Centralized strings (v2.0)** - All Hebrew UI text managed in `lib/strings/he.ts` for consistency
+- **Single-page architecture** - Combined Vote/Results views with tab navigation instead of separate routes
+- **Centralized strings** - All Hebrew UI text managed in `lib/strings/he.ts` for consistency
+- **Gamification & engagement** - Milestone-based encouragement, artifact collections, and feedback systems
 
 ### Voting & Poll Features
 - **Statement-based voting** - Direct voting on positions with split-screen Agree/Disagree buttons
 - **Statement batching** - 10 statements at a time with inline "next batch" prompts for better UX on large polls
 - **Immutable votes** - Once cast, votes cannot be changed (enforced in voting logic)
 - **Fixed voting threshold** - Users must complete 10 votes to unlock Results view
-- **Results unlocking (v2.0)** - Results tab locked until 10 votes completed, shows counter "(7/10)"
+- **Results unlocking** - Results tab locked until 10 votes completed, shows counter "(7/10)"
+- **Gamification milestones** - Encouragement toasts at 30%, 50%, 70%, with confetti at completion
 - **Universal closed poll access** - Both voters and non-voters can view results; voters get personal insights
 - **Unpublish capability** - Polls can be returned to draft state from published (votes preserved)
 - **Button label flexibility** - Poll-specific button labels (support/oppose/unsure) override global defaults when set
 
-### User Experience (v2.0)
+### User Experience
 - **Anonymous support** - Session-based anonymous users with seamless auth upgrade path
 - **Automatic upgrade flow** - Anonymous→authenticated transition preserves all user data
 - **User creation flexibility** - Users created on demographics save OR first vote (whichever first)
@@ -484,6 +500,78 @@ All test pages are publicly accessible in development:
 - **Profile caching strategy** - 24-hour cache for user profiles to minimize external API calls
 - **Insight regeneration** - Personal insights recalculated when votes change, only latest version stored
 
+## New Features & Enhancements (v2.0)
+
+### Gamification System
+The application includes a comprehensive gamification system to encourage participation and maintain engagement:
+
+**Milestone-Based Encouragement:**
+- **30% Progress** - First encouragement message ("You're making progress!")
+- **50% Progress** - Halfway celebration ("Halfway there!")
+- **70% Progress** - Momentum message ("Great momentum!")
+- **Insight Teaser** - Special message teasing upcoming insights
+- **Almost There** - Near-completion encouragement
+- **Final Threshold** - Completion celebration with confetti
+
+**Visual Feedback:**
+- **EncouragementToast** component displays contextual Hebrew messages at each milestone
+- **Confetti celebration** triggers when voting threshold is reached
+- **Add button pulse animation** appears at vote 4 to encourage statement submission
+- **Real-time progress indicators** show completion percentage
+
+**Implementation:**
+- Milestone triggers calculated in `/app/polls/[slug]/page.tsx`
+- Toast messages managed via Sonner with custom Hebrew strings
+- Confetti effects using canvas-confetti library
+- Smooth animations via Framer Motion
+
+### Artifact Collection System
+Users can unlock profile artifacts/achievements based on participation:
+
+**Features:**
+- **Rarity System** - Common, Rare, Legendary tiers
+- **Profile Collection** - Visual display of unlocked artifacts
+- **Unlock Triggers** - Based on voting milestones and engagement
+- **Collection Display** - `minimal-collection-footer.tsx` shows progress
+- **New Badges** - `new-artifact-badge.tsx` highlights recent unlocks
+- **Interactive Slots** - `interactive-artifact-slot.tsx` for locked/unlocked states
+
+**Service:**
+- `artifact-rarity-service.ts` handles rarity calculations and unlocking logic
+- Integrates with user voting progress and demographics completion
+
+### User Feedback System
+Floating feedback mechanism for continuous improvement:
+
+**Features:**
+- **Floating Feedback Button** - Always accessible during voting
+- **Modal-Based Submission** - Clean, focused feedback interface
+- **Feedback Service** - `feedback-service.ts` handles submissions
+- **Anonymous & Authenticated** - Works for both user types
+
+### Statement Ordering Infrastructure
+Fair and balanced statement presentation:
+
+**Features:**
+- **Random Ordering** - Prevents order bias in voting
+- **Weighted Distribution** - Ensures balanced statement exposure (infrastructure ready)
+- **Service Layer** - `statement-ordering-service.ts` manages ordering logic
+- **StatementManager Integration** - Core batching logic uses ordering service
+
+### CSS Theme System
+Flexible theming infrastructure with CSS variables:
+
+**Features:**
+- **Multiple Color Themes** - 6+ pre-configured themes (blue-foundation, cyan-centric, natural-gradient, vibrant-spectrum, etc.)
+- **CSS Variable System** - `--confetti-purple-600`, `--confetti-pink-600`, etc.
+- **Theme Utilities** - Centralized theme configuration and switching
+- **Design Tokens Integration** - Works seamlessly with `lib/design-tokens-v2.ts`
+
+**Files:**
+- Theme definitions in `app/` directory
+- CSS variables for consistent theming
+- Color migration from hardcoded values to variables
+
 ## Component Architecture
 
 ### UI Components
@@ -492,27 +580,40 @@ All test pages are publicly accessible in development:
 - **`components/modals/`** - Modal dialogs (PublishPollModal, UnpublishPollModal, AddStatementModal, EditStatementModal)
 - **`components/auth/`** - Authentication components (ProtectedRoute)
 
-### v1.x Components (Legacy - Being Replaced)
-- **`components/voting/`** - Old voting interface (StatementCard, ProgressBar, VoteResultOverlay, ContinuationPage)
-- **`components/polls/`** - Old poll components (PollDeckCard, CardDeckPackage, ClickableCardDeck)
+### v2.0 Components (Production)
 
-### v2.0 Components (New Architecture)
-- **`components/voting-v2/`** - New voting interface components
-  - `SplitVoteCard` - 50/50 split Agree/Disagree buttons with stats overlay
-  - `ProgressSegments` - Stories-style progress bar (thinner, purple theme)
-  - `QuestionPill` - Blue gradient pill displaying poll question
-  - `NextBatchPrompt` - Inline prompt between batches
-- **`components/polls-v2/`** - New poll components
-  - `PollCardGradient` - Purple/pink gradient header with white body
-  - `TabNavigation` - Vote/Results tab switcher
-  - `ResultsLockedBanner` - Shows when results are locked with counter
-- **`components/results-v2/`** - Results view components
-  - `InsightCard` - Gradient card with personal influence profile
-  - `AggregateStats` - Vote distribution visualization
-  - `DemographicHeatmap` - Demographic breakdown charts
-- **`components/banners/`** - Informational banners
-  - `DemographicsBanner` - Prompts demographics after 10 votes
-  - `ResultsLockedBanner` - Explains results unlocking requirement
+**Voting Interface** (`components/voting-v2/`)
+- `split-vote-card.tsx` - 50/50 split Agree/Disagree buttons with stats overlay and hover expansion
+- `progress-segments.tsx` - Stories-style progress bar (Instagram-like segmented indicators)
+- `question-pill.tsx` - Blue gradient pill displaying poll question
+
+**Poll Components** (`components/polls-v2/`)
+- `poll-card-gradient.tsx` - Purple/pink gradient header with white body
+- `tab-navigation.tsx` - Vote/Results tab switcher with locked state support
+
+**Results & Insights** (`components/results-v2/`)
+- `insight-card.tsx` - Gradient card with personal influence profile
+- `insight-detail-modal.tsx` - Detailed insight view modal
+- `aggregate-stats.tsx` - Vote distribution visualization
+- `demographic-heatmap.tsx` - Demographic breakdown charts
+- `statements-list.tsx` - Statement list view with voting history
+- `voting-complete-banner.tsx` - Completion celebration banner with share options
+- `more-statements-prompt.tsx` - Inline prompt for continuing to vote on more statements
+- `minimal-collection-footer.tsx` - Artifact collection display with "Earn More" prompts
+- `new-artifact-badge.tsx` - Badge for newly unlocked artifacts
+- `interactive-artifact-slot.tsx` - Interactive artifact collection slots
+
+**Informational Banners** (`components/banners/`)
+- `demographics-banner.tsx` - Prompts demographics after 10 votes
+- `results-locked-banner.tsx` - Explains results unlocking requirement with progress counter
+- `closed-poll-banner.tsx` - Displays when poll is closed
+- `partial-participation-banner.tsx` - Shown for partial participation
+- `sign-up-banner.tsx` - Encourages anonymous users to sign up
+
+**Gamification Components** (integrated in main page)
+- `EncouragementToast` - Milestone-based encouragement messages during voting
+- Confetti celebration effects at threshold completion
+- Add button pulse animation (triggered at vote 4)
 
 ### Header System
 - **AdaptiveHeader** (`components/shared/adaptive-header.tsx`) - Context-aware header with multiple variants
@@ -536,14 +637,15 @@ All test pages are publicly accessible in development:
 6. **Import strings** - All UI text from `lib/strings/he.ts` (never hardcode Hebrew text)
 7. **Use design tokens** - Import from `lib/design-tokens-v2.ts` for styling consistency
 
-### v2.0 Development Guidelines
-- **Component isolation** - New components in `components/*-v2/` directories
-- **Reference migration plan** - Follow `.claude/misc/MIGRATION_PLAN.md` for implementation sequence
-- **Preserve infrastructure** - Never modify DB schema, queries, actions, or services during UI migration
+### Component Development Guidelines
+- **Component organization** - v2.0 components in `components/*-v2/` directories (production standard)
+- **Preserve infrastructure** - DB schema, queries, actions, and services are stable; focus on UI/UX enhancements
 - **Hebrew terminology** - Use approved terms from `lib/strings/he.ts` (דיון for poll, עמדה for statement)
 - **Design system adherence** - Follow `lib/design-tokens-v2.ts` for colors, spacing, animations
+- **CSS variables** - Use theme CSS variables (`--confetti-*`) for consistent theming
 - **Single-page architecture** - Build tab-based views, not separate routes
 - **RTL layout** - Use logical properties (ms-*, me-*, start, end) not directional (ml-*, mr-*, left, right)
+- **Gamification integration** - Consider milestone triggers and encouragement feedback for new features
 
 ### Code Quality Standards
 - **Always run `npm run build`** - Ensure TypeScript compilation before committing
@@ -563,6 +665,13 @@ All test pages are publicly accessible in development:
 - **`lib/utils/slug.ts`** - URL slug generation
 - **`lib/utils/permissions.ts`** - Permission checking helpers
 
-### Design & Localization Utilities (v2.0)
+### Design & Localization Utilities
 - **`lib/design-tokens-v2.ts`** - Complete design system (colors, spacing, typography, components)
 - **`lib/strings/he.ts`** - Centralized Hebrew strings organized by page/component
+- **Theme CSS variables** - `--confetti-purple-600`, `--confetti-pink-600`, etc. for theming
+
+### Gamification Utilities
+- **Milestone calculations** - Progress-based trigger logic in main poll page
+- **Encouragement messages** - Hebrew strings for milestone toasts
+- **Confetti effects** - Canvas-confetti integration for celebrations
+- **Artifact unlocking** - Rarity calculations and collection management
