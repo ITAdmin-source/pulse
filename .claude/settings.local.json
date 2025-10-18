@@ -30,7 +30,8 @@
       "Bash(done)",
       "Bash(npm test:*)",
       "Bash(npm run build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(del libutilsoffline-queue.ts)"
     ],
     "deny": [],
     "ask": [

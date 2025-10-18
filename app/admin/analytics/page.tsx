@@ -120,7 +120,7 @@ export default function AdminAnalyticsPage() {
                         </Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/polls/${selectedPoll.slug}/results`}>
+                        <Link href={`/polls/${selectedPoll.slug}`}>
                           View Results
                         </Link>
                       </Button>

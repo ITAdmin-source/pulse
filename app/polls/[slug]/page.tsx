@@ -34,13 +34,13 @@ import { ProgressSegments } from "@/components/voting-v2/progress-segments";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
 import { ClosedPollBanner } from "@/components/banners/closed-poll-banner";
 import { PartialParticipationBanner } from "@/components/banners/partial-participation-banner";
-import { DemographicsModal, type DemographicsData } from "@/components/polls/demographics-modal";
+import { DemographicsModal, type DemographicsData } from "@/components/modals/demographics-modal";
 import { InsightCard } from "@/components/results-v2/insight-card";
 import { AggregateStats } from "@/components/results-v2/aggregate-stats";
 import { DemographicHeatmap } from "@/components/results-v2/demographic-heatmap";
 import { MoreStatementsPrompt } from "@/components/results-v2/more-statements-prompt";
 import { VotingCompleteBanner } from "@/components/results-v2/voting-complete-banner";
-import { StatementSubmissionModal } from "@/components/voting/statement-submission-modal";
+import { StatementSubmissionModal } from "@/components/modals/statement-submission-modal";
 import { EncouragementToast } from "@/components/gamification/encouragement-toast";
 // Note: NextBatchPrompt removed - using MoreStatementsPrompt in Results tab instead
 

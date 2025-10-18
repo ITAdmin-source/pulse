@@ -26,7 +26,8 @@ export async function getPollResultsSummaryAction(pollId: string) {
 export async function invalidatePollSummaryAction(pollId: string) {
   try {
     await PollResultsService.invalidateSummary(pollId);
-    revalidatePath(`/polls/${pollId}/results`);
+    // Revalidate all poll pages since we don't have slug here
+    revalidatePath(`/polls`);
     return { success: true };
   } catch (error) {
     console.error("Error invalidating poll summary:", error);
