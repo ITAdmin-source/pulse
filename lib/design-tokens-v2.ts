@@ -94,7 +94,7 @@ export const colors = {
       from: '#4f46e5',    // indigo-600
       via: '#9333ea',     // purple-600
       to: '#db2777',      // pink-600
-      className: 'bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600',
+      className: 'bg-gradient-insight',
     },
 
     // Next batch prompt gradient
@@ -108,14 +108,14 @@ export const colors = {
     completion: {
       from: '#22c55e',    // green-500
       to: '#10b981',      // emerald-600
-      className: 'bg-gradient-to-br from-green-500 to-emerald-600',
+      className: 'bg-gradient-completion',
     },
 
     // Question pill gradient
     question: {
       from: '#2563eb',    // blue-600
       to: '#3b82f6',      // blue-500
-      className: 'bg-gradient-to-r from-blue-600 to-blue-500',
+      className: 'bg-gradient-question',
     },
   },
 
