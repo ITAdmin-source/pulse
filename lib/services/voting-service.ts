@@ -1,4 +1,4 @@
-import { eq, and, count, notInArray } from "drizzle-orm";
+import { eq, and, count, notInArray, sql } from "drizzle-orm";
 import { db } from "@/db/db";
 import { votes, statements, polls } from "@/db/schema";
 import type { Vote } from "@/db/schema";
@@ -373,26 +373,7 @@ export class VotingService {
       throw new Error("Batch number must be at least 1");
     }
 
-    // 1. Fetch ALL approved statements for this poll (no limit!)
-    const allStatements = await db
-      .select({
-        id: statements.id,
-        createdAt: statements.createdAt,
-        pollId: statements.pollId,
-        text: statements.text,
-        submittedBy: statements.submittedBy,
-        approved: statements.approved,
-        approvedBy: statements.approvedBy,
-        approvedAt: statements.approvedAt,
-      })
-      .from(statements)
-      .where(and(
-        eq(statements.pollId, pollId),
-        eq(statements.approved, true)
-      ))
-      .orderBy(statements.createdAt); // Consistent base ordering for sequential mode
-
-    // 2. Get all statement IDs the user has already voted on for this poll
+    // 1. Get all statement IDs the user has already voted on for this poll
     const votedStatementIds = await db
       .select({ statementId: votes.statementId })
       .from(votes)
@@ -404,7 +385,7 @@ export class VotingService {
 
     const votedIds = votedStatementIds.map(v => v.statementId);
 
-    // 3. Get poll configuration for ordering strategy
+    // 2. Get poll configuration for ordering strategy
     const poll = await db
       .select({
         id: polls.id,
@@ -415,28 +396,105 @@ export class VotingService {
       .where(eq(polls.id, pollId))
       .limit(1);
 
-    // 4. Apply ordering strategy to ALL statements (before filtering)
-    const { StatementOrderingService } = await import("./statement-ordering-service");
-    const orderedStatements = await StatementOrderingService.orderStatements(
-      allStatements,
-      {
-        userId,
-        pollId,
-        batchNumber,
-        pollConfig: {
-          orderMode: (poll[0]?.statementOrderMode as "sequential" | "random" | "weighted") || "random",
-          randomSeed: poll[0]?.randomSeed || null,
-        },
-      }
-    );
+    const orderMode = (poll[0]?.statementOrderMode as "sequential" | "random" | "weighted") || "random";
+    const randomSeed = poll[0]?.randomSeed || null;
 
-    // 5. Filter out voted statements (maintains order from step 4)
-    const unvotedOrdered = orderedStatements.filter(
-      s => !votedIds.includes(s.id)
-    );
+    // 3. OPTIMIZATION: Different strategies for different order modes
+    if (orderMode === "random") {
+      // OPTIMIZED PATH: SQL-side deterministic random ordering
+      // Uses hash-based ordering to fetch only what we need (10 rows instead of 200+)
 
-    // 6. Return first 10 (current batch)
-    return unvotedOrdered.slice(0, 10) as typeof statements.$inferSelect[];
+      // Generate deterministic seed string from context
+      const seedString = randomSeed
+        ? `${userId}-${randomSeed}-${batchNumber}`
+        : `${userId}-${pollId}-${batchNumber}`;
+
+      // Fetch ONLY unvoted statements with SQL-side random ordering
+      const randomStatements = await db
+        .select({
+          id: statements.id,
+          createdAt: statements.createdAt,
+          pollId: statements.pollId,
+          text: statements.text,
+          submittedBy: statements.submittedBy,
+          approved: statements.approved,
+          approvedBy: statements.approvedBy,
+          approvedAt: statements.approvedAt,
+        })
+        .from(statements)
+        .where(and(
+          eq(statements.pollId, pollId),
+          eq(statements.approved, true),
+          // SQL-level filtering: exclude voted statements
+          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
+        ))
+        // Hash-based deterministic random: md5(statement_id || seed) creates unique "random" value per statement
+        // Same seed → same order (deterministic), different users → different order
+        .orderBy(sql`md5(${statements.id}::text || ${seedString})`)
+        .limit(10); // Only fetch what we need!
+
+      return randomStatements as typeof statements.$inferSelect[];
+
+    } else if (orderMode === "weighted") {
+      // FUTURE WEIGHTED PATH: Fetch all unvoted statements for weight calculation
+      // Weighted ordering requires all unvoted statements to calculate/apply weights
+      const allUnvotedStatements = await db
+        .select({
+          id: statements.id,
+          createdAt: statements.createdAt,
+          pollId: statements.pollId,
+          text: statements.text,
+          submittedBy: statements.submittedBy,
+          approved: statements.approved,
+          approvedBy: statements.approvedBy,
+          approvedAt: statements.approvedAt,
+        })
+        .from(statements)
+        .where(and(
+          eq(statements.pollId, pollId),
+          eq(statements.approved, true),
+          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
+        ))
+        .orderBy(statements.createdAt); // Base ordering for consistency
+
+      // Apply weighted ordering strategy
+      const { StatementOrderingService } = await import("./statement-ordering-service");
+      const orderedStatements = await StatementOrderingService.orderStatements(
+        allUnvotedStatements,
+        {
+          userId,
+          pollId,
+          batchNumber,
+          pollConfig: { orderMode: "weighted", randomSeed },
+        }
+      );
+
+      return orderedStatements.slice(0, 10) as typeof statements.$inferSelect[];
+
+    } else {
+      // SEQUENTIAL MODE: Simple created_at ordering
+      const sequentialStatements = await db
+        .select({
+          id: statements.id,
+          createdAt: statements.createdAt,
+          pollId: statements.pollId,
+          text: statements.text,
+          submittedBy: statements.submittedBy,
+          approved: statements.approved,
+          approvedBy: statements.approvedBy,
+          approvedAt: statements.approvedAt,
+        })
+        .from(statements)
+        .where(and(
+          eq(statements.pollId, pollId),
+          eq(statements.approved, true),
+          votedIds.length > 0 ? notInArray(statements.id, votedIds) : undefined
+        ))
+        .orderBy(statements.createdAt)
+        .limit(10);
+
+      return sequentialStatements as typeof statements.$inferSelect[];
+    }
   }
 
   /**

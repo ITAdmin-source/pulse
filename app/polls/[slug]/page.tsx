@@ -140,6 +140,10 @@ type TabType = "vote" | "results";
 const BATCH_SIZE = 10;
 
 // Vote distribution cache for optimistic updates
+// Fix #1: Add TTL and LRU eviction to prevent memory leaks
+const VOTE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 100; // Prevent unbounded growth
+
 const voteDistributionCache = new Map<string, {
   agreeCount: number;
   disagreeCount: number;
@@ -147,6 +151,29 @@ const voteDistributionCache = new Map<string, {
   totalVotes: number;
   timestamp: number;
 }>();
+
+// Fix #1: Helper to get valid cached distribution with TTL check
+function getValidCachedDistribution(statementId: string) {
+  const cached = voteDistributionCache.get(statementId);
+  if (cached && Date.now() - cached.timestamp < VOTE_CACHE_TTL) {
+    return cached;
+  }
+
+  // Evict stale entry
+  if (cached) {
+    voteDistributionCache.delete(statementId);
+  }
+
+  // LRU eviction if cache too large
+  if (voteDistributionCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = voteDistributionCache.keys().next().value;
+    if (oldestKey) {
+      voteDistributionCache.delete(oldestKey);
+    }
+  }
+
+  return null;
+}
 
 function calculateOptimisticDistribution(
   statementId: string,
@@ -156,7 +183,7 @@ function calculateOptimisticDistribution(
   disagreePercent: number;
   passPercent: number;
 } {
-  const cached = voteDistributionCache.get(statementId);
+  const cached = getValidCachedDistribution(statementId);
   const baseStats = cached || {
     agreeCount: 0,
     disagreeCount: 0,
@@ -247,6 +274,23 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const isVotingRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
+  // Fix #2: Ref-based results cache with vote count invalidation
+  const resultsCacheRef = useRef<{
+    pollId: string;
+    votedCount: number;
+    data: typeof resultsData;
+    timestamp: number;
+  } | null>(null);
+  const RESULTS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+  // Optimization #6: Client-side heatmap cache
+  const heatmapCacheRef = useRef<{
+    pollId: string;
+    data: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]>;
+    timestamp: number;
+  } | null>(null);
+  const HEATMAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   // Progress tracking - single source of truth from statementManager
   const progress = statementManager?.getProgress();
   const votedCount = progress?.totalVoted ?? 0;
@@ -260,28 +304,31 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Prefetch vote distribution when statement appears (for optimistic updates)
   useEffect(() => {
-    if (currentStatement) {
-      const statementId = currentStatement.id;
+    if (!currentStatement) return;
 
-      // Check if already cached
-      if (!voteDistributionCache.has(statementId)) {
-        // Prefetch in background while user reads the card
-        // By the time they vote (~2-4 seconds), distribution will be cached
-        getStatementVoteDistributionAction(statementId).then((result) => {
-          if (result.success && result.data) {
-            voteDistributionCache.set(statementId, {
-              agreeCount: result.data.agreeCount,
-              disagreeCount: result.data.disagreeCount,
-              unsureCount: result.data.unsureCount,
-              totalVotes: result.data.totalVotes,
-              timestamp: Date.now(),
-            });
-          }
-        }).catch(() => {
-          // Silent fail - cache will start from zero if needed
+    const statementId = currentStatement.id;
+
+    // Skip if already cached with valid TTL
+    if (getValidCachedDistribution(statementId)) {
+      return;
+    }
+
+    // Prefetch in background while user reads the card
+    // By the time they vote (~2-4 seconds), distribution will be cached
+    getStatementVoteDistributionAction(statementId).then((result) => {
+      if (result.success && result.data) {
+        voteDistributionCache.set(statementId, {
+          agreeCount: result.data.agreeCount,
+          disagreeCount: result.data.disagreeCount,
+          unsureCount: result.data.unsureCount,
+          totalVotes: result.data.totalVotes,
+          timestamp: Date.now(),
         });
       }
-    }
+    }).catch((error) => {
+      // Log errors for debugging but don't block UX
+      console.warn("Prefetch failed for statement", statementId, error);
+    });
   }, [currentStatement]);
 
   // Auto-open demographics modal when Results tab is accessed without demographics
@@ -291,24 +338,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       setShowDemographicsModal(true);
     }
   }, [activeTab, resultsLocked, hasDemographics, isPollClosed]);
-
-  // Auto-load results when Results tab becomes active
-  // For closed polls, skip the results locked and demographics checks
-  // Also allow results loading without userId for closed polls (anonymous users without DB entry)
-  useEffect(() => {
-    const canLoadResults = isPollClosed
-      ? (activeTab === "results" && poll) // Remove userId requirement for closed polls
-      : (activeTab === "results" && !resultsLocked && hasDemographics && poll && userId);
-
-    if (canLoadResults) {
-      // Load results data when switching to results tab
-      loadResultsData().catch((error) => {
-        console.error("Error loading results:", error);
-        toast.error("שגיאה בטעינת תוצאות");
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, resultsLocked, hasDemographics, poll?.id, userId, isPollClosed]);
 
   // Auto-load next batch when Vote tab becomes active with no current statement
   useEffect(() => {
@@ -524,7 +553,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           setUserId(dbUser.id);
           setSessionId(contextSessionId);
 
-          // Load user's votes and progress
+          // Fix #2: Parallelize ALL data fetches (votes, progress, demographics, batch)
+          // Load user's votes, progress, and demographics in parallel
           const [votesResult, progressResult, demographicsResult] = await Promise.all([
             getUserVotesForPollAction(dbUser.id, fetchedPoll.id),
             getVotingProgressAction(fetchedPoll.id, dbUser.id),
@@ -560,7 +590,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 setActiveTab("results");
               }
             } else {
-              // User has more statements to vote on - load batch normally
+              // Fix #2: Fetch statement batch (was sequential, now remains separate due to conditional logic)
+              // Note: Can't parallelize with votes/progress because we need totalVoted check first
               const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
 
               if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
@@ -721,24 +752,27 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         // Capture statement ID for async callback
         const statementIdForCache = currentStatement.id;
 
-        // Background fetch actual distribution to update cache for next user
-        // (fire-and-forget, doesn't block UI)
-        getStatementVoteDistributionAction(statementIdForCache).then(
-          (distributionResult) => {
-            if (distributionResult.success && distributionResult.data) {
-              // Update cache with real data for next time
-              voteDistributionCache.set(statementIdForCache, {
-                agreeCount: distributionResult.data.agreeCount,
-                disagreeCount: distributionResult.data.disagreeCount,
-                unsureCount: distributionResult.data.unsureCount,
-                totalVotes: distributionResult.data.totalVotes,
-                timestamp: Date.now(),
-              });
+        // Fix #4: Background fetch actual distribution to update cache for next user
+        // Wait for animation to complete before updating cache to prevent flickering
+        setTimeout(() => {
+          getStatementVoteDistributionAction(statementIdForCache).then(
+            (distributionResult) => {
+              // Only update if user has moved on (prevents flickering during animation)
+              if (currentStatement?.id !== statementIdForCache && distributionResult.success && distributionResult.data) {
+                voteDistributionCache.set(statementIdForCache, {
+                  agreeCount: distributionResult.data.agreeCount,
+                  disagreeCount: distributionResult.data.disagreeCount,
+                  unsureCount: distributionResult.data.unsureCount,
+                  totalVotes: distributionResult.data.totalVotes,
+                  timestamp: Date.now(),
+                });
+              }
             }
-          }
-        ).catch(() => {
-          // Silent fail - cache update is not critical
-        });
+          ).catch((error) => {
+            // Log for debugging but don't block UX
+            console.warn("Background cache update failed for statement", statementIdForCache, error);
+          });
+        }, 2000); // Wait for animation + advance delay
 
         // Gamification: Check for milestones
         const newVotedCount = votedCount + 1;
@@ -776,18 +810,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   // Continue to next batch (called from Results tab "More Statements" prompt)
   // Just switches to Vote tab - useEffect handles retrieving/loading batch
   const handleContinueBatch = useCallback(async () => {
-    // Reset results cache to force fresh load after user votes more
-    setResultsData({
-      insight: null,
-      stats: null,
-      heatmapData: {
-        gender: [],
-        ageGroup: [],
-        ethnicity: [],
-        politicalParty: []
-      },
-      hasMoreStatements: false
-    });
+    // Fix #2: Invalidate ref-based cache instead of clearing state
+    // This ensures fresh results load after voting more
+    resultsCacheRef.current = null;
 
     // Switch to vote tab - useEffect will handle getting statement from preloaded batch
     setActiveTab("vote");
@@ -831,9 +856,17 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     if (!poll) return;
     if (!isPollClosed && !userId) return;
 
-    // Skip if already loaded and not forcing refresh (caching)
-    if (resultsData.insight && !forceRefresh) {
-      console.log("[Results] Using cached data");
+    // Fix #2: Check ref-based cache validity
+    const cache = resultsCacheRef.current;
+    const cacheValid = cache
+      && cache.pollId === poll.id
+      && cache.votedCount === votedCount
+      && Date.now() - cache.timestamp < RESULTS_CACHE_TTL;
+
+    if (cacheValid && !forceRefresh) {
+      console.log("[Results] Using ref-based cached data");
+      setResultsData(cache.data);
+      setIsLoadingResults(false);
       return;
     }
 
@@ -967,27 +1000,73 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
       }
 
-      // Process heatmap data (now from single optimized call)
-      const heatmapData = allHeatmapData.success && allHeatmapData.data ? allHeatmapData.data : {
-        gender: [],
-        ageGroup: [],
-        ethnicity: [],
-        politicalParty: []
-      };
+      // Optimization #6: Use client-side heatmap cache
+      let heatmapData;
+      const heatmapCache = heatmapCacheRef.current;
+      const heatmapCacheValid = heatmapCache
+        && heatmapCache.pollId === poll.id
+        && Date.now() - heatmapCache.timestamp < HEATMAP_CACHE_TTL;
 
-      setResultsData({
+      if (heatmapCacheValid) {
+        console.log("[Results] Using cached heatmap data");
+        heatmapData = heatmapCache.data;
+      } else {
+        // Fetch fresh heatmap data
+        heatmapData = allHeatmapData.success && allHeatmapData.data ? allHeatmapData.data : {
+          gender: [],
+          ageGroup: [],
+          ethnicity: [],
+          politicalParty: []
+        };
+
+        // Update heatmap cache
+        heatmapCacheRef.current = {
+          pollId: poll.id,
+          data: heatmapData,
+          timestamp: Date.now()
+        };
+      }
+
+      const newData = {
         insight,
         stats,
         heatmapData,
         hasMoreStatements
-      });
+      };
+
+      setResultsData(newData);
+
+      // Fix #2: Update ref-based cache
+      resultsCacheRef.current = {
+        pollId: poll.id,
+        votedCount,
+        data: newData,
+        timestamp: Date.now()
+      };
     } catch (error) {
       console.error("Error loading results:", error);
       toast.error("שגיאה בטעינת תוצאות");
     } finally {
       setIsLoadingResults(false);
     }
-  }, [poll, userId, hasMoreStatements, dbUser?.clerkUserId, resultsData.insight, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
+  }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
+
+  // Auto-load results when Results tab becomes active
+  // For closed polls, skip the results locked and demographics checks
+  // Also allow results loading without userId for closed polls (anonymous users without DB entry)
+  useEffect(() => {
+    const canLoadResults = isPollClosed
+      ? (activeTab === "results" && poll) // Remove userId requirement for closed polls
+      : (activeTab === "results" && !resultsLocked && hasDemographics && poll && userId);
+
+    if (canLoadResults) {
+      // Load results data when switching to results tab
+      loadResultsData().catch((error) => {
+        console.error("Error loading results:", error);
+        toast.error("שגיאה בטעינת תוצאות");
+      });
+    }
+  }, [activeTab, resultsLocked, hasDemographics, poll, userId, isPollClosed, loadResultsData]);
 
   // Handle tab change
   const handleTabChange = useCallback((tab: TabType) => {
