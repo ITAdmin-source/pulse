@@ -85,7 +85,7 @@ export function PollCardGradient({
 
           {/* CTA Button */}
           <motion.button
-            className={`w-full font-semibold py-2.5 sm:py-3 rounded-lg transition-colors text-sm sm:text-base ${
+            className={`w-full font-semibold py-3 sm:py-3 min-h-[44px] rounded-lg transition-colors text-sm sm:text-base ${
               isActive
                 ? "btn-primary text-white"
                 : "btn-secondary text-white"

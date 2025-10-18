@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, Calendar, Globe, Flag } from "lucide-react";
 import { getAgeGroupsAction } from "@/actions/age-groups-actions";
 import { getGendersAction } from "@/actions/genders-actions";
 import { getEthnicitiesAction } from "@/actions/ethnicities-actions";
@@ -127,33 +127,45 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
     <>
       <Dialog open={open} modal>
         <DialogContent
-          className="sm:max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
+          className="sm:max-w-md p-0 max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-2xl"
           showCloseButton={false}
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
-          <DialogHeader className="text-center mb-6">
-            <div className="text-5xl sm:text-6xl mb-4">🎯</div>
-            <DialogTitle className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-              {demographicsStrings.title}
-            </DialogTitle>
-            <DialogDescription className="text-gray-600 text-sm sm:text-base">
-              {demographicsStrings.description}
-            </DialogDescription>
-          </DialogHeader>
+          {/* Gradient Header */}
+          <div className="bg-gradient-poll-header p-6 sm:p-8 relative overflow-hidden">
+            {/* Decorative circles */}
+            <div className="absolute top-2 start-2 w-16 h-16 rounded-full bg-white/10 blur-xl" />
+            <div className="absolute bottom-2 end-2 w-20 h-20 rounded-full bg-white/10 blur-xl" />
+
+            <DialogHeader className="text-center relative z-10">
+              <div className="text-5xl sm:text-6xl mb-3">🎯</div>
+              <DialogTitle className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                {demographicsStrings.title}
+              </DialogTitle>
+              <DialogDescription className="text-white/90 text-sm sm:text-base">
+                {demographicsStrings.description}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* White Body */}
+          <div className="p-4 sm:p-6 bg-white overflow-y-auto max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-200px)]">
 
           {isLoading ? (
             <div className="py-8 flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
             </div>
           ) : (
-            <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+              {/* Gender Field */}
               <div className="space-y-2">
-                <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="gender" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <Users size={16} className="text-primary-600" />
                   {demographicsStrings.genderLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={genderId} onValueChange={setGenderId} required>
-                  <SelectTrigger id="gender" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="gender" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.genderPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -166,12 +178,14 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                 </Select>
               </div>
 
+              {/* Age Field */}
               <div className="space-y-2">
-                <Label htmlFor="age" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="age" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <Calendar size={16} className="text-primary-600" />
                   {demographicsStrings.ageLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ageGroupId} onValueChange={setAgeGroupId} required>
-                  <SelectTrigger id="age" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="age" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.agePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -184,12 +198,14 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                 </Select>
               </div>
 
+              {/* Ethnicity Field */}
               <div className="space-y-2">
-                <Label htmlFor="ethnicity" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="ethnicity" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <Globe size={16} className="text-primary-600" />
                   {demographicsStrings.ethnicityLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ethnicityId} onValueChange={setEthnicityId} required>
-                  <SelectTrigger id="ethnicity" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="ethnicity" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.ethnicityPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -202,12 +218,14 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                 </Select>
               </div>
 
+              {/* Political Party Field */}
               <div className="space-y-2">
-                <Label htmlFor="party" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="party" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <Flag size={16} className="text-primary-600" />
                   {demographicsStrings.politicsLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={politicalPartyId} onValueChange={setPoliticalPartyId} required>
-                  <SelectTrigger id="party" className="w-full border-2 border-gray-300 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="party" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
                     <SelectValue placeholder={demographicsStrings.politicsPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -226,9 +244,9 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
             <Button
               onClick={handleSubmit}
               disabled={!isFormComplete || isSubmitting}
-              className={`w-full font-semibold py-3 sm:py-3.5 rounded-lg transition-colors text-sm sm:text-base ${
+              className={`w-full font-semibold py-3 sm:py-3.5 min-h-[44px] rounded-lg transition-all text-sm sm:text-base ${
                 isFormComplete && !isSubmitting
-                  ? 'btn-primary text-white cursor-pointer'
+                  ? 'bg-gradient-poll-header text-white cursor-pointer hover:shadow-lg'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -241,6 +259,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
             </Button>
           </div>
 
+          {/* Privacy Footer */}
           <div className="text-center text-xs text-gray-500 space-x-3">
             <button
               onClick={() => setShowWhyWeAsk(true)}
@@ -257,6 +276,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
           <p className="text-xs text-gray-500 text-center mt-4">
             {demographicsStrings.privacyNote}
           </p>
+          </div>
         </DialogContent>
       </Dialog>
 

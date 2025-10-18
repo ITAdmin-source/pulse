@@ -75,7 +75,7 @@ export function DemographicHeatmap({ data, isLoading = false }: DemographicHeatm
             <button
               key={attr}
               onClick={() => setActiveAttribute(attr)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 sm:py-2 min-h-[44px] rounded-lg font-semibold text-sm transition-all ${
                 isActive
                   ? "bg-gradient-poll-header text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"

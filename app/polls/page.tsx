@@ -146,12 +146,12 @@ export default function PollsPage() {
           <SignedOut>
             <div className="flex gap-2">
               <SignInButton mode="modal">
-                <Button variant="ghost" size="sm" className="text-white hover-bg-primary-700 hover:text-white">
+                <Button variant="ghost" size="default" className="text-white hover-bg-primary-700 hover:text-white min-h-[44px] px-4">
                   כניסה
                 </Button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <Button variant="outline" size="sm" className="bg-white-95 border-primary-400-40 text-primary-700 hover-bg-primary-700 hover:text-white hover:border-primary-400-60">
+                <Button variant="outline" size="default" className="bg-white-95 border-primary-400-40 text-primary-700 hover-bg-primary-700 hover:text-white hover:border-primary-400-60 min-h-[44px] px-4">
                   הצטרפות
                 </Button>
               </SignUpButton>
@@ -186,28 +186,28 @@ export default function PollsPage() {
 
         {/* Filters */}
         <section className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={statusFilter === "active" ? "default" : "outline"}
-              size="sm"
+              size="default"
               onClick={() => setStatusFilter("active")}
-              className={statusFilter === "active" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
+              className={`min-h-[44px] px-4 ${statusFilter === "active" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}`}
             >
               {pollsList.filterActive}
             </Button>
             <Button
               variant={statusFilter === "closed" ? "default" : "outline"}
-              size="sm"
+              size="default"
               onClick={() => setStatusFilter("closed")}
-              className={statusFilter === "closed" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
+              className={`min-h-[44px] px-4 ${statusFilter === "closed" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}`}
             >
               {pollsList.filterClosed}
             </Button>
             <Button
               variant={statusFilter === "all" ? "default" : "outline"}
-              size="sm"
+              size="default"
               onClick={() => setStatusFilter("all")}
-              className={statusFilter === "all" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}
+              className={`min-h-[44px] px-4 ${statusFilter === "all" ? "btn-primary" : "bg-transparent border-white-20 text-white hover-bg-white-10"}`}
             >
               {pollsList.filterAll}
             </Button>
@@ -217,7 +217,7 @@ export default function PollsPage() {
             <Input
               type="search"
               placeholder={pollsList.searchPlaceholder}
-              className="w-full md:w-64 bg-white-10 border-white-20 text-white placeholder-white-60"
+              className="w-full md:w-64 h-11 sm:h-10 bg-white-10 border-white-20 text-white placeholder-white-60"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

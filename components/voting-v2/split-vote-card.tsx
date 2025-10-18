@@ -32,13 +32,25 @@ export function SplitVoteCard({
 }: SplitVoteCardProps) {
   const [hoveredButton, setHoveredButton] = useState<"agree" | "disagree" | null>(null);
 
+  // Touch event handlers for mobile feedback
+  const handleTouchStart = (button: "agree" | "disagree") => {
+    if (!disabled && !showStats) {
+      setHoveredButton(button);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setHoveredButton(null);
+  };
+
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       {/* Statement Card */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Statement Text Header */}
@@ -58,6 +70,8 @@ export function SplitVoteCard({
             onClick={() => !disabled && onVote(-1)}
             onMouseEnter={() => !disabled && setHoveredButton("disagree")}
             onMouseLeave={() => setHoveredButton(null)}
+            onTouchStart={() => handleTouchStart("disagree")}
+            onTouchEnd={handleTouchEnd}
             disabled={disabled}
             className={`flex-1 flex flex-col items-center justify-center transition-all relative overflow-hidden ${
               showStats
@@ -99,6 +113,8 @@ export function SplitVoteCard({
             onClick={() => !disabled && onVote(1)}
             onMouseEnter={() => !disabled && setHoveredButton("agree")}
             onMouseLeave={() => setHoveredButton(null)}
+            onTouchStart={() => handleTouchStart("agree")}
+            onTouchEnd={handleTouchEnd}
             disabled={disabled}
             className={`flex-1 flex flex-col items-center justify-center transition-all relative overflow-hidden ${
               showStats
@@ -139,7 +155,7 @@ export function SplitVoteCard({
           <button
             onClick={() => !disabled && onVote(0)}
             disabled={disabled}
-            className="flex-1 py-2.5 sm:py-3 bg-voting-pass hover:bg-voting-pass text-voting-pass rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+            className="flex-1 py-3 sm:py-3.5 min-h-[44px] bg-voting-pass hover:bg-voting-pass text-voting-pass rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
           >
             <HelpCircle size={18} className="sm:w-5 sm:h-5" />
             <span>{voting.passButton}</span>
@@ -150,7 +166,7 @@ export function SplitVoteCard({
             <AddStatementPulse shouldPulse={showAddButtonPulse}>
               <button
                 onClick={onAddStatement}
-                className="w-full py-2.5 sm:py-3 btn-primary text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+                className="w-full py-3 sm:py-3.5 min-h-[44px] btn-primary text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
               >
                 <Plus size={18} className="sm:w-5 sm:h-5" />
                 <span>{voting.addPositionButton}</span>

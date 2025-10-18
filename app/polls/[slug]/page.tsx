@@ -1178,15 +1178,15 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       />
 
       {/* Sticky Back Button Header */}
-      <header className="sticky top-0 z-50 bg-gradient-header backdrop-blur-md border-b border-primary-500-20">
-        <div className="container mx-auto px-4 py-3">
+      <header className="sticky top-0 z-50 bg-gradient-header border-b border-primary-500-20">
+        <div className="container mx-auto px-4 py-4 sm:py-3">
           <Button
             variant="ghost"
-            size="sm"
+            size="default"
             onClick={() => router.push("/polls")}
-            className="text-white hover-bg-primary-700 hover:text-white flex items-center gap-2"
+            className="text-white hover-bg-primary-700 hover:text-white flex items-center gap-2 min-h-[44px] px-4"
           >
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-5 h-5" />
             חזרה לכל הסקרים
           </Button>
         </div>
@@ -1194,10 +1194,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Poll Header - Question and Description */}
-        <div className="text-center mb-6">
-          <div className="text-4xl sm:text-5xl mb-2 sm:mb-3">📊</div>
+        <div className="text-center mb-4 sm:mb-6 px-4">
+          <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">📊</div>
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-            <h1 className="text-xl sm:text-3xl font-bold text-white">{poll.question}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
             {isPollClosed && (
               <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
             )}
@@ -1251,19 +1251,26 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   }}
                 />
               ) : currentStatement ? (
-                <SplitVoteCard
-                  key={currentStatement.id}
-                  statementText={currentStatement.text}
-                  onVote={handleVote}
-                  onAddStatement={() => setShowStatementModal(true)}
-                  showStats={showVoteStats}
-                  agreePercent={voteStats?.agreePercent}
-                  disagreePercent={voteStats?.disagreePercent}
-                  passPercent={voteStats?.passPercent}
-                  disabled={isSavingVote}
-                  allowAddStatement={poll?.allowUserStatements || false}
-                  showAddButtonPulse={showAddButtonPulse}
-                />
+                <div className="relative" key={currentStatement.id}>
+                  {/* Static visual glow for prominence - uses design token colors */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-purple-500/5 via-primary-pink-500/5 to-primary-purple-500/5 rounded-2xl blur-xl -z-10"
+                       style={{
+                         background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.08), rgba(219, 39, 119, 0.08), transparent)'
+                       }}
+                  />
+                  <SplitVoteCard
+                    statementText={currentStatement.text}
+                    onVote={handleVote}
+                    onAddStatement={() => setShowStatementModal(true)}
+                    showStats={showVoteStats}
+                    agreePercent={voteStats?.agreePercent}
+                    disagreePercent={voteStats?.disagreePercent}
+                    passPercent={voteStats?.passPercent}
+                    disabled={isSavingVote}
+                    allowAddStatement={poll?.allowUserStatements || false}
+                    showAddButtonPulse={showAddButtonPulse}
+                  />
+                </div>
               ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
                   <div className="w-16 h-16 mx-auto bg-gradient-completion rounded-full flex items-center justify-center mb-4">

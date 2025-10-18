@@ -31,7 +31,7 @@ export function TabNavigation({
       {/* Vote Tab */}
       <button
         onClick={() => onTabChange("vote")}
-        className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
+        className={`relative flex-1 px-6 py-3.5 sm:py-3 min-h-[48px] rounded-lg font-bold text-sm transition-colors ${
           activeTab === "vote"
             ? "text-primary-900"
             : "text-white hover:text-white-80"
@@ -53,7 +53,7 @@ export function TabNavigation({
         <TooltipTrigger asChild>
           <button
             onClick={() => !resultsLocked && onTabChange("results")}
-            className={`relative flex-1 px-6 py-3 rounded-lg font-bold text-sm transition-colors ${
+            className={`relative flex-1 px-6 py-3.5 sm:py-3 min-h-[48px] rounded-lg font-bold text-sm transition-colors ${
               resultsLocked
                 ? "text-white-60 cursor-not-allowed"
                 : activeTab === "results"

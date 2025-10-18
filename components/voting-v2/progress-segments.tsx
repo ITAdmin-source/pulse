@@ -19,7 +19,7 @@ export function ProgressSegments({ total, current, showStats = false }: Progress
         return (
           <div
             key={index}
-            className={`flex-1 h-1.5 rounded-full overflow-hidden ${
+            className={`flex-1 h-2 sm:h-1.5 rounded-full overflow-hidden ${
               isCompleted || shouldFillCurrent
                 ? "bg-progress"
                 : isCurrent
