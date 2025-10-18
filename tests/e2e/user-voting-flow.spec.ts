@@ -36,7 +36,7 @@ test.describe('User Voting Flow', () => {
     expect(progress.required).toBeGreaterThan(0)
   })
 
-  test('user can change their vote', async ({ page }) => {
+  test('user cannot change their vote - votes are immutable', async ({ page }) => {
     await page.goto('/poll/example-poll')
 
     const statements = await pollPage.getStatementTexts()
@@ -47,12 +47,31 @@ test.describe('User Voting Flow', () => {
     const statementCard = page.getByTestId('statement-card').filter({ hasText: firstStatement })
     await expect(statementCard.getByTestId('vote-agree')).toHaveAttribute('aria-pressed', 'true')
 
-    // Change vote to disagree
-    await pollPage.voteOnStatement(firstStatement, 'disagree')
-    await expect(statementCard.getByTestId('vote-disagree')).toHaveAttribute('aria-pressed', 'true')
-    await expect(statementCard.getByTestId('vote-agree')).toHaveAttribute('aria-pressed', 'false')
+    // Attempt to change vote to disagree should either:
+    // 1. Show error message
+    // 2. Buttons become disabled
+    // 3. Vote remains unchanged
 
-    // Verify voting progress didn't increase (vote was changed, not added)
+    // Try to click disagree button
+    const disagreeButton = statementCard.getByTestId('vote-disagree')
+
+    // The button should either be disabled or clicking should show an error
+    const isDisabled = await disagreeButton.isDisabled()
+
+    if (!isDisabled) {
+      // If not disabled, clicking should show error
+      await disagreeButton.click()
+
+      // Look for error message (toast or inline error)
+      const hasError = await page.getByText(/already voted|cannot change|immutable|final/i).isVisible().catch(() => false)
+      expect(hasError).toBeTruthy()
+    }
+
+    // Original vote should remain unchanged
+    await expect(statementCard.getByTestId('vote-agree')).toHaveAttribute('aria-pressed', 'true')
+    await expect(statementCard.getByTestId('vote-disagree')).toHaveAttribute('aria-pressed', 'false')
+
+    // Verify voting progress stayed at 1 (no duplicate vote counted)
     const progress = await pollPage.getVotingProgress()
     expect(progress.current).toBe(1)
   })

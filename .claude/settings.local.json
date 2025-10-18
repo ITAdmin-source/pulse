@@ -32,7 +32,8 @@
       "Bash(npm run build:*)",
       "Bash(git add:*)",
       "Bash(del libutilsoffline-queue.ts)",
-      "Bash(npx drizzle-kit push)"
+      "Bash(npx drizzle-kit push)",
+      "Bash(if not exist testsintegrationworkflows mkdir testsintegrationworkflows)"
     ],
     "deny": [],
     "ask": [

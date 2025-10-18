@@ -83,6 +83,12 @@ npm run test:e2e     # Run E2E tests with Playwright
 npm run test:quick   # Quick unit test run
 npm run test:integration # Run integration tests
 npm run test:all     # Run all test suites
+
+# Key Test Coverage (as of Oct 2025)
+# ✅ Vote immutability - enforced and tested
+# ✅ StatementManager - 33 comprehensive tests (batching, progress, navigation)
+# ✅ Demographics gating - 12 integration tests (requires DB setup)
+# ⚠️  Integration tests require running PostgreSQL database
 ```
 
 ## Database Architecture

@@ -164,41 +164,104 @@ describe('VotingService', () => {
   })
 
   describe('updateVote', () => {
-    it('should update existing vote', async () => {
-      const mockVote = createMockVote({ value: -1 })
-      const updateData = {
-        voteId: 'test-vote-id',
-        value: -1,
-      }
-
-      const mockUpdate = {
-        set: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockResolvedValue([mockVote]),
-      }
-      vi.mocked(db.update).mockReturnValue(mockUpdate as any)
-
-      const result = await VotingService.updateVote(updateData)
-
-      expect(db.update).toHaveBeenCalledWith(votes)
-      expect(mockUpdate.set).toHaveBeenCalledWith({ value: -1 })
-      expect(result).toEqual(mockVote)
+    it('should always throw error - votes are immutable', async () => {
+      await expect(VotingService.updateVote()).rejects.toThrow(
+        'Vote updates are not allowed - votes are final and irreversible'
+      )
     })
+  })
 
-    it('should throw error if vote not found', async () => {
-      const updateData = {
-        voteId: 'nonexistent-vote',
+  describe('Vote Immutability', () => {
+    it('should throw error when attempting to vote twice on same statement', async () => {
+      const mockStatement = createMockStatement({ approved: true, pollId: 'test-poll-id' })
+      const mockPoll = createMockPoll({ id: 'test-poll-id' })
+      const voteData = {
+        statementId: TEST_STATEMENT_ID,
+        userId: TEST_USER_ID,
         value: 1,
       }
 
-      const mockUpdate = {
-        set: vi.fn().mockReturnThis(),
+      // Mock statement lookup
+      const mockSelectStatement = {
+        from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockResolvedValue([]),
+        limit: vi.fn().mockResolvedValue([mockStatement]),
       }
-      vi.mocked(db.update).mockReturnValue(mockUpdate as any)
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectStatement as any)
 
-      await expect(VotingService.updateVote(updateData)).rejects.toThrow('Vote not found')
+      // Mock poll lookup
+      const mockSelectPoll = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockPoll]),
+      }
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectPoll as any)
+
+      // Mock voting active check
+      vi.mocked(PollService.isVotingActive).mockResolvedValue(true)
+
+      // Mock getUserVote to return existing vote
+      const mockSelectExistingVote = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([createMockVote({ value: 1 })]),
+      }
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectExistingVote as any)
+
+      // Attempt to cast vote again on same statement
+      await expect(VotingService.castVote(voteData)).rejects.toThrow(
+        'Vote already cast - votes are final and cannot be changed'
+      )
+    })
+
+    it('should allow vote on different statement by same user', async () => {
+      const mockStatement = createMockStatement({ approved: true, pollId: 'test-poll-id' })
+      const mockPoll = createMockPoll({ id: 'test-poll-id' })
+      const mockVote = createMockVote({ value: 1 })
+      const voteData = {
+        statementId: 'different-statement-id',
+        userId: TEST_USER_ID,
+        value: 1,
+      }
+
+      // Mock statement lookup
+      const mockSelectStatement = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockStatement]),
+      }
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectStatement as any)
+
+      // Mock poll lookup
+      const mockSelectPoll = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockPoll]),
+      }
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectPoll as any)
+
+      // Mock voting active check
+      vi.mocked(PollService.isVotingActive).mockResolvedValue(true)
+
+      // Mock getUserVote to return null (no existing vote)
+      const mockSelectNoVote = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([]),
+      }
+      vi.mocked(db.select).mockReturnValueOnce(mockSelectNoVote as any)
+
+      // Mock vote insertion
+      const mockInsert = {
+        values: vi.fn().mockReturnThis(),
+        returning: vi.fn().mockResolvedValue([mockVote]),
+      }
+      vi.mocked(db.insert).mockReturnValue(mockInsert as any)
+
+      const result = await VotingService.castVote(voteData)
+
+      expect(result).toEqual(mockVote)
+      expect(db.insert).toHaveBeenCalledWith(votes)
     })
   })
 
