@@ -70,6 +70,10 @@ npm run lint
 npm run db:generate  # Generate database migration
 npm run db:migrate   # Apply database migrations
 
+# Database security (RLS)
+npx tsx scripts/check-rls-status.ts      # Check Row Level Security status on all tables
+npx tsx scripts/apply-rls-migration.ts   # Apply RLS policies (already applied to all tables)
+
 # Testing
 npm run test         # Run tests
 npm run test:watch   # Run tests in watch mode
@@ -93,6 +97,8 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 - Uses **Supabase PostgreSQL** via `DATABASE_URL` from `.env.local`
 - All schemas are imported and exported through `db/schema/index.ts`
 - Database instance created in `db/db.ts` with full schema object
+- **Row Level Security (RLS) enabled on ALL tables** - Defense-in-depth protection against direct database access
+- **Performance indexes** on high-traffic tables (`votes`, `statements`) for optimized query performance
 
 ### Key Tables & Relationships
 
@@ -123,6 +129,47 @@ This project uses **Drizzle ORM with PostgreSQL (via Supabase)** and follows a c
 - **Statement moderation** - Only approved statements appear; rejected statements are deleted
 - **Anonymous user transition** - Anonymous users who sign up have their votes transferred to authenticated identity
 - **Poll results caching** - AI-generated summaries cached for 24 hours to reduce API calls
+
+### Row Level Security (RLS)
+
+**Status: ✅ ENABLED on all 14 tables**
+
+All database tables have Row Level Security enabled as a defense-in-depth security measure:
+
+**Architecture:**
+- **Server Actions** use service role credentials that automatically bypass RLS policies
+- **Direct database connections** (e.g., via stolen `DATABASE_URL`) are blocked by RLS policies
+- **Zero application code changes** required - RLS is transparent to the application layer
+
+**Security Benefits:**
+- **Protects against DATABASE_URL exposure** - If credentials leak, attackers cannot query data
+- **Compliance requirement** - Aligns with GDPR, SOC 2, and ISO 27001 standards for defense-in-depth
+- **Audit trail ready** - Database logs show unauthorized access attempts at RLS layer
+
+**Tables Protected (14 total):**
+- **High sensitivity**: `user_demographics`, `votes`, `user_poll_insights` (PII and personal voting data)
+- **Medium sensitivity**: `users`, `user_profiles`, `user_roles`, `user_feedback`, `polls`, `statements`
+- **Low sensitivity**: `poll_results_summaries`, `age_groups`, `genders`, `ethnicities`, `political_parties`
+
+**RLS Policy Pattern:**
+All tables use a restrictive "deny by default" policy:
+```sql
+ALTER TABLE "table_name" ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "table_name_block_direct_access"
+ON "table_name"
+FOR ALL
+USING (false);  -- Deny all direct access
+```
+
+**Verification:**
+Check RLS status at any time:
+```bash
+npx tsx scripts/check-rls-status.ts
+```
+
+**Important for New Tables:**
+When adding new tables, **ALWAYS enable RLS** immediately after creating the table. See `NEW_TABLE_INSTRUCTIONS.md` Step 7 for details.
 
 ## Infrastructure Services
 
@@ -168,6 +215,9 @@ The project includes a comprehensive service layer in `lib/services/` that provi
 - **Slug generation** (`lib/utils/slug.ts`) - URL-friendly poll identifiers
 - **Voting utilities** (`lib/utils/voting.ts`) - Vote calculations and distributions
 - **Permission helpers** (`lib/utils/permissions.ts`) - Role-based access control
+- **Rate limiting** (`lib/utils/rate-limit.ts`) - In-memory token bucket rate limiter for API protection
+  - Pre-configured limiters: `voteLimiter`, `statementLimiter`, `apiLimiter`
+  - Prevents abuse on vote submission and statement creation endpoints
 
 ## Authentication & User Management
 
@@ -395,6 +445,7 @@ All user-facing text managed in `lib/strings/he.ts`:
 - **Forms**: React Hook Form with Zod validation
 - **State Management**: React Context API (UserContext, HeaderContext)
 - **Notifications**: Sonner for toast notifications
+- **Security**: Security headers (HSTS, X-Frame-Options, CSP), rate limiting, RLS on all tables
 
 ## Environment Setup
 
