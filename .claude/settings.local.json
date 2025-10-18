@@ -29,11 +29,11 @@
       "Bash(do [ -f \"$file\" ])",
       "Bash(done)",
       "Bash(npm test:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [
-
       "Bash(npm run dev:*)",
       "Bash(npm run test:*)",
       "Bash(npm run test:coverage:*)",
