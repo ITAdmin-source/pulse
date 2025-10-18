@@ -1075,7 +1075,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         <div className="text-center mb-6">
           <div className="text-4xl sm:text-5xl mb-2 sm:mb-3">📊</div>
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
+            <h1 className="text-xl sm:text-3xl font-bold text-white">{poll.question}</h1>
             {isPollClosed && (
               <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
             )}

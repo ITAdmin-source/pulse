@@ -45,7 +45,9 @@
   --gradient-question-to: #16c3ea;
 
   /* Progress Bar */
-  --color-progress: #f04e2d;
+  --color-progress: #f04e2d;          /* Contemporary Orange - Progress bar segments */
+  --color-progress-50: rgba(240, 78, 45, 0.5);   /* Contemporary Orange/50 - Current segment (pulsing) */
+  --color-progress-20: rgba(240, 78, 45, 0.2);   /* Contemporary Orange/20 - Upcoming segments */
 
   /* Tab Navigation */
   --tab-active-bg: #f04e2d;

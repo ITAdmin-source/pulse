@@ -153,6 +153,11 @@
 .text-voting-pass { color: var(--voting-pass-text); }
 .text-voting-pass-dark { color: var(--voting-pass-dark); }
 
+/* Progress Bar Colors */
+.bg-progress { background-color: var(--color-progress); }
+.bg-progress-50 { background-color: var(--color-progress-50); }
+.bg-progress-20 { background-color: var(--color-progress-20); }
+
 /* Gray Colors */
 .text-gray-900 { color: var(--color-gray-900); }
 .text-gray-600 { color: var(--color-gray-600); }

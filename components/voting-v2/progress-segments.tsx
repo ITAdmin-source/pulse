@@ -21,15 +21,15 @@ export function ProgressSegments({ total, current, showStats = false }: Progress
             key={index}
             className={`flex-1 h-1.5 rounded-full overflow-hidden ${
               isCompleted || shouldFillCurrent
-                ? "bg-white"
+                ? "bg-progress"
                 : isCurrent
-                ? "bg-white/50 animate-pulse"
-                : "bg-white/20"
+                ? "bg-progress-50 animate-pulse"
+                : "bg-progress-20"
             }`}
           >
             {shouldFillCurrent && (
               <motion.div
-                className="h-full bg-white"
+                className="h-full bg-progress"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
                 transition={{ duration: 0.8, ease: "linear" }}

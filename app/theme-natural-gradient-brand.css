@@ -46,7 +46,9 @@
   --gradient-question-to: #8dc63f;
 
   /* Progress Bar */
-  --color-progress: #8dc63f;
+  --color-progress: #8dc63f;          /* Medium Base Green - Progress bar segments */
+  --color-progress-50: rgba(141, 198, 63, 0.5);   /* Medium Base Green/50 - Current segment (pulsing) */
+  --color-progress-20: rgba(141, 198, 63, 0.2);   /* Medium Base Green/20 - Upcoming segments */
 
   /* Tab Navigation */
   --tab-active-bg: #ffffff;

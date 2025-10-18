@@ -189,6 +189,14 @@
   --confetti-pink-600: #db2777;
   --confetti-pink-500: #ec4899;
   --confetti-purple-500: #a855f7;
+
+  /* ============================================================================
+   * PROGRESS BAR COLORS
+   * ============================================================================ */
+
+  --color-progress: #ffffff;          /* white - Progress bar segments */
+  --color-progress-50: rgba(255, 255, 255, 0.5);   /* white/50 - Current segment (pulsing) */
+  --color-progress-20: rgba(255, 255, 255, 0.2);   /* white/20 - Upcoming segments */
 }
 
 /* ============================================================================
