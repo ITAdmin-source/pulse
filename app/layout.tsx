@@ -26,8 +26,8 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "פולס - פלטפורמת סקרים דמוקרטית",
-  description: "פלטפורמת סקרים משתתפת למעורבות דמוקרטית",
+  title: "כיכר העיר - חכמת האנשים",
+  description: "דיונים  ציבוריים שמתקנים",
 };
 
 export default function RootLayout({

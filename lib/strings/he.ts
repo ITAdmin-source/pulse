@@ -15,8 +15,8 @@
 
 export const pollsList = {
   // Hero Section
-  appTitle: 'דיונים ציבוריים',
-  heroHeadline: 'בחרו נושא והשפיעו עליו',
+  appTitle: 'דיונים  ציבוריים שמתקנים',
+  heroHeadline: 'הצטרפו לדיון והשפיעו עכשיו',
   heroSubheading: 'שתפו את נקודת המבט שלכם בנושאים חשובים',
 
   // Filters
@@ -273,8 +273,8 @@ export const banners = {
   partialIcon: 'ℹ️',
 
   // Sign Up Banner (Home Page - Dismissible)
-  signUpBannerTitle: 'לעולם לא לפספס דיון',
-  signUpBannerBody: 'הירשמו כדי לקבל התראות על דיונים חדשים ולשמור את תובנות ההצבעה שלכם',
+  signUpBannerTitle: 'לעולם לא תפססו דיון',
+  signUpBannerBody: 'הירשמו כדי לקבל התראות על דיונים חדשים',
   signUpBannerCTA: 'הרשמה חינם',
   signUpBannerDismiss: 'אולי מאוחר יותר',
   signUpBannerIcon: '💡',
