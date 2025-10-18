@@ -17,7 +17,7 @@ export function FloatingFeedbackButton({ userId }: FloatingFeedbackButtonProps) 
       {/* Floating Button - Fixed position bottom-left (RTL) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 start-6 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-2xl transition-all duration-200 hover:scale-110 hover:shadow-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        className="fixed bottom-6 start-6 z-50 h-14 w-14 rounded-full bg-gradient-poll-header text-white shadow-2xl transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2"
         aria-label={feedbackStrings.buttonTooltip}
         title={feedbackStrings.buttonTooltip}
       >

@@ -47,7 +47,7 @@ export function EncouragementToast({
           }}
           className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"
         >
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full shadow-2xl">
+          <div className="bg-gradient-poll-header text-white px-6 py-3 rounded-full shadow-2xl">
             <p className="text-lg sm:text-xl font-bold text-center" dir="auto">
               {message}
             </p>

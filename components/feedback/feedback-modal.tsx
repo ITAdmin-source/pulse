@@ -127,7 +127,7 @@ export function FeedbackModal({
             <DialogFooter>
               <Button
                 onClick={handleClose}
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full btn-primary"
               >
                 {feedbackStrings.closeButton}
               </Button>
@@ -185,7 +185,7 @@ export function FeedbackModal({
               <Button
                 onClick={handleSubmit}
                 disabled={isEmpty || isOverLimit || isSubmitting}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="btn-primary"
               >
                 {isSubmitting ? (
                   <>
