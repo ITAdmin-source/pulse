@@ -39,7 +39,7 @@ try {
     connect_timeout: 30, // Increased timeout for network latency
     max_lifetime: 60 * 30, // Reuse connections for 30 minutes
     onnotice: () => {}, // Suppress notices
-    prepare: false, // CRITICAL: Required for PgBouncer transaction mode (?pgbouncer=true)
+    //prepare: false, // CRITICAL: Required for PgBouncer transaction mode (?pgbouncer=true)
   });
 
   // Test connection on startup in development
