@@ -14,10 +14,76 @@ import {
 } from "@/db/queries/statements-queries";
 import { type NewStatement } from "@/db/schema/statements";
 import { UserService } from "@/lib/services/user-service";
+import { z } from "zod";
+import { getPollByIdAction } from "@/actions/polls-actions";
 
+// PHASE 4 SECURITY: Zod validation schema for statement creation
+const createStatementSchema = z.object({
+  pollId: z.string().uuid("Invalid poll ID"),
+  text: z.string()
+    .min(10, "Statement must be at least 10 characters")
+    .max(500, "Statement must not exceed 500 characters")
+    .trim(),
+  submittedBy: z.string().uuid("Invalid user ID").optional().nullable(),
+  approved: z.boolean().optional().nullable(),
+  approvedBy: z.string().uuid("Invalid approver ID").optional().nullable(),
+});
+
+/**
+ * Create a new statement with comprehensive validation
+ * SECURITY: Validates input, sanitizes content, verifies poll status
+ */
 export async function createStatementAction(data: NewStatement) {
   try {
-    const statement = await createStatement(data);
+    // PHASE 4 SECURITY: Validate input with Zod schema
+    const validated = createStatementSchema.safeParse(data);
+    if (!validated.success) {
+      const errors = validated.error.issues.map(e => e.message).join(", ");
+      return {
+        success: false,
+        error: `Invalid statement data: ${errors}`
+      };
+    }
+
+    // PHASE 4 SECURITY: Verify poll exists and allows user statements
+    const pollResult = await getPollByIdAction(validated.data.pollId);
+    if (!pollResult.success || !pollResult.data) {
+      return {
+        success: false,
+        error: "Poll not found"
+      };
+    }
+
+    const poll = pollResult.data;
+
+    // Check if poll allows user-submitted statements
+    if (!poll.allowUserStatements) {
+      return {
+        success: false,
+        error: "This poll does not accept user-submitted statements"
+      };
+    }
+
+    // Check if poll is published (can't add statements to draft/closed polls)
+    if (poll.status !== "published") {
+      return {
+        success: false,
+        error: "Cannot submit statements to this poll"
+      };
+    }
+
+    // PHASE 4 SECURITY: Sanitize text content (remove HTML, trim whitespace)
+    const sanitizedText = validated.data.text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    // Create statement with sanitized content
+    const statement = await createStatement({
+      ...validated.data,
+      text: sanitizedText,
+    });
+
     revalidatePath("/polls");
     revalidateTag("statements"); // Invalidate statements cache
     return { success: true, data: statement };

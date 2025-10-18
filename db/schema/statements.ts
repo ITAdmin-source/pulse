@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, boolean, index } from "drizzle-orm/pg-core";
 import { polls } from "./polls";
 import { users } from "./users";
 
@@ -12,7 +12,12 @@ export const statements = pgTable("statements", {
   approved: boolean("approved"),
   approvedBy: uuid("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
-});
+}, (table) => ({
+  // Performance indexes for common queries
+  pollIdIdx: index("statements_poll_id_idx").on(table.pollId), // For fetching statements by poll
+  pollIdApprovedIdx: index("statements_poll_id_approved_idx").on(table.pollId, table.approved), // For fetching approved statements by poll
+  approvedIdx: index("statements_approved_idx").on(table.approved), // For moderation queries
+}));
 
 export type Statement = typeof statements.$inferSelect;
 export type NewStatement = typeof statements.$inferInsert;

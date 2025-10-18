@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import {
   createUserDemographics,
   deleteUserDemographics,
@@ -9,6 +10,7 @@ import {
   updateUserDemographics,
 } from "@/db/queries/user-demographics-queries";
 import { type NewUserDemographics } from "@/db/schema/user-demographics";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createUserDemographicsAction(data: NewUserDemographics) {
   try {
@@ -21,8 +23,31 @@ export async function createUserDemographicsAction(data: NewUserDemographics) {
   }
 }
 
+/**
+ * Update user demographics
+ * PHASE 5 SECURITY: Only allows users to update their own demographics OR system admins
+ */
 export async function updateUserDemographicsAction(userId: string, data: Partial<NewUserDemographics>) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to update their own demographics OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized to update user demographics" };
+    }
+
     const updatedUserDemographics = await updateUserDemographics(userId, data);
     if (!updatedUserDemographics) {
       return { success: false, error: "User demographics not found" };
@@ -35,8 +60,31 @@ export async function updateUserDemographicsAction(userId: string, data: Partial
   }
 }
 
+/**
+ * Delete user demographics
+ * PHASE 5 SECURITY: Only allows users to delete their own demographics OR system admins
+ */
 export async function deleteUserDemographicsAction(userId: string) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to delete their own demographics OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized to delete user demographics" };
+    }
+
     const success = await deleteUserDemographics(userId);
     if (!success) {
       return { success: false, error: "User demographics not found" };
@@ -59,8 +107,31 @@ export async function getUserDemographicsAction() {
   }
 }
 
+/**
+ * Get user demographics by user ID
+ * PHASE 5 SECURITY: Only allows users to access their own demographics OR system admins
+ */
 export async function getUserDemographicsByIdAction(userId: string) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own demographics OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user demographics" };
+    }
+
     const userDemographics = await getUserDemographicsById(userId);
     if (!userDemographics) {
       return { success: false, error: "User demographics not found" };

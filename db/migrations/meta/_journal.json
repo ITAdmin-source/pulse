@@ -57,6 +57,13 @@
       "when": 1760718581053,
       "tag": "0007_modern_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1760777528155,
+      "tag": "0008_jittery_the_fallen",
+      "breakpoints": true
     }
   ]
 }

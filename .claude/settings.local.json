@@ -31,7 +31,8 @@
       "Bash(npm test:*)",
       "Bash(npm run build:*)",
       "Bash(git add:*)",
-      "Bash(del libutilsoffline-queue.ts)"
+      "Bash(del libutilsoffline-queue.ts)",
+      "Bash(npx drizzle-kit push)"
     ],
     "deny": [],
     "ask": [
@@ -46,9 +47,7 @@
       "Bash(npm run db:generate:*)",
       "Bash(npm run db:migrate:*)",
       "Bash(npm run db:seed:*)",
-      "Bash(npm run lint:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run test:*)"
     ]

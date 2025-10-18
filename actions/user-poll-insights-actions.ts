@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import {
   createUserPollInsight,
   deleteUserPollInsight,
@@ -13,6 +14,7 @@ import {
 } from "@/db/queries/user-poll-insights-queries";
 import { type NewUserPollInsight } from "@/db/schema/user-poll-insights";
 import { AIService } from "@/lib/services/ai-service";
+import { UserService } from "@/lib/services/user-service";
 
 export async function createUserPollInsightAction(data: NewUserPollInsight) {
   try {
@@ -74,8 +76,31 @@ export async function getUserPollInsightsAction() {
   }
 }
 
+/**
+ * Get all insights for a specific user
+ * PHASE 5 SECURITY: Only allows users to access their own insights OR system admins
+ */
 export async function getUserPollInsightsByUserIdAction(userId: string) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own insights OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user insights" };
+    }
+
     const insights = await getUserPollInsightsByUserId(userId);
     return { success: true, data: insights };
   } catch (error) {
@@ -94,8 +119,31 @@ export async function getUserPollInsightsByPollIdAction(pollId: string) {
   }
 }
 
+/**
+ * Get a specific user's insight for a specific poll
+ * PHASE 5 SECURITY: Only allows users to access their own insights OR system admins
+ */
 export async function getUserPollInsightAction(userId: string, pollId: string) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own insights OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user insight" };
+    }
+
     const insight = await getUserPollInsight(userId, pollId);
     return { success: true, data: insight };
   } catch (error) {
@@ -106,9 +154,29 @@ export async function getUserPollInsightAction(userId: string, pollId: string) {
 
 /**
  * Fetch insight with poll details for modal display
+ * PHASE 5 SECURITY: Only allows users to access their own insights OR system admins
  */
 export async function getInsightWithPollDetailsAction(userId: string, pollId: string) {
   try {
+    // PHASE 5 SECURITY: Authorization check
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUser = await UserService.findByClerkId(clerkUserId);
+    if (!currentUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Only allow users to access their own insights OR system admins
+    const roles = await UserService.getUserRoles(currentUser.id);
+    const isAdmin = roles.some(r => r.role === 'system_admin');
+
+    if (currentUser.id !== userId && !isAdmin) {
+      return { success: false, error: "Unauthorized access to user insight" };
+    }
+
     const insight = await getUserPollInsight(userId, pollId);
 
     if (!insight) {

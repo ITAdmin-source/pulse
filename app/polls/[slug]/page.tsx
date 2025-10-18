@@ -19,6 +19,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useClerk } from "@clerk/nextjs";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
-// v2.0 Components
+// v2.0 Components - Core (always loaded)
 import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
@@ -35,14 +36,59 @@ import { ResultsLockedBanner } from "@/components/banners/results-locked-banner"
 import { ClosedPollBanner } from "@/components/banners/closed-poll-banner";
 import { PartialParticipationBanner } from "@/components/banners/partial-participation-banner";
 import { DemographicsModal, type DemographicsData } from "@/components/modals/demographics-modal";
-import { InsightCard } from "@/components/results-v2/insight-card";
-import { AggregateStats } from "@/components/results-v2/aggregate-stats";
-import { DemographicHeatmap } from "@/components/results-v2/demographic-heatmap";
-import { MoreStatementsPrompt } from "@/components/results-v2/more-statements-prompt";
-import { VotingCompleteBanner } from "@/components/results-v2/voting-complete-banner";
-import { StatementSubmissionModal } from "@/components/modals/statement-submission-modal";
 import { EncouragementToast } from "@/components/gamification/encouragement-toast";
-// Note: NextBatchPrompt removed - using MoreStatementsPrompt in Results tab instead
+import { StatementSubmissionModal } from "@/components/modals/statement-submission-modal";
+
+// v2.0 Components - Lazy Loaded (Results tab only) with loading fallbacks
+const InsightCard = dynamic(() => import("@/components/results-v2/insight-card").then(mod => ({ default: mod.InsightCard })), {
+  loading: () => (
+    <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+      <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+      <p className="text-lg font-medium">טוען תובנה...</p>
+    </div>
+  ),
+  ssr: false
+});
+
+const AggregateStats = dynamic(() => import("@/components/results-v2/aggregate-stats").then(mod => ({ default: mod.AggregateStats })), {
+  loading: () => (
+    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
+      <p className="text-gray-600 text-sm">טוען סטטיסטיקות...</p>
+    </div>
+  ),
+  ssr: false
+});
+
+const DemographicHeatmap = dynamic(() => import("@/components/results-v2/demographic-heatmap").then(mod => ({ default: mod.DemographicHeatmap })), {
+  loading: () => (
+    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
+      <p className="text-gray-600 text-sm">טוען מפת חום דמוגרפית...</p>
+    </div>
+  ),
+  ssr: false
+});
+
+const MoreStatementsPrompt = dynamic(() => import("@/components/results-v2/more-statements-prompt").then(mod => ({ default: mod.MoreStatementsPrompt })), {
+  loading: () => (
+    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
+      <p className="text-gray-600 text-sm">טוען...</p>
+    </div>
+  ),
+  ssr: false
+});
+
+const VotingCompleteBanner = dynamic(() => import("@/components/results-v2/voting-complete-banner").then(mod => ({ default: mod.VotingCompleteBanner })), {
+  loading: () => (
+    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
+      <p className="text-gray-600 text-sm">טוען...</p>
+    </div>
+  ),
+  ssr: false
+});
 
 // Actions
 import { getPollBySlugAction } from "@/actions/polls-actions";
@@ -52,7 +98,7 @@ import { saveDemographicsAction, getUserDemographicsByIdAction } from "@/actions
 import { ensureUserExistsAction } from "@/actions/users-actions";
 import { getUserPollInsightAction, generateAndSaveInsightAction, getUserArtifactCollectionAction, markArtifactAsSeenAction } from "@/actions/user-poll-insights-actions";
 import { getPollResultsAction } from "@/actions/poll-results-actions";
-import { getHeatmapDataAction } from "@/actions/heatmap-actions";
+import { getAllHeatmapDataAction } from "@/actions/heatmap-actions";
 import type { HeatmapStatementData } from "@/db/queries/demographic-analytics-queries";
 import type { ArtifactSlot } from "@/components/results-v2/minimal-collection-footer";
 
@@ -820,13 +866,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       // For users below threshold, don't fetch insight (but still fetch aggregate stats for closed polls)
       // For closed polls, always fetch aggregate stats/heatmap regardless of vote count
       const shouldFetchInsight = hasReachedInsightThreshold && userId;
-      const [insightResult, pollResultsResult, genderHeatmap, ageHeatmap, ethnicityHeatmap, politicsHeatmap, artifacts] = await Promise.all([
+      const [insightResult, pollResultsResult, allHeatmapData, artifacts] = await Promise.all([
         shouldFetchInsight ? getUserPollInsightAction(userId, poll.id) : Promise.resolve({ success: false, data: null }),
         getPollResultsAction(poll.id),
-        getHeatmapDataAction(poll.id, "gender", 3),
-        getHeatmapDataAction(poll.id, "ageGroup", 3),
-        getHeatmapDataAction(poll.id, "ethnicity", 3),
-        getHeatmapDataAction(poll.id, "politicalParty", 3),
+        getAllHeatmapDataAction(poll.id, 3), // OPTIMIZED: Single call instead of 4 separate calls
         userId ? loadUserArtifacts() : Promise.resolve([])
       ]);
 
@@ -924,12 +967,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
       }
 
-      // Process heatmap data
-      const heatmapData = {
-        gender: genderHeatmap.success && genderHeatmap.data ? genderHeatmap.data : [],
-        ageGroup: ageHeatmap.success && ageHeatmap.data ? ageHeatmap.data : [],
-        ethnicity: ethnicityHeatmap.success && ethnicityHeatmap.data ? ethnicityHeatmap.data : [],
-        politicalParty: politicsHeatmap.success && politicsHeatmap.data ? politicsHeatmap.data : []
+      // Process heatmap data (now from single optimized call)
+      const heatmapData = allHeatmapData.success && allHeatmapData.data ? allHeatmapData.data : {
+        gender: [],
+        ageGroup: [],
+        ethnicity: [],
+        politicalParty: []
       };
 
       setResultsData({
