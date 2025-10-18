@@ -247,7 +247,7 @@ export default function PollsPage() {
 
         {/* Poll Grid */}
         {!isLoading && filteredPolls.length > 0 && (
-          <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPolls.map((poll) => {
               const displayStatus = getPollStatus(poll);
               return (

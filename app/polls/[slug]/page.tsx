@@ -127,6 +127,7 @@ interface Poll {
   unsureButtonLabel?: string | null;
   allowUserStatements: boolean;
   autoApproveStatements: boolean;
+  emoji?: string | null;
 }
 
 interface CombinedPollPageProps {
@@ -1195,7 +1196,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Poll Header - Question and Description */}
         <div className="text-center mb-4 sm:mb-6 px-4">
-          <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">📊</div>
+          <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">{poll.emoji || '📊'}</div>
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
             {isPollClosed && (
