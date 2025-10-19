@@ -28,6 +28,18 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: "כיכר העיר - חכמת האנשים",
   description: "דיונים  ציבוריים שמתקנים",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  openGraph: {
+    title: "כיכר העיר - חכמת האנשים",
+    description: "דיונים  ציבוריים שמתקנים",
+    type: "website",
+    locale: "he_IL",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "כיכר העיר - חכמת האנשים",
+    description: "דיונים  ציבוריים שמתקנים",
+  },
 };
 
 export default function RootLayout({
