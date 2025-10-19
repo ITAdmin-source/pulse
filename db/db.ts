@@ -27,34 +27,109 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
+// Parse and validate connection string
+const dbUrl = new URL(process.env.DATABASE_URL);
+const isSessionMode = dbUrl.port === '5432';
+const isTransactionMode = dbUrl.port === '6543';
+const hasPgBouncer = dbUrl.searchParams.has('pgbouncer');
+
+// Validate configuration and warn about mismatches
+if (process.env.NODE_ENV === "development") {
+  console.log(`[DB] Connecting to: ${dbUrl.hostname}:${dbUrl.port}`);
+  console.log(`[DB] Mode: ${isSessionMode ? 'Session' : isTransactionMode ? 'Transaction' : 'Unknown'}`);
+
+  if (isSessionMode && hasPgBouncer) {
+    console.warn('⚠️  WARNING: Port 5432 (Session Mode) should NOT use ?pgbouncer=true');
+    console.warn('   Recommendation: Remove ?pgbouncer=true OR switch to port 6543 (Transaction Mode)');
+  } else if (isTransactionMode && !hasPgBouncer) {
+    console.warn('⚠️  WARNING: Port 6543 (Transaction Mode) should use ?pgbouncer=true');
+    console.warn('   Recommendation: Add ?pgbouncer=true to your connection string');
+  }
+}
+
+/**
+ * Singleton pattern for database client
+ * Prevents connection exhaustion during Next.js development hot reloads
+ *
+ * In development, Next.js Hot Module Replacement (HMR) causes modules to reload,
+ * which would create new database connections without closing old ones.
+ * This pattern stores the client in globalThis to persist across reloads.
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var __db_client: ReturnType<typeof postgres> | undefined;
+}
+
 let client: ReturnType<typeof postgres>;
 
-try {
-  const dbUrl = new URL(process.env.DATABASE_URL);
-  console.log(`Attempting to connect to database at: ${dbUrl.hostname}`);
-
+if (process.env.NODE_ENV === "production") {
+  // Production: Create new client (serverless functions are stateless)
   client = postgres(process.env.DATABASE_URL, {
-    max: 10, // Increased connection pool for better performance
+    // For Next.js serverless, small pool size is optimal (1-2 connections)
+    // Multiple serverless instances = multiple pools
+    max: isTransactionMode ? 2 : 5,
     idle_timeout: 20,
-    connect_timeout: 30, // Increased timeout for network latency
-    max_lifetime: 60 * 30, // Reuse connections for 30 minutes
+    connect_timeout: 30,
+    max_lifetime: 60 * 30, // 30 minutes
     onnotice: () => {}, // Suppress notices
-    prepare: false, // CRITICAL: Required for PgBouncer transaction mode (?pgbouncer=true)
+    // CRITICAL: prepare: false required for Transaction Mode (port 6543)
+    // Session Mode (port 5432) supports prepared statements
+    prepare: isTransactionMode ? false : false, // Set to false for both modes for consistency
   });
-
-  // Test connection on startup in development
-  if (process.env.NODE_ENV === "development") {
-    client`SELECT 1`.catch((err) => {
-      console.error("Database connection test failed:", err.message);
-      console.error("Please check:");
-      console.error("1. Your Supabase project is active (not paused)");
-      console.error("2. The DATABASE_URL in .env.local is correct");
-      console.error("3. Your network can reach Supabase (check firewall/VPN)");
+} else {
+  // Development: Use singleton pattern to persist client across hot reloads
+  if (!global.__db_client) {
+    console.log('[DB] Creating new database client (singleton)');
+    global.__db_client = postgres(process.env.DATABASE_URL, {
+      // Development can use larger pool for better performance
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 30,
+      max_lifetime: 60 * 30,
+      onnotice: () => {},
+      prepare: isTransactionMode ? false : false,
+      // Enable debug mode in development for troubleshooting
+      debug: false, // Set to true for detailed query logging
     });
+
+    // Test connection on first initialization
+    global.__db_client`SELECT 1`
+      .then(() => console.log('[DB] ✅ Connection test successful'))
+      .catch((err) => {
+        console.error("[DB] ❌ Connection test failed:", err.message);
+        console.error("Please check:");
+        console.error("1. Your Supabase project is active (not paused)");
+        console.error("2. The DATABASE_URL in .env.local is correct");
+        console.error("3. Your network can reach Supabase (check firewall/VPN)");
+        console.error("4. Port and mode configuration are correct:");
+        console.error(`   Current: Port ${dbUrl.port}, pgbouncer=${hasPgBouncer}`);
+        console.error("   Session Mode: Port 5432 WITHOUT ?pgbouncer=true");
+        console.error("   Transaction Mode: Port 6543 WITH ?pgbouncer=true");
+      });
+  } else {
+    console.log('[DB] Reusing existing database client (singleton)');
   }
-} catch (error) {
-  console.error("Failed to initialize database client:", error);
-  throw new Error(`Database initialization failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+
+  client = global.__db_client;
 }
 
 export const db = drizzle(client, { schema });
+
+/**
+ * Graceful shutdown handler
+ * Call this when your application is shutting down to close database connections
+ */
+export async function closeDatabase() {
+  try {
+    await client.end({ timeout: 5 });
+    console.log('[DB] Connection closed successfully');
+  } catch (error) {
+    console.error('[DB] Error closing connection:', error);
+  }
+}
+
+// Clean up on process termination
+if (process.env.NODE_ENV !== 'test') {
+  process.on('SIGTERM', closeDatabase);
+  process.on('SIGINT', closeDatabase);
+}

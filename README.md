@@ -72,6 +72,77 @@ npm run lint
 # Database operations
 npm run db:generate    # Generate migration
 npm run db:migrate     # Apply migrations
+npm run db:health      # Connection health check
+npm run db:stress      # Connection stress test
+
+# Testing
+npm run test           # Run tests in watch mode
+npm run test:quick     # Quick unit tests
+npm run test:integration # Integration tests (requires DB)
+npm run test:e2e       # E2E tests with Playwright
+npm run test:all       # Run all test suites
+npm run test:coverage  # Generate coverage report
+```
+
+## Testing
+
+Pulse uses a multi-layered testing strategy with four test categories:
+
+### Test Categories
+
+**Unit Tests** (`tests/unit/`)
+- Fast, isolated tests of services and utilities
+- No database required (uses mocks)
+- Run on every code change
+- Command: `npm run test:quick`
+
+**Integration Tests** (`tests/integration/`)
+- Test service interactions with database
+- Requires running PostgreSQL database
+- Run before commits
+- Command: `npm run test:integration`
+
+**E2E Tests** (`tests/e2e/`)
+- Complete user workflows through browser
+- Uses Playwright for automation
+- Run before major releases
+- Command: `npm run test:e2e`
+
+**Infrastructure Tests** (`scripts/`)
+- Validate database connection health
+- Run manually or pre-deployment
+- Commands: `npm run db:health`, `npm run db:stress`
+
+### Quick Reference
+
+```bash
+# Development (fast feedback)
+npm run test:quick              # Unit tests only (~5s)
+npm run test:watch              # Watch mode
+
+# Pre-commit (comprehensive)
+npm run test:all                # All application tests (~60s)
+
+# Infrastructure (manual/scheduled)
+npm run db:health               # Connection health check (~10s)
+npm run db:stress               # Stress test (~20s)
+```
+
+For comprehensive testing documentation, see **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)**.
+
+### Coverage Requirements
+
+- Services: 90%+ coverage required
+- Validations: 100% coverage required
+- Utils: 85%+ coverage required
+
+### Key Test Coverage
+
+- ✅ Vote immutability enforcement
+- ✅ Demographics gating workflow (12 integration tests)
+- ✅ Statement batching logic (33 tests)
+- ✅ Database connection health (6 automated tests)
+- ✅ Connection stress testing (350 requests)
 ```
 
 ## Architecture
