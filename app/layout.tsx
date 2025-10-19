@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { heIL } from "@clerk/localizations";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { UserProvider } from "@/contexts/user-context";
 import { Providers } from "@/components/providers";
 import { AdaptiveHeader } from "@/components/shared";
@@ -64,6 +66,8 @@ export default function RootLayout({
               {children}
               <FeedbackButtonWrapper />
             </UserProvider>
+            <Analytics />
+            <SpeedInsights />
           </Providers>
         </body>
       </html>
