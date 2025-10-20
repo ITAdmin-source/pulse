@@ -34,7 +34,9 @@
       "Bash(del libutilsoffline-queue.ts)",
       "Bash(npx drizzle-kit push)",
       "Bash(if not exist testsintegrationworkflows mkdir testsintegrationworkflows)",
-      "Bash(if not exist .claudedocs mkdir .claudedocs)"
+      "Bash(if not exist .claudedocs mkdir .claudedocs)",
+      "Bash(if not exist libclustering mkdir libclustering)",
+      "Bash(if not exist apppolls[slug]opinionmap mkdir apppolls[slug]opinionmap)"
     ],
     "deny": [],
     "ask": [

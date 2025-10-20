@@ -599,6 +599,114 @@ export function pluralize(count: number, singular: string, plural: string): stri
   return count === 1 ? singular : plural;
 }
 
+// ============================================================================
+// OPINION MAP PAGE (CLUSTERING VISUALIZATION)
+// ============================================================================
+
+export const opinionMap = {
+  // Page Title & Header
+  pageTitle: 'מפת דעות',
+  backToResults: 'חזרה לתוצאות',
+
+  // Loading States
+  loading: 'בונים את מפת הדעות...',
+  computing: 'מחשבים קבוצות דעה...',
+
+  // Eligibility Messages
+  notEligibleTitle: 'מפת הדעות עדיין לא זמינה',
+  notEligibleMinUsers: (current: number, required: number) =>
+    `דרושים לפחות ${required} מצביעים כדי ליצור מפת דעות. כרגע: ${current} מצביעים.`,
+  notEligibleMinStatements: (current: number, required: number) =>
+    `דרושות לפחות ${required} עמדות כדי ליצור מפת דעות. כרגע: ${current} עמדות.`,
+  checkBackLater: 'חזרו מאוחר יותר כשיהיו יותר מצביעים',
+
+  // Error States
+  errorTitle: 'שגיאה בטעינת מפת הדעות',
+  errorMessage: 'לא הצלחנו לטעון את מפת הדעות. נסו לרענן את הדף.',
+  errorRetry: 'נסו שוב',
+
+  // Legend & Groups
+  legendTitle: 'קבוצות דעה',
+  yourPosition: 'המיקום שלכם',
+  yourGroup: 'הקבוצה שלכם',
+  groupLabel: (n: number) => `קבוצה ${n}`,
+  groupSize: (count: number) => `${count} משתתפים`,
+
+  // Visualization Controls
+  zoomIn: 'התקרבו',
+  zoomOut: 'התרחקו',
+  resetView: 'אפסו תצוגה',
+  toggleLabels: 'הצגת תוויות',
+
+  // Statement Classifications
+  consensusTitle: 'עמדות קונצנזוס',
+  divisiveTitle: 'עמדות מחלקות',
+  bridgeTitle: 'עמדות גשר',
+
+  consensusPositive: 'קונצנזוס חיובי',
+  consensusNegative: 'קונצנזוס שלילי',
+  divisiveStatement: 'עמדה מחלקת',
+  bridgeStatement: 'עמדת גשר',
+
+  consensusDescription: 'כל הקבוצות מסכימות על עמדות אלו',
+  divisiveDescription: 'קבוצות שונות חלוקות מאוד על עמדות אלו',
+  bridgeDescription: 'עמדות שמחברות בין קבוצות שונות',
+
+  // Quality Metrics
+  qualityTitle: 'איכות הניתוח',
+  silhouetteScore: 'ציון איכות',
+  varianceExplained: 'שונות מוסברת',
+  clusterCount: (n: number) => `${n} קבוצות`,
+
+  qualityExcellent: 'מצוין',
+  qualityGood: 'טוב',
+  qualityFair: 'סביר',
+  qualityPoor: 'נמוך',
+
+  // Tooltips & Help
+  helpTitle: 'איך קוראים את המפה?',
+  helpClose: 'סגרו',
+
+  // Onboarding Tutorial
+  tutorialTitle: 'ברוכים הבאים למפת הדעות',
+  tutorialSkip: 'דלגו',
+  tutorialNext: 'הבא',
+  tutorialPrev: 'הקודם',
+  tutorialDone: 'הבנתי',
+
+  tutorialStep1Title: 'מה זו מפת דעות?',
+  tutorialStep1Description: 'מפת הדעות מציגה איך המצביעים מתקבצים לפי דפוסי ההצבעה שלהם. כל נקודה מייצגת מצביע.',
+
+  tutorialStep2Title: 'הקבוצה שלכם',
+  tutorialStep2Description: 'הנקודה המסומנת היא המיקום שלכם במפה. מצביעים עם דעות דומות נמצאים קרוב אליכם.',
+
+  tutorialStep3Title: 'קבוצות דעה',
+  tutorialStep3Description: 'המערכת זיהתה קבוצות של מצביעים עם דפוסי הצבעה דומים. כל צבע מייצג קבוצה אחרת.',
+
+  tutorialStep4Title: 'עמדות מעניינות',
+  tutorialStep4Description: 'המערכת מזהה עמדות קונצנזוס (כולם מסכימים), עמדות מחלקות (קבוצות חלוקות), ועמדות גשר (מחברות בין קבוצות).',
+
+  tutorialStep5Title: 'חקרו את המפה',
+  tutorialStep5Description: 'השתמשו בעכבר או באצבע כדי להזיז ולהתקרב. לחצו על קבוצות כדי לראות מידע נוסף.',
+
+  // Accessibility
+  ariaLabel: 'מפת דעות אינטראקטיבית',
+  ariaYourPosition: 'המיקום שלכם במפת הדעות',
+  ariaGroup: (n: number) => `קבוצת דעה ${n}`,
+
+  // Mobile Specific
+  mobileSwipeHint: 'החליקו כדי לראות עוד',
+  mobileTapHint: 'הקישו על קבוצה לפרטים',
+  mobileSimplifiedView: 'תצוגה מפושטת למובייל',
+
+  // Data Table View
+  tableViewTitle: 'תצוגת טבלה',
+  tableGroup: 'קבוצה',
+  tableSize: 'גודל',
+  tablePercentage: 'אחוז',
+  tableTopStatements: 'עמדות מובילות',
+} as const;
+
 /**
  * Format large numbers (e.g., 1000 -> 1K)
  */
@@ -631,6 +739,7 @@ export default {
   feedback,
   admin,
   dateTime,
+  opinionMap,
 } as const;
 
 // Type for all strings
@@ -652,4 +761,5 @@ export const strings = {
   feedback,
   admin,
   dateTime,
+  opinionMap,
 } as const;

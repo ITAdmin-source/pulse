@@ -6,6 +6,7 @@ import { createVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/l
 import { VoteValue, calculateVoteDistribution, getMinimumVotingThreshold } from "@/lib/utils/voting";
 import { PollService } from "./poll-service";
 import { UserService } from "./user-service";
+import { ClusteringService } from "./clustering-service";
 import { z } from "zod";
 
 export class VotingService {
@@ -122,6 +123,20 @@ export class VotingService {
         value: validatedData.value,
       })
       .returning();
+
+    // Trigger background clustering update (non-blocking)
+    // This runs asynchronously and won't block the vote response
+    if (statement[0].pollId) {
+      ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
+        (error) => {
+          // Log error but don't fail the vote
+          console.error(
+            `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
+            error
+          );
+        }
+      );
+    }
 
     return vote;
   }
