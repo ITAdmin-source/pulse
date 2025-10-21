@@ -153,7 +153,7 @@ export function FeedbackModal({
                   rows={8}
                   disabled={isSubmitting}
                   placeholder={feedbackStrings.placeholder}
-                  className="resize-none text-base"
+                  className="resize-none text-base text-gray-900 dark:text-white"
                   dir="auto"
                 />
 

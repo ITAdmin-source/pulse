@@ -695,10 +695,10 @@ export default function ManagePage({ params }: ManagePageProps) {
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select value={statementFilter} onValueChange={(value: "all" | "pending" | "approved") => setStatementFilter(value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-gray-900 dark:text-gray-900">
                         <SelectValue placeholder="All Statements" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white text-gray-900">
                         <SelectItem value="all">All Statements</SelectItem>
                         <SelectItem value="pending">Pending Only</SelectItem>
                         <SelectItem value="approved">Approved Only</SelectItem>
@@ -715,7 +715,7 @@ export default function ManagePage({ params }: ManagePageProps) {
                         placeholder="Search statement text..."
                         value={statementSearch}
                         onChange={(e) => setStatementSearch(e.target.value)}
-                        className="ps-9"
+                        className="ps-9 text-gray-900 dark:text-white"
                       />
                     </div>
                   </div>
@@ -724,10 +724,10 @@ export default function ManagePage({ params }: ManagePageProps) {
                   <div className="space-y-2">
                     <Label>Sort</Label>
                     <Select value={statementSort} onValueChange={(value: "newest" | "oldest") => setStatementSort(value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-gray-900 dark:text-gray-900">
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white text-gray-900">
                         <SelectItem value="newest">Newest First</SelectItem>
                         <SelectItem value="oldest">Oldest First</SelectItem>
                       </SelectContent>

@@ -222,10 +222,10 @@ export default function PollsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-              <SelectTrigger className="w-full sm:w-40 bg-white-10 border-white-20 text-white">
+              <SelectTrigger className="w-full sm:w-40 bg-white-10 border-white-20 text-white dark:text-white">
                 <SelectValue placeholder={pollsList.sortByLabel} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-gray-900">
                 <SelectItem value="recent">{pollsList.sortRecent}</SelectItem>
                 <SelectItem value="popular">{pollsList.sortPopular}</SelectItem>
                 <SelectItem value="ending">{pollsList.sortEnding}</SelectItem>

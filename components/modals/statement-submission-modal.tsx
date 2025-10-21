@@ -112,7 +112,7 @@ export function StatementSubmissionModal({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="לדוגמה: אנחנו צריכים זמני פגישה גמישים יותר"
-        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-primary-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base"
+        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-primary-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 dark:text-white"
         rows={4}
         disabled={isSubmitting}
         dir="auto"

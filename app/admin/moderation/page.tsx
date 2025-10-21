@@ -234,10 +234,10 @@ export default function ModerationQueuePage() {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Filter by Poll</label>
                     <Select value={pollFilter} onValueChange={setPollFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-gray-900 dark:text-gray-900">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white text-gray-900">
                         <SelectItem value="all">All Polls</SelectItem>
                         {polls.map(poll => (
                           <SelectItem key={poll.id} value={poll.id}>
@@ -251,10 +251,10 @@ export default function ModerationQueuePage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Sort by</label>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-gray-900 dark:text-gray-900">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-gray-900">
                     <SelectItem value="oldest">Oldest First</SelectItem>
                     <SelectItem value="newest">Newest First</SelectItem>
                   </SelectContent>

@@ -263,6 +263,7 @@ export default function CreatePollPage() {
                     placeholder="מה כדאי לעשות בנושא שינויי האקלים?"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -274,6 +275,7 @@ export default function CreatePollPage() {
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -286,7 +288,7 @@ export default function CreatePollPage() {
                       maxLength={10}
                       value={emoji}
                       onChange={(e) => setEmoji(e.target.value)}
-                      className="text-4xl text-center w-24 h-16"
+                      className="text-4xl text-center w-24 h-16 dark:text-white"
                     />
                     <div className="text-sm text-gray-500 flex-1">
                       הזן אמוג&apos;י לייצג את חפיסת הסקר
@@ -333,6 +335,7 @@ export default function CreatePollPage() {
                     placeholder="1000"
                     value={votingGoal}
                     onChange={(e) => setVotingGoal(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">מספר יעד של הצבעות כולל</p>
                 </div>
@@ -350,6 +353,7 @@ export default function CreatePollPage() {
                     maxLength={10}
                     value={agreeLabel}
                     onChange={(e) => setAgreeLabel(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">מוצג על הקלף</p>
                 </div>
@@ -362,6 +366,7 @@ export default function CreatePollPage() {
                     maxLength={10}
                     value={disagreeLabel}
                     onChange={(e) => setDisagreeLabel(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">מוצג על הקלף</p>
                 </div>
@@ -374,6 +379,7 @@ export default function CreatePollPage() {
                     maxLength={10}
                     value={passLabel}
                     onChange={(e) => setPassLabel(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">מוצג מתחת לקלף</p>
                 </div>
@@ -390,6 +396,7 @@ export default function CreatePollPage() {
                     type="datetime-local"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">השאר ריק להתחלה מיידית</p>
                 </div>
@@ -401,6 +408,7 @@ export default function CreatePollPage() {
                     type="datetime-local"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
+                    className="text-gray-900 dark:text-white"
                   />
                   <p className="text-sm text-gray-500">השאר ריק ללא תאריך סיום</p>
                 </div>
@@ -424,6 +432,7 @@ export default function CreatePollPage() {
                             rows={2}
                             value={statement}
                             onChange={(e) => updateStatement(index, e.target.value)}
+                            className="text-gray-900 dark:text-white"
                           />
                           {index >= 6 && (
                             <Button

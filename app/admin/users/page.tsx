@@ -301,10 +301,10 @@ export default function AdminUsersPage() {
                 value={userTypeFilter}
                 onValueChange={(value) => setUserTypeFilter(value as typeof userTypeFilter)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-gray-900 dark:text-gray-900">
                   <SelectValue placeholder="User Type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-gray-900">
                   <SelectItem value="all">All Users</SelectItem>
                   <SelectItem value="authenticated">Authenticated</SelectItem>
                   <SelectItem value="anonymous">Anonymous</SelectItem>
@@ -316,10 +316,10 @@ export default function AdminUsersPage() {
                 value={roleFilter}
                 onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-gray-900 dark:text-gray-900">
                   <SelectValue placeholder="Role Filter" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-gray-900">
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="admin">System Admins</SelectItem>
                   <SelectItem value="owner">Poll Owners</SelectItem>

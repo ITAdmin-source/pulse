@@ -97,10 +97,10 @@ export default function AdminAnalyticsPage() {
               ) : (
                 <div className="space-y-4">
                   <Select value={selectedPollId} onValueChange={setSelectedPollId}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-gray-900 dark:text-gray-900">
                       <SelectValue placeholder="Select a poll..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white text-gray-900">
                       {polls.map((poll) => (
                         <SelectItem key={poll.id} value={poll.id}>
                           <div className="flex items-center gap-2">

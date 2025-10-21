@@ -165,10 +165,10 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.genderLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={genderId} onValueChange={setGenderId} required>
-                  <SelectTrigger id="gender" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="gender" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500 text-gray-900 dark:text-gray-900">
                     <SelectValue placeholder={demographicsStrings.genderPlaceholder} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-gray-900">
                     {genders.map((gender) => (
                       <SelectItem key={gender.id} value={String(gender.id)}>
                         {gender.label}
@@ -185,10 +185,10 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.ageLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ageGroupId} onValueChange={setAgeGroupId} required>
-                  <SelectTrigger id="age" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="age" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500 text-gray-900 dark:text-gray-900">
                     <SelectValue placeholder={demographicsStrings.agePlaceholder} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-gray-900">
                     {ageGroups.map((group) => (
                       <SelectItem key={group.id} value={String(group.id)}>
                         {group.label}
@@ -205,10 +205,10 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.ethnicityLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={ethnicityId} onValueChange={setEthnicityId} required>
-                  <SelectTrigger id="ethnicity" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="ethnicity" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500 text-gray-900 dark:text-gray-900">
                     <SelectValue placeholder={demographicsStrings.ethnicityPlaceholder} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-gray-900">
                     {ethnicities.map((ethnicity) => (
                       <SelectItem key={ethnicity.id} value={String(ethnicity.id)}>
                         {ethnicity.label}
@@ -225,10 +225,10 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
                   {demographicsStrings.politicsLabel} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={politicalPartyId} onValueChange={setPoliticalPartyId} required>
-                  <SelectTrigger id="party" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500">
+                  <SelectTrigger id="party" className="w-full border-2 border-primary-500-20 rounded-lg focus:border-primary-500 text-gray-900 dark:text-gray-900">
                     <SelectValue placeholder={demographicsStrings.politicsPlaceholder} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-gray-900">
                     {politicalParties.map((party) => (
                       <SelectItem key={party.id} value={String(party.id)}>
                         {party.label}
@@ -283,7 +283,7 @@ export function DemographicsModal({ open, onSubmit }: DemographicsModalProps) {
       {/* Why We Ask Modal */}
       {showWhyWeAsk && (
         <Dialog open={showWhyWeAsk} onOpenChange={setShowWhyWeAsk}>
-          <DialogContent className="max-w-md p-6 sm:p-8">
+          <DialogContent className="max-w-md p-6 sm:p-8 bg-white dark:bg-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-gray-900 mb-4">
                 {demographicsStrings.whyModalTitle}
