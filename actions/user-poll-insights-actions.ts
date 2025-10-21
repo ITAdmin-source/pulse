@@ -212,28 +212,49 @@ export async function getInsightWithPollDetailsAction(userId: string, pollId: st
  * This combines generation + persistence in one atomic operation (server-side)
  */
 export async function generateAndSaveInsightAction(userId: string, pollId: string) {
+  console.log("[generateAndSaveInsightAction] ===== CALLED =====");
+  console.log("[generateAndSaveInsightAction] userId:", userId);
+  console.log("[generateAndSaveInsightAction] pollId:", pollId);
+
   try {
+    console.log("[generateAndSaveInsightAction] Calling AIService.generatePersonalInsight...");
+    const generateStartTime = Date.now();
+
     // Generate insight using AIService (same as old UI)
     const generated = await AIService.generatePersonalInsight(userId, pollId);
 
+    const generateDuration = Date.now() - generateStartTime;
+    console.log("[generateAndSaveInsightAction] AIService.generatePersonalInsight completed in", generateDuration, "ms");
+    console.log("[generateAndSaveInsightAction] Generated insight:", {
+      titleLength: generated.title.length,
+      bodyLength: generated.body.length
+    });
+
+    console.log("[generateAndSaveInsightAction] Saving to database...");
     // Save to database immediately
     const saveResult = await upsertUserPollInsight(userId, pollId, generated.title, generated.body);
+    console.log("[generateAndSaveInsightAction] ✅ Saved to database successfully");
 
     revalidatePath("/polls");
 
-    return {
+    const result = {
       success: true,
       data: {
         title: saveResult.title,
         body: saveResult.body
       }
     };
+    console.log("[generateAndSaveInsightAction] ===== RETURNING SUCCESS =====");
+    return result;
   } catch (error) {
-    console.error("Error generating and saving insight:", error);
-    return {
+    console.error("[generateAndSaveInsightAction] ❌ ERROR:", error);
+    console.error("[generateAndSaveInsightAction] Error stack:", error instanceof Error ? error.stack : "No stack");
+    const result = {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate insight"
     };
+    console.log("[generateAndSaveInsightAction] ===== RETURNING ERROR =====");
+    return result;
   }
 }
 

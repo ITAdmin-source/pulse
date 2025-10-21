@@ -70,29 +70,43 @@ export class AIService {
   ): Promise<{ title: string; body: string }> {
     console.log("[AIService] ===== STARTING INSIGHT GENERATION =====");
     console.log("[AIService] userId:", userId, "pollId:", pollId);
+    console.log("[AIService] Timestamp:", new Date().toISOString());
+
     try {
+      console.log("[AIService] Step 1: Fetching poll...");
       // Fetch poll and statements first
       const poll = await getPollById(pollId);
       if (!poll) {
+        console.error("[AIService] ❌ Poll not found!");
         throw new Error("Poll not found");
       }
+      console.log("[AIService] ✅ Poll found:", poll.question);
 
+      console.log("[AIService] Step 2: Fetching statements...");
       const statements = await getApprovedStatementsByPollId(pollId);
+      console.log("[AIService] ✅ Statements fetched:", statements.length);
       const statementIds = new Set(statements.map(s => s.id));
 
+      console.log("[AIService] Step 3: Fetching user votes...");
       // Fetch user votes for this poll
       const allUserVotes = await getVotesByUserId(userId);
+      console.log("[AIService] ✅ All user votes:", allUserVotes.length);
 
       // Filter votes for this specific poll
       const pollVotes = allUserVotes.filter(v => statementIds.has(v.statementId));
+      console.log("[AIService] ✅ Poll-specific votes:", pollVotes.length);
 
       if (pollVotes.length === 0) {
+        console.error("[AIService] ❌ No votes found for this poll!");
         throw new Error(`No votes found for this poll. User has ${allUserVotes.length} total votes, but none match the ${statements.length} statements in this poll.`);
       }
 
+      console.log("[AIService] Step 4: Calculating statistics...");
       // Calculate user statistics
       const stats = this.calculateUserStatistics(pollVotes);
+      console.log("[AIService] ✅ Stats:", stats);
 
+      console.log("[AIService] Step 5: Building statements with votes...");
       // Build statements with votes for AI
       const statementsWithVotes = pollVotes.map((vote) => {
         const statement = statements.find((s) => s.id === vote.statementId);
@@ -101,13 +115,16 @@ export class AIService {
           vote: vote.value as 1 | 0 | -1,
         };
       });
+      console.log("[AIService] ✅ Statements with votes built:", statementsWithVotes.length);
 
+      console.log("[AIService] Step 6: Fetching demographics...");
       // Fetch user demographics (including gender) if available
       const demographics = await getUserDemographicsById(userId);
-      console.log("[AIService] User demographics:", demographics);
+      console.log("[AIService] Demographics result:", demographics);
       let genderLabel: string | undefined;
 
       if (demographics?.genderId) {
+        console.log("[AIService] Fetching gender label for genderId:", demographics.genderId);
         // Import db and genders schema to fetch gender label
         const { db } = await import("@/db/db");
         const { genders } = await import("@/db/schema/genders");
@@ -120,7 +137,7 @@ export class AIService {
           .limit(1);
 
         genderLabel = genderResult[0]?.label;
-        console.log("[AIService] Gender lookup - genderId:", demographics.genderId, "label:", genderLabel);
+        console.log("[AIService] ✅ Gender label:", genderLabel);
       } else {
         console.log("[AIService] No gender data found for user");
       }
@@ -136,27 +153,45 @@ export class AIService {
         demographics: genderLabel ? { gender: genderLabel } : undefined,
       };
 
-      console.log("[AIService] Insight request demographics:", insightRequest.demographics);
+      console.log("[AIService] Step 7: Building AI request...");
+      console.log("[AIService] Insight request:", {
+        userId: insightRequest.userId,
+        pollId: insightRequest.pollId,
+        pollQuestion: insightRequest.pollQuestion,
+        statementsCount: insightRequest.statements.length,
+        voteStatistics: insightRequest.voteStatistics,
+        demographics: insightRequest.demographics
+      });
 
       // Try to generate with OpenAI GPT-5 mini
       try {
+        console.log("[AIService] Step 8: Calling OpenAI generateInsight...");
+        const aiStartTime = Date.now();
         const result = await generateInsight(insightRequest);
+        const aiDuration = Date.now() - aiStartTime;
+        console.log("[AIService] ✅ OpenAI generateInsight completed in", aiDuration, "ms");
+        console.log("[AIService] Result:", { titleLength: result.title.length, bodyLength: result.body.length });
+
         return {
           title: result.title,
           body: result.body,
         };
       } catch (aiError) {
-        console.error("[AIService] OpenAI generation failed, using fallback:", aiError);
+        console.error("[AIService] ❌ OpenAI generation failed, using fallback:", aiError);
+        console.error("[AIService] AI Error stack:", aiError instanceof Error ? aiError.stack : "No stack");
 
+        console.log("[AIService] Using fallback insight...");
         // Use fallback template-based insight
         const fallback = generateFallbackInsight(insightRequest);
+        console.log("[AIService] ✅ Fallback insight generated");
         return {
           title: fallback.title,
           body: fallback.body,
         };
       }
     } catch (error) {
-      console.error("Error generating personal insight:", error);
+      console.error("[AIService] ❌ FATAL ERROR in generatePersonalInsight:", error);
+      console.error("[AIService] Error stack:", error instanceof Error ? error.stack : "No stack");
       throw error;
     }
   }

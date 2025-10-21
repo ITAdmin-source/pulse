@@ -853,9 +853,23 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Load results data
   const loadResultsData = useCallback(async (forceRefresh = false) => {
+    console.log("[Results] ===== LOAD RESULTS DATA CALLED =====");
+    console.log("[Results] poll:", poll?.id, poll?.slug);
+    console.log("[Results] userId:", userId);
+    console.log("[Results] isPollClosed:", isPollClosed);
+    console.log("[Results] votedCount:", votedCount);
+    console.log("[Results] totalStatements:", totalStatements);
+    console.log("[Results] forceRefresh:", forceRefresh);
+
     // For closed polls, allow loading without userId (anonymous users without DB entry)
-    if (!poll) return;
-    if (!isPollClosed && !userId) return;
+    if (!poll) {
+      console.log("[Results] EARLY EXIT: No poll");
+      return;
+    }
+    if (!isPollClosed && !userId) {
+      console.log("[Results] EARLY EXIT: Not closed and no userId");
+      return;
+    }
 
     // Fix #2: Check ref-based cache validity
     const cache = resultsCacheRef.current;
@@ -871,27 +885,34 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       return;
     }
 
+    console.log("[Results] Starting fresh data load...");
     setIsLoadingResults(true);
     try {
       // Check if user is anonymous (no Clerk ID)
       const isAnonymous = !dbUser?.clerkUserId;
+      console.log("[Results] isAnonymous:", isAnonymous);
+      console.log("[Results] dbUser:", dbUser ? { id: dbUser.id, clerkUserId: dbUser.clerkUserId } : null);
 
       // Check if user has reached the threshold for insight generation
       // Threshold is 10 votes OR all statements if poll has fewer than 10
       // Also require at least 1 vote (prevent edge case where totalStatements = 0)
       const insightThreshold = Math.min(10, totalStatements);
       const hasReachedInsightThreshold = votedCount > 0 && votedCount >= insightThreshold;
+      console.log("[Results] insightThreshold:", insightThreshold);
+      console.log("[Results] hasReachedInsightThreshold:", hasReachedInsightThreshold);
 
       // For anonymous users, check localStorage first (synchronous)
       let insightFromStorage = null;
       if (isAnonymous && hasReachedInsightThreshold) {
         insightFromStorage = getInsightFromStorage(poll.id);
+        console.log("[Results] insightFromStorage:", insightFromStorage ? "Found" : "Not found");
       }
 
       // Quick check: Do we need to generate insight?
       // Set generating state BEFORE waiting for async calls
       // Only generate if user has reached threshold
       if (!insightFromStorage && hasReachedInsightThreshold) {
+        console.log("[Results] Will need to generate insight - setting isGeneratingInsight to true");
         // Optimistically assume we'll need to generate
         // Will be corrected if DB has cached version
         setIsGeneratingInsight(true);
@@ -900,6 +921,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       // For users below threshold, don't fetch insight (but still fetch aggregate stats for closed polls)
       // For closed polls, always fetch aggregate stats/heatmap regardless of vote count
       const shouldFetchInsight = hasReachedInsightThreshold && userId;
+      console.log("[Results] shouldFetchInsight:", shouldFetchInsight);
+      console.log("[Results] Starting parallel data fetch...");
+
       const [insightResult, pollResultsResult, allHeatmapData, artifacts] = await Promise.all([
         shouldFetchInsight ? getUserPollInsightAction(userId, poll.id) : Promise.resolve({ success: false, data: null }),
         getPollResultsAction(poll.id),
@@ -907,13 +931,23 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         userId ? loadUserArtifacts() : Promise.resolve([])
       ]);
 
+      console.log("[Results] Parallel fetch complete!");
+      console.log("[Results] insightResult:", insightResult.success ? "Success" : "Failed", insightResult.data ? "Has data" : "No data");
+      console.log("[Results] pollResultsResult:", pollResultsResult.success ? "Success" : "Failed");
+      console.log("[Results] allHeatmapData:", allHeatmapData.success ? "Success" : "Failed");
+      console.log("[Results] artifacts count:", artifacts.length);
+
       // Update artifacts state
       setUserArtifacts(artifacts);
 
       // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
       let insight = null;
       let isNewArtifact = false;
+
+      console.log("[Results] ===== PROCESSING INSIGHT =====");
+
       if (insightFromStorage) {
+        console.log("[Results] Using localStorage insight");
         // ✅ Anonymous user with localStorage insight
         const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
         insight = {
@@ -922,7 +956,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           description: insightFromStorage.body
         };
         setIsGeneratingInsight(false); // Turn off since we have cached version
+        console.log("[Results] Insight from localStorage set, isGeneratingInsight -> false");
       } else if (insightResult.success && insightResult.data) {
+        console.log("[Results] Using DB cached insight");
         // ✅ Insight exists in DB - use cached version
         const { title, body } = insightResult.data;
         const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
@@ -937,16 +973,25 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
         isNewArtifact = dbIsNew || false;
         setIsGeneratingInsight(false); // Turn off since we have cached version
+        console.log("[Results] Insight from DB set, isGeneratingInsight -> false");
       } else if (userId && hasReachedInsightThreshold) {
+        console.log("[Results] ===== GENERATING NEW INSIGHT =====");
+        console.log("[Results] Calling generateAndSaveInsightAction for userId:", userId, "pollId:", poll.id);
         // ❌ No insight in DB/localStorage - generate using AIService and save
         // Only attempt if user has userId (skip for anonymous without DB entry)
         // isGeneratingInsight already set to true above
         setInsightError(null);
 
         try {
+          console.log("[Results] About to call generateAndSaveInsightAction...");
+          const generateStartTime = Date.now();
           const generateResult = await generateAndSaveInsightAction(userId, poll.id);
+          const generateDuration = Date.now() - generateStartTime;
+          console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
+          console.log("[Results] generateResult:", generateResult);
 
-          if (generateResult.success && generateResult.data) {
+          if (generateResult.success && 'data' in generateResult) {
+            console.log("[Results] ✅ Generation successful!");
             // Extract emoji from generated title
             const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
 
@@ -967,19 +1012,26 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 generateResult.data.title,
                 generateResult.data.body
               );
-              console.log("[PollPage] Saved insight to localStorage for anonymous user");
+              console.log("[Results] Saved insight to localStorage for anonymous user");
             }
+            console.log("[Results] Insight generated and set successfully");
           } else {
-            throw new Error(generateResult.error || "Failed to generate insight");
+            const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
+            console.error("[Results] ❌ Generation failed:", errorMsg);
+            throw new Error(errorMsg);
           }
         } catch (error) {
-          console.error("Error generating insight:", error);
+          console.error("[Results] ❌ ERROR in insight generation:", error);
           const errorMessage = error instanceof Error ? error.message : "לא הצלחנו ליצור תובנה אישית";
+          console.error("[Results] Setting error message:", errorMessage);
           setInsightError(errorMessage);
           // Don't set insight - will show error state in UI
         } finally {
+          console.log("[Results] Finally block: setting isGeneratingInsight -> false");
           setIsGeneratingInsight(false);
         }
+      } else {
+        console.log("[Results] No insight generation needed (userId:", userId, "hasReachedInsightThreshold:", hasReachedInsightThreshold, ")");
       }
 
       // Set newly earned artifact badge for authenticated users (first view only)
@@ -1035,6 +1087,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         hasMoreStatements
       };
 
+      console.log("[Results] Setting results data:", {
+        hasInsight: !!insight,
+        hasStats: !!stats,
+        heatmapDataKeys: Object.keys(heatmapData),
+        hasMoreStatements
+      });
       setResultsData(newData);
 
       // Fix #2: Update ref-based cache
@@ -1044,11 +1102,15 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         data: newData,
         timestamp: Date.now()
       };
+      console.log("[Results] Cache updated");
     } catch (error) {
-      console.error("Error loading results:", error);
+      console.error("[Results] ❌ FATAL ERROR in loadResultsData:", error);
+      console.error("[Results] Error stack:", error instanceof Error ? error.stack : "No stack");
       toast.error("שגיאה בטעינת תוצאות");
     } finally {
+      console.log("[Results] Finally block: setting isLoadingResults -> false");
       setIsLoadingResults(false);
+      console.log("[Results] ===== LOAD RESULTS DATA COMPLETE =====");
     }
   }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
 
