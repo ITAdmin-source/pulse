@@ -918,131 +918,21 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         setIsGeneratingInsight(true);
       }
 
-      // For users below threshold, don't fetch insight (but still fetch aggregate stats for closed polls)
-      // For closed polls, always fetch aggregate stats/heatmap regardless of vote count
-      const shouldFetchInsight = hasReachedInsightThreshold && userId;
-      console.log("[Results] shouldFetchInsight:", shouldFetchInsight);
-      console.log("[Results] Starting parallel data fetch...");
+      // PROGRESSIVE LOADING: Split into fast and slow data fetches
+      // Fast data: stats & heatmap (load first, show immediately)
+      // Slow data: insight (load in background, may take 10-30 seconds)
 
-      const [insightResult, pollResultsResult, allHeatmapData, artifacts] = await Promise.all([
-        shouldFetchInsight ? getUserPollInsightAction(userId, poll.id) : Promise.resolve({ success: false, data: null }),
+      console.log("[Results] ===== PHASE 1: LOADING FAST DATA (stats & heatmap) =====");
+      const [pollResultsResult, allHeatmapData] = await Promise.all([
         getPollResultsAction(poll.id),
-        getAllHeatmapDataAction(poll.id, 3), // OPTIMIZED: Single call instead of 4 separate calls
-        userId ? loadUserArtifacts() : Promise.resolve([])
+        getAllHeatmapDataAction(poll.id, 3),
       ]);
 
-      console.log("[Results] Parallel fetch complete!");
-      console.log("[Results] insightResult:", insightResult.success ? "Success" : "Failed", insightResult.data ? "Has data" : "No data");
+      console.log("[Results] Fast data loaded!");
       console.log("[Results] pollResultsResult:", pollResultsResult.success ? "Success" : "Failed");
       console.log("[Results] allHeatmapData:", allHeatmapData.success ? "Success" : "Failed");
-      console.log("[Results] artifacts count:", artifacts.length);
 
-      // Update artifacts state
-      setUserArtifacts(artifacts);
-
-      // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
-      let insight = null;
-      let isNewArtifact = false;
-
-      console.log("[Results] ===== PROCESSING INSIGHT =====");
-
-      if (insightFromStorage) {
-        console.log("[Results] Using localStorage insight");
-        // ✅ Anonymous user with localStorage insight
-        const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
-        insight = {
-          emoji: emojiMatch ? emojiMatch[1] : "🌟",
-          profile: emojiMatch ? emojiMatch[2] : insightFromStorage.title,
-          description: insightFromStorage.body
-        };
-        setIsGeneratingInsight(false); // Turn off since we have cached version
-        console.log("[Results] Insight from localStorage set, isGeneratingInsight -> false");
-      } else if (insightResult.success && insightResult.data) {
-        console.log("[Results] Using DB cached insight");
-        // ✅ Insight exists in DB - use cached version
-        const { title, body } = insightResult.data;
-        const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
-
-        // Extract emoji from title using regex: "🌟 משתנה חברתי" -> emoji: "🌟", profile: "משתנה חברתי"
-        const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);
-
-        insight = {
-          emoji: emojiMatch ? emojiMatch[1] : "🌟",
-          profile: emojiMatch ? emojiMatch[2] : title,
-          description: body
-        };
-        isNewArtifact = dbIsNew || false;
-        setIsGeneratingInsight(false); // Turn off since we have cached version
-        console.log("[Results] Insight from DB set, isGeneratingInsight -> false");
-      } else if (userId && hasReachedInsightThreshold) {
-        console.log("[Results] ===== GENERATING NEW INSIGHT =====");
-        console.log("[Results] Calling generateAndSaveInsightAction for userId:", userId, "pollId:", poll.id);
-        // ❌ No insight in DB/localStorage - generate using AIService and save
-        // Only attempt if user has userId (skip for anonymous without DB entry)
-        // isGeneratingInsight already set to true above
-        setInsightError(null);
-
-        try {
-          console.log("[Results] About to call generateAndSaveInsightAction...");
-          const generateStartTime = Date.now();
-          const generateResult = await generateAndSaveInsightAction(userId, poll.id);
-          const generateDuration = Date.now() - generateStartTime;
-          console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
-          console.log("[Results] generateResult:", generateResult);
-
-          if (generateResult.success && 'data' in generateResult) {
-            console.log("[Results] ✅ Generation successful!");
-            // Extract emoji from generated title
-            const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
-
-            insight = {
-              emoji: emojiMatch ? emojiMatch[1] : "💡",
-              profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
-              description: generateResult.data.body
-            };
-
-            // Newly generated insights are always "new" for authenticated users
-            isNewArtifact = !isAnonymous;
-
-            // Save to localStorage for anonymous users
-            if (isAnonymous) {
-              saveInsightToStorage(
-                poll.id,
-                poll.question,
-                generateResult.data.title,
-                generateResult.data.body
-              );
-              console.log("[Results] Saved insight to localStorage for anonymous user");
-            }
-            console.log("[Results] Insight generated and set successfully");
-          } else {
-            const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
-            console.error("[Results] ❌ Generation failed:", errorMsg);
-            throw new Error(errorMsg);
-          }
-        } catch (error) {
-          console.error("[Results] ❌ ERROR in insight generation:", error);
-          const errorMessage = error instanceof Error ? error.message : "לא הצלחנו ליצור תובנה אישית";
-          console.error("[Results] Setting error message:", errorMessage);
-          setInsightError(errorMessage);
-          // Don't set insight - will show error state in UI
-        } finally {
-          console.log("[Results] Finally block: setting isGeneratingInsight -> false");
-          setIsGeneratingInsight(false);
-        }
-      } else {
-        console.log("[Results] No insight generation needed (userId:", userId, "hasReachedInsightThreshold:", hasReachedInsightThreshold, ")");
-      }
-
-      // Set newly earned artifact badge for authenticated users (first view only)
-      if (!isAnonymous && isNewArtifact && insight) {
-        setNewlyEarnedArtifact({
-          emoji: insight.emoji,
-          profile: insight.profile
-        });
-      }
-
-      // Process aggregate stats
+      // Process aggregate stats (so we can show them immediately)
       let stats = null;
       if (pollResultsResult.success && pollResultsResult.data) {
         const resultsData = pollResultsResult.data;
@@ -1053,64 +943,161 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
       }
 
-      // Optimization #6: Use client-side heatmap cache
-      let heatmapData;
-      const heatmapCache = heatmapCacheRef.current;
-      const heatmapCacheValid = heatmapCache
-        && heatmapCache.pollId === poll.id
-        && Date.now() - heatmapCache.timestamp < HEATMAP_CACHE_TTL;
+      // Process heatmap data
+      const heatmapData = allHeatmapData.success && allHeatmapData.data
+        ? allHeatmapData.data
+        : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
 
-      if (heatmapCacheValid) {
-        console.log("[Results] Using cached heatmap data");
-        heatmapData = heatmapCache.data;
-      } else {
-        // Fetch fresh heatmap data
-        heatmapData = allHeatmapData.success && allHeatmapData.data ? allHeatmapData.data : {
-          gender: [],
-          ageGroup: [],
-          ethnicity: [],
-          politicalParty: []
-        };
-
-        // Update heatmap cache
-        heatmapCacheRef.current = {
-          pollId: poll.id,
-          data: heatmapData,
-          timestamp: Date.now()
-        };
-      }
-
-      const newData = {
-        insight,
+      // SHOW RESULTS IMMEDIATELY (without insight)
+      console.log("[Results] Setting initial results data (stats & heatmap only)");
+      const initialData = {
+        insight: null, // Will be loaded in background
         stats,
         heatmapData,
         hasMoreStatements
       };
+      setResultsData(initialData);
+      setIsLoadingResults(false); // Stop main loading spinner
 
-      console.log("[Results] Setting results data:", {
-        hasInsight: !!insight,
-        hasStats: !!stats,
-        heatmapDataKeys: Object.keys(heatmapData),
-        hasMoreStatements
-      });
-      setResultsData(newData);
-
-      // Fix #2: Update ref-based cache
+      // Update cache with initial data
       resultsCacheRef.current = {
         pollId: poll.id,
         votedCount,
-        data: newData,
+        data: initialData,
         timestamp: Date.now()
       };
-      console.log("[Results] Cache updated");
+
+      console.log("[Results] ===== PHASE 2: LOADING INSIGHT IN BACKGROUND =====");
+
+      // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
+      let insight: { emoji: string; profile: string; description: string } | null = null;
+
+      // Load insight in background (don't wait for it)
+      if (insightFromStorage) {
+        console.log("[Results] Using localStorage insight");
+        // ✅ Anonymous user with localStorage insight
+        const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
+        insight = {
+          emoji: emojiMatch ? emojiMatch[1] : "🌟",
+          profile: emojiMatch ? emojiMatch[2] : insightFromStorage.title,
+          description: insightFromStorage.body
+        };
+        setIsGeneratingInsight(false);
+
+        // Update results data with insight
+        setResultsData(prev => ({ ...prev, insight }));
+        if (resultsCacheRef.current) {
+          resultsCacheRef.current.data.insight = insight;
+        }
+
+        console.log("[Results] Insight from localStorage loaded");
+      } else if (hasReachedInsightThreshold && userId) {
+        // Load insight asynchronously (in background)
+        console.log("[Results] Loading insight in background...");
+
+        // Start background load (don't await)
+        (async () => {
+          try {
+            // First try to fetch existing insight from DB
+            console.log("[Results] Checking for existing insight in DB...");
+            const insightResult = await getUserPollInsightAction(userId, poll.id);
+
+            if (insightResult.success && insightResult.data) {
+              console.log("[Results] ✅ Found existing insight in DB");
+              const { title, body } = insightResult.data;
+              const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
+              const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);
+
+              const loadedInsight = {
+                emoji: emojiMatch ? emojiMatch[1] : "🌟",
+                profile: emojiMatch ? emojiMatch[2] : title,
+                description: body
+              };
+
+              setIsGeneratingInsight(false);
+              setResultsData(prev => ({ ...prev, insight: loadedInsight }));
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.insight = loadedInsight;
+              }
+
+              // Set artifact badge if it's new
+              if (!isAnonymous && dbIsNew) {
+                setNewlyEarnedArtifact({
+                  emoji: loadedInsight.emoji,
+                  profile: loadedInsight.profile
+                });
+              }
+            } else {
+              // No existing insight - generate new one
+              console.log("[Results] No existing insight - generating new one...");
+              setInsightError(null);
+
+              const generateStartTime = Date.now();
+              const generateResult = await generateAndSaveInsightAction(userId, poll.id);
+              const generateDuration = Date.now() - generateStartTime;
+              console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
+
+              if (generateResult.success && 'data' in generateResult) {
+                console.log("[Results] ✅ Insight generated successfully!");
+                const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
+
+                const generatedInsight = {
+                  emoji: emojiMatch ? emojiMatch[1] : "💡",
+                  profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
+                  description: generateResult.data.body
+                };
+
+                setResultsData(prev => ({ ...prev, insight: generatedInsight }));
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.insight = generatedInsight;
+                }
+
+                // Save to localStorage for anonymous users
+                if (isAnonymous) {
+                  saveInsightToStorage(poll.id, poll.question, generateResult.data.title, generateResult.data.body);
+                }
+
+                // Set artifact badge for authenticated users
+                if (!isAnonymous) {
+                  setNewlyEarnedArtifact({
+                    emoji: generatedInsight.emoji,
+                    profile: generatedInsight.profile
+                  });
+                }
+              } else {
+                const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
+                console.error("[Results] ❌ Generation failed:", errorMsg);
+                setInsightError(errorMsg);
+              }
+            }
+          } catch (error) {
+            console.error("[Results] ❌ ERROR loading insight:", error);
+            const errorMessage = error instanceof Error ? error.message : "לא הצלחנו ליצור תובנה אישית";
+            setInsightError(errorMessage);
+          } finally {
+            setIsGeneratingInsight(false);
+          }
+        })();
+      } else {
+        console.log("[Results] No insight needed (threshold not reached or no userId)");
+        setIsGeneratingInsight(false);
+      }
+
+      // Load artifacts in background (don't block)
+      if (userId) {
+        loadUserArtifacts().then(artifacts => {
+          setUserArtifacts(artifacts);
+        }).catch(error => {
+          console.error("[Results] Error loading artifacts:", error);
+        });
+      }
+
+      console.log("[Results] ===== RESULTS LOADED SUCCESSFULLY (stats & heatmap shown, insight loading in background) =====");
     } catch (error) {
       console.error("[Results] ❌ FATAL ERROR in loadResultsData:", error);
       console.error("[Results] Error stack:", error instanceof Error ? error.stack : "No stack");
       toast.error("שגיאה בטעינת תוצאות");
-    } finally {
-      console.log("[Results] Finally block: setting isLoadingResults -> false");
       setIsLoadingResults(false);
-      console.log("[Results] ===== LOAD RESULTS DATA COMPLETE =====");
     }
   }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
 
