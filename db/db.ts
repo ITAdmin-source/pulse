@@ -74,7 +74,7 @@ if (process.env.NODE_ENV === "production") {
 
     // OPTIMIZATION: Reduced timeouts for faster failure detection
     idle_timeout: 20, // Close idle connections after 20s
-    connect_timeout: 10, // Fail fast if can't connect within 10s
+    connect_timeout: 15, // Balanced timeout for stability (increased from 10s)
     max_lifetime: 60 * 30, // 30 minutes
 
     // OPTIMIZATION: Suppress notices in production (reduce log noise)

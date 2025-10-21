@@ -10,6 +10,10 @@ import { getApprovedStatementsByPollId } from "@/db/queries/statements-queries";
 import type { InsightGenerationRequest } from "@/lib/types/openai";
 
 export async function POST(request: NextRequest) {
+  const startTime = performance.now();
+  console.log("[API] ===== INSIGHT GENERATION REQUEST STARTED =====");
+  console.log("[API] Timestamp:", new Date().toISOString());
+
   try {
     const { userId: clerkUserId } = await auth();
     const body = await request.json();
@@ -19,10 +23,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Poll ID is required" }, { status: 400 });
     }
 
+    console.log("[API] Request parsed - pollId:", pollId, "clerkUserId:", clerkUserId || "anonymous");
+
     // Resolve to database user ID
     let dbUser;
     let sessionId: string | undefined;
 
+    const userLookupStart = performance.now();
     if (clerkUserId) {
       // Authenticated user
       dbUser = await UserService.findByClerkId(clerkUserId);
@@ -33,6 +40,7 @@ export async function POST(request: NextRequest) {
         dbUser = await UserService.findBySessionId(sessionId);
       }
     }
+    console.log(`[API] ⏱️ User lookup: ${Math.round(performance.now() - userLookupStart)}ms`);
 
     if (!dbUser) {
       return NextResponse.json(
@@ -61,13 +69,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch poll data
+    const pollFetchStart = performance.now();
     const poll = await getPollById(pollId);
+    console.log(`[API] ⏱️ Poll fetch: ${Math.round(performance.now() - pollFetchStart)}ms`);
+
     if (!poll) {
       return NextResponse.json({ error: "Poll not found" }, { status: 404 });
     }
 
     // Fetch approved statements
+    const statementsFetchStart = performance.now();
     const statements = await getApprovedStatementsByPollId(pollId);
+    console.log(`[API] ⏱️ Statements fetch: ${Math.round(performance.now() - statementsFetchStart)}ms`);
+
     if (statements.length === 0) {
       return NextResponse.json(
         { error: "No statements found for this poll" },
@@ -78,8 +92,10 @@ export async function POST(request: NextRequest) {
     const statementIds = new Set(statements.map((s) => s.id));
 
     // Fetch user's votes
+    const votesFetchStart = performance.now();
     const allUserVotes = await getVotesByUserId(effectiveUserId);
     const pollVotes = allUserVotes.filter((v) => statementIds.has(v.statementId));
+    console.log(`[API] ⏱️ Votes fetch: ${Math.round(performance.now() - votesFetchStart)}ms (${allUserVotes.length} total, ${pollVotes.length} for this poll)`);
 
     if (pollVotes.length === 0) {
       return NextResponse.json(
@@ -114,12 +130,15 @@ export async function POST(request: NextRequest) {
     });
 
     // Fetch user demographics (including gender) if available
+    const demographicsFetchStart = performance.now();
     const { getUserDemographicsById } = await import("@/db/queries/user-demographics-queries");
     const demographics = await getUserDemographicsById(effectiveUserId);
+    console.log(`[API] ⏱️ Demographics fetch: ${Math.round(performance.now() - demographicsFetchStart)}ms`);
     console.log("[API] User demographics:", demographics);
 
     let genderLabel: string | undefined;
     if (demographics?.genderId) {
+      const genderLookupStart = performance.now();
       const { db } = await import("@/db/db");
       const { genders } = await import("@/db/schema/genders");
       const { eq } = await import("drizzle-orm");
@@ -131,7 +150,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       genderLabel = genderResult[0]?.label;
-      console.log("[API] Gender lookup - genderId:", demographics.genderId, "label:", genderLabel);
+      console.log(`[API] ⏱️ Gender lookup: ${Math.round(performance.now() - genderLookupStart)}ms - genderId: ${demographics.genderId}, label: ${genderLabel}`);
     } else {
       console.log("[API] No gender data found for user");
     }
@@ -150,21 +169,31 @@ export async function POST(request: NextRequest) {
     console.log("[API] Insight request demographics:", insightRequest.demographics);
 
     // Generate insight using OpenAI
+    console.log("[API] 🤖 Starting OpenAI insight generation...");
+    const aiGenerationStart = performance.now();
     let result;
     try {
       result = await generateInsight(insightRequest);
+      const aiDuration = Math.round(performance.now() - aiGenerationStart);
+      console.log(`[API] ⏱️ OpenAI generation: ${aiDuration}ms`);
+      console.log(`[API] ✅ OpenAI success - tokens: ${result.tokensUsed.total}, cost: $${result.cost}`);
 
       // Increment rate limit only on successful generation (authenticated users)
       if (clerkUserId) {
         RateLimiter.increment(effectiveUserId);
       }
     } catch (error) {
-      console.error("[API] Insight generation failed, using fallback:", error);
+      const aiDuration = Math.round(performance.now() - aiGenerationStart);
+      console.error(`[API] ❌ Insight generation failed after ${aiDuration}ms, using fallback:`, error);
 
       // Use fallback insight
       result = generateFallbackInsight(insightRequest);
       result.tokensUsed.total = -1; // Indicator that fallback was used
+      console.log("[API] ✅ Fallback insight generated");
     }
+
+    const totalDuration = Math.round(performance.now() - startTime);
+    console.log(`[API] ⏱️ ===== TOTAL REQUEST DURATION: ${totalDuration}ms =====`);
 
     return NextResponse.json({
       success: true,
@@ -176,10 +205,12 @@ export async function POST(request: NextRequest) {
         tokensUsed: result.tokensUsed,
         cost: result.cost,
         latency: result.latency,
+        totalDuration, // Add total duration to response
       },
     });
   } catch (error) {
-    console.error("[API] Error in insight generation endpoint:", error);
+    const totalDuration = Math.round(performance.now() - startTime);
+    console.error(`[API] ❌ Error in insight generation endpoint after ${totalDuration}ms:`, error);
 
     return NextResponse.json(
       {
