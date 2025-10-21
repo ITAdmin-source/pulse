@@ -250,17 +250,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [resultsData, setResultsData] = useState<{
     insight: { profile: string; emoji: string; description: string } | null;
     stats: { participantCount: number; statementCount: number; totalVotes: number } | null;
-    heatmapData: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]>;
+    heatmapData: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]> | null;
     hasMoreStatements: boolean;
   }>({
     insight: null,
     stats: null,
-    heatmapData: {
-      gender: [],
-      ageGroup: [],
-      ethnicity: [],
-      politicalParty: []
-    },
+    heatmapData: null,
     hasMoreStatements: false
   });
   const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -919,18 +914,14 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       }
 
       // PROGRESSIVE LOADING: Split into fast and slow data fetches
-      // Fast data: stats & heatmap (load first, show immediately)
-      // Slow data: insight (load in background, may take 10-30 seconds)
+      // Fast data: ONLY stats (load first, show immediately - <1 second)
+      // Slow data: heatmap + insight (load in background - may take 10-300 seconds)
 
-      console.log("[Results] ===== PHASE 1: LOADING FAST DATA (stats & heatmap) =====");
-      const [pollResultsResult, allHeatmapData] = await Promise.all([
-        getPollResultsAction(poll.id),
-        getAllHeatmapDataAction(poll.id, 3),
-      ]);
+      console.log("[Results] ===== PHASE 1: LOADING FAST DATA (stats only) =====");
+      const pollResultsResult = await getPollResultsAction(poll.id);
 
       console.log("[Results] Fast data loaded!");
       console.log("[Results] pollResultsResult:", pollResultsResult.success ? "Success" : "Failed");
-      console.log("[Results] allHeatmapData:", allHeatmapData.success ? "Success" : "Failed");
 
       // Process aggregate stats (so we can show them immediately)
       let stats = null;
@@ -943,17 +934,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
       }
 
-      // Process heatmap data
-      const heatmapData = allHeatmapData.success && allHeatmapData.data
-        ? allHeatmapData.data
-        : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
-
-      // SHOW RESULTS IMMEDIATELY (without insight)
-      console.log("[Results] Setting initial results data (stats & heatmap only)");
+      // SHOW RESULTS IMMEDIATELY (without heatmap or insight)
+      console.log("[Results] Setting initial results data (stats only - heatmap loading in background)");
       const initialData = {
         insight: null, // Will be loaded in background
         stats,
-        heatmapData,
+        heatmapData: null, // Will be loaded in background
         hasMoreStatements
       };
       setResultsData(initialData);
@@ -966,6 +952,42 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         data: initialData,
         timestamp: Date.now()
       };
+
+      // LOAD HEATMAP IN BACKGROUND (with 10-second timeout)
+      console.log("[Results] ===== PHASE 1B: LOADING HEATMAP IN BACKGROUND =====");
+      (async () => {
+        try {
+          // Race between heatmap fetch and 10-second timeout
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+          );
+
+          const heatmapPromise = getAllHeatmapDataAction(poll.id, 3);
+
+          const allHeatmapData = await Promise.race([heatmapPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+          console.log("[Results] Heatmap loaded successfully!");
+
+          // Process heatmap data
+          const heatmapData = allHeatmapData.success && allHeatmapData.data
+            ? allHeatmapData.data
+            : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+          // Update results with heatmap
+          setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+          if (resultsCacheRef.current) {
+            resultsCacheRef.current.data.heatmapData = heatmapData;
+          }
+        } catch (error) {
+          console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+          // Set empty heatmap data so UI knows it failed
+          const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+          setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+          if (resultsCacheRef.current) {
+            resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+          }
+        }
+      })();
 
       console.log("[Results] ===== PHASE 2: LOADING INSIGHT IN BACKGROUND =====");
 
@@ -1457,11 +1479,22 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 )}
 
                 {/* Demographic Heatmap */}
-                <DemographicHeatmap
-                  pollId={poll.id}
-                  data={resultsData.heatmapData}
-                  isLoading={false}
-                />
+                {resultsData.heatmapData ? (
+                  <DemographicHeatmap
+                    pollId={poll.id}
+                    data={resultsData.heatmapData}
+                    isLoading={false}
+                  />
+                ) : (
+                  <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                      {results.heatmapTitle}
+                    </h3>
+                    <div className="text-center py-12 text-gray-500">
+                      <p>טוען נתוני חום דמוגרפיים...</p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
