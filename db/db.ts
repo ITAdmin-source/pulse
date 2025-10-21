@@ -64,16 +64,17 @@ let client: ReturnType<typeof postgres>;
 
 if (process.env.NODE_ENV === "production") {
   // Production: Create new client (serverless functions are stateless)
-  // OPTIMIZATION: Increased pool size for better production throughput
+  // OPTIMAL: Small pool size for serverless architecture
   client = postgres(process.env.DATABASE_URL, {
-    // CRITICAL: Increased from 2 to 20 for production traffic
+    // CRITICAL: Pool size = 2 follows Vercel/Supabase best practices for serverless
     // Each Vercel serverless function instance has its own pool
-    // Higher pool size = more concurrent queries per function instance
-    max: isTransactionMode ? 20 : 10,
+    // Serverless scales horizontally (more instances) not vertically (more connections per instance)
+    // With multiple instances under load: 50 instances × 2 connections = 100 total (safe)
+    max: isTransactionMode ? 2 : 5,
 
     // OPTIMIZATION: Reduced timeouts for faster failure detection
     idle_timeout: 20, // Close idle connections after 20s
-    connect_timeout: 10, // Fail fast if can't connect within 10s (down from 30s)
+    connect_timeout: 10, // Fail fast if can't connect within 10s
     max_lifetime: 60 * 30, // 30 minutes
 
     // OPTIMIZATION: Suppress notices in production (reduce log noise)
