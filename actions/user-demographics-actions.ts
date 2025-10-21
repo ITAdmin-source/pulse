@@ -109,34 +109,15 @@ export async function getUserDemographicsAction() {
 
 /**
  * Get user demographics by user ID
- * PHASE 5 SECURITY: Only allows users to access their own demographics OR system admins
+ * Works for both anonymous and authenticated users using internal userId
+ * No Clerk auth required - demographics are checked by internal userId only
  */
 export async function getUserDemographicsByIdAction(userId: string) {
   try {
-    // PHASE 5 SECURITY: Authorization check
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) {
-      return { success: false, error: "Authentication required" };
-    }
-
-    const currentUser = await UserService.findByClerkId(clerkUserId);
-    if (!currentUser) {
-      return { success: false, error: "User not found" };
-    }
-
-    // Only allow users to access their own demographics OR system admins
-    const roles = await UserService.getUserRoles(currentUser.id);
-    const isAdmin = roles.some(r => r.role === 'system_admin');
-
-    if (currentUser.id !== userId && !isAdmin) {
-      return { success: false, error: "Unauthorized access to user demographics" };
-    }
-
     const userDemographics = await getUserDemographicsById(userId);
-    if (!userDemographics) {
-      return { success: false, error: "User demographics not found" };
-    }
-    return { success: true, data: userDemographics };
+    // Return success with null data when demographics don't exist yet
+    // This distinguishes "no demographics" from "error fetching demographics"
+    return { success: true, data: userDemographics || null };
   } catch (error) {
     console.error("Error fetching user demographics:", error);
     return { success: false, error: "Failed to fetch user demographics" };
