@@ -35,7 +35,8 @@
       "Bash(npx drizzle-kit push)",
       "Bash(if not exist testsintegrationworkflows mkdir testsintegrationworkflows)",
       "Bash(if not exist .claudedocs mkdir .claudedocs)",
-      "Read(//c/Users/Guy/Downloads/**)"
+      "Read(//c/Users/Guy/Downloads/**)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [
