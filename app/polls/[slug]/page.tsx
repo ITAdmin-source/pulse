@@ -1020,8 +1020,47 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         // Start background load (don't await)
         (async () => {
           try {
-            // First try to fetch existing insight from DB
-            console.log("[Results] Checking for existing insight in DB...");
+            // OPTIMIZATION: Anonymous users don't have insights in DB
+            // Skip the DB check for anonymous users to avoid auth error and delay
+            if (isAnonymous) {
+              console.log("[Results] Anonymous user - skipping DB check, generating new insight...");
+              // Generate new insight directly
+              setInsightError(null);
+
+              const generateStartTime = Date.now();
+              const generateResult = await generateAndSaveInsightAction(userId, poll.id);
+              const generateDuration = Date.now() - generateStartTime;
+              console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
+
+              if (generateResult.success && 'data' in generateResult) {
+                console.log("[Results] ✅ Insight generated successfully!");
+                const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
+
+                const generatedInsight = {
+                  emoji: emojiMatch ? emojiMatch[1] : "💡",
+                  profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
+                  description: generateResult.data.body
+                };
+
+                setResultsData(prev => ({ ...prev, insight: generatedInsight }));
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.insight = generatedInsight;
+                }
+
+                // Save to localStorage for anonymous users
+                saveInsightToStorage(poll.id, poll.question, generateResult.data.title, generateResult.data.body);
+              } else {
+                const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
+                console.error("[Results] ❌ Generation failed:", errorMsg);
+                setInsightError(errorMsg);
+              }
+
+              setIsGeneratingInsight(false);
+              return; // Exit early for anonymous users
+            }
+
+            // AUTHENTICATED USERS: First try to fetch existing insight from DB
+            console.log("[Results] Authenticated user - checking for existing insight in DB...");
             const insightResult = await getUserPollInsightAction(userId, poll.id);
 
             if (insightResult.success && insightResult.data) {
