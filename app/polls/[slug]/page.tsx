@@ -953,48 +953,14 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         timestamp: Date.now()
       };
 
-      // LOAD HEATMAP IN BACKGROUND (with 10-second timeout)
-      console.log("[Results] ===== PHASE 1B: LOADING HEATMAP IN BACKGROUND =====");
-      (async () => {
-        try {
-          // Race between heatmap fetch and 10-second timeout
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
-          );
-
-          const heatmapPromise = getAllHeatmapDataAction(poll.id, 3);
-
-          const allHeatmapData = await Promise.race([heatmapPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
-
-          console.log("[Results] Heatmap loaded successfully!");
-
-          // Process heatmap data
-          const heatmapData = allHeatmapData.success && allHeatmapData.data
-            ? allHeatmapData.data
-            : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
-
-          // Update results with heatmap
-          setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
-          if (resultsCacheRef.current) {
-            resultsCacheRef.current.data.heatmapData = heatmapData;
-          }
-        } catch (error) {
-          console.warn("[Results] Heatmap failed to load (timeout or error):", error);
-          // Set empty heatmap data so UI knows it failed
-          const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
-          setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
-          if (resultsCacheRef.current) {
-            resultsCacheRef.current.data.heatmapData = emptyHeatmap;
-          }
-        }
-      })();
-
-      console.log("[Results] ===== PHASE 2: LOADING INSIGHT IN BACKGROUND =====");
+      // PRIORITY: Start insight generation FIRST (more important than heatmap)
+      // Then start heatmap with a small delay to ensure parallel execution
+      console.log("[Results] ===== PHASE 1B+2: LOADING INSIGHT & HEATMAP IN PARALLEL =====");
 
       // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
       let insight: { emoji: string; profile: string; description: string } | null = null;
 
-      // Load insight in background (don't wait for it)
+      // STEP 1: If insight is in localStorage, load it immediately (synchronous)
       if (insightFromStorage) {
         console.log("[Results] Using localStorage insight");
         // ✅ Anonymous user with localStorage insight
@@ -1013,12 +979,45 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         }
 
         console.log("[Results] Insight from localStorage loaded");
-      } else if (hasReachedInsightThreshold && userId) {
-        // Load insight asynchronously (in background)
-        console.log("[Results] Loading insight in background...");
 
-        // Start background load (don't await)
-        (async () => {
+        // Still need to load heatmap even if insight is cached
+        // Start heatmap with 50ms delay to ensure it doesn't block anything
+        setTimeout(() => {
+          (async () => {
+            try {
+              console.log("[Results] Loading heatmap in background...");
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+              );
+
+              const heatmapPromise = getAllHeatmapDataAction(poll.id, 3);
+              const allHeatmapData = await Promise.race([heatmapPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+              console.log("[Results] Heatmap loaded successfully!");
+              const heatmapData = allHeatmapData.success && allHeatmapData.data
+                ? allHeatmapData.data
+                : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+              setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = heatmapData;
+              }
+            } catch (error) {
+              console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+              const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+              setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+              }
+            }
+          })();
+        }, 50);
+      } else if (hasReachedInsightThreshold && userId) {
+        // STEP 2: Load insight AND heatmap in parallel (insight has priority)
+        console.log("[Results] Loading insight (priority) and heatmap in parallel...");
+
+        // Use Promise.allSettled to force true parallel execution
+        const insightPromise = (async () => {
           try {
             // OPTIMIZATION: Anonymous users don't have insights in DB
             // Skip the DB check for anonymous users to avoid auth error and delay
@@ -1139,9 +1138,84 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
             setIsGeneratingInsight(false);
           }
         })();
+
+        // Heatmap promise (starts with 50ms delay to ensure insight starts first)
+        const heatmapPromise = new Promise((resolve) => {
+          setTimeout(() => {
+            (async () => {
+              try {
+                console.log("[Results] Loading heatmap in background (delayed 50ms)...");
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+                );
+
+                const heatmapDataPromise = getAllHeatmapDataAction(poll.id, 3);
+                const allHeatmapData = await Promise.race([heatmapDataPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+                console.log("[Results] Heatmap loaded successfully!");
+                const heatmapData = allHeatmapData.success && allHeatmapData.data
+                  ? allHeatmapData.data
+                  : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+                setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.heatmapData = heatmapData;
+                }
+                resolve(true);
+              } catch (error) {
+                console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+                const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+                setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+                }
+                resolve(false);
+              }
+            })();
+          }, 50);
+        });
+
+        // Execute both in parallel using Promise.allSettled (insight already started, heatmap delayed 50ms)
+        // This ensures they run independently and don't block each other
+        Promise.allSettled([insightPromise, heatmapPromise]).then((results) => {
+          console.log("[Results] Both insight and heatmap processes completed (or timed out)");
+          console.log("[Results] Insight:", results[0].status, "Heatmap:", results[1].status);
+        });
       } else {
         console.log("[Results] No insight needed (threshold not reached or no userId)");
         setIsGeneratingInsight(false);
+
+        // Still load heatmap even if no insight
+        setTimeout(() => {
+          (async () => {
+            try {
+              console.log("[Results] Loading heatmap only (no insight needed)...");
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+              );
+
+              const heatmapDataPromise = getAllHeatmapDataAction(poll.id, 3);
+              const allHeatmapData = await Promise.race([heatmapDataPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+              console.log("[Results] Heatmap loaded successfully!");
+              const heatmapData = allHeatmapData.success && allHeatmapData.data
+                ? allHeatmapData.data
+                : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+              setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = heatmapData;
+              }
+            } catch (error) {
+              console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+              const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+              setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+              }
+            }
+          })();
+        }, 50);
       }
 
       // Load artifacts in background (don't block)
