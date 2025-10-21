@@ -51,12 +51,12 @@ export function SplitVoteCard({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        className="bg-white rounded-2xl shadow-2xl overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Statement Text Header */}
-        <div className="p-4 sm:p-6 bg-gray-50 border-b-4 border-primary-200">
+        <div className="flex-1 min-h-[150px] sm:min-h-[180px] p-4 sm:p-6 bg-gray-50 border-b-4 border-primary-200 flex items-center justify-center">
           <p
-            className="text-lg sm:text-xl font-medium text-gray-800 text-center leading-relaxed"
+            className="text-xl sm:text-3xl font-medium text-gray-800 text-center leading-relaxed"
             dir="auto"
           >
             &ldquo;{statementText}&rdquo;
@@ -64,7 +64,7 @@ export function SplitVoteCard({
         </div>
 
         {/* Split Voting Buttons */}
-        <div className="flex h-64 sm:h-80 relative">
+        <div className="flex flex-1 min-h-[200px] sm:min-h-[240px] relative">
           {/* Disagree Button (Left/Start) */}
           <button
             onClick={() => !disabled && onVote(-1)}
