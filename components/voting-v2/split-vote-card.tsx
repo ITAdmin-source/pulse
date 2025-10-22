@@ -56,7 +56,7 @@ export function SplitVoteCard({
         {/* Statement Text Header */}
         <div className="flex-1 min-h-[150px] sm:min-h-[180px] p-4 sm:p-6 bg-gray-50 border-b-4 border-primary-200 flex items-center justify-center">
           <p
-            className="text-xl sm:text-3xl font-medium text-gray-800 text-center leading-relaxed"
+            className="text-xl sm:text-3xl font-bold text-gray-800 text-center leading-relaxed"
             dir="auto"
           >
             &ldquo;{statementText}&rdquo;
