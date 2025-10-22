@@ -17,6 +17,10 @@ interface SplitVoteCardProps {
   disabled?: boolean;
   allowAddStatement?: boolean;
   showAddButtonPulse?: boolean;
+  voteProgress?: {
+    current: number;
+    required: number;
+  };
 }
 
 export function SplitVoteCard({
@@ -28,7 +32,8 @@ export function SplitVoteCard({
   disagreePercent = 0,
   disabled = false,
   allowAddStatement = true,
-  showAddButtonPulse = false
+  showAddButtonPulse = false,
+  voteProgress
 }: SplitVoteCardProps) {
   const [hoveredButton, setHoveredButton] = useState<"agree" | "disagree" | null>(null);
 
@@ -44,7 +49,7 @@ export function SplitVoteCard({
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
+    <div className="relative w-full">
       {/* Statement Card */}
       <motion.div
         initial={{ opacity: 0, scale: 0.92 }}
@@ -53,6 +58,15 @@ export function SplitVoteCard({
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
+        {/* Vote Progress Counter (if provided) */}
+        {voteProgress && (
+          <div className="bg-gradient-poll-header px-4 py-2 text-center">
+            <p className="text-white text-sm font-semibold">
+              {voting.voteCounter(voteProgress.current, voteProgress.required)}
+            </p>
+          </div>
+        )}
+
         {/* Statement Text Header */}
         <div className="flex-1 min-h-[150px] sm:min-h-[180px] p-4 sm:p-6 bg-gray-50 border-b-4 border-primary-200 flex items-center justify-center">
           <p

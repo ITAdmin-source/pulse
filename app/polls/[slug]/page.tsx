@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
 // v2.0 Components - Core (always loaded)
-import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
@@ -38,6 +37,11 @@ import { PartialParticipationBanner } from "@/components/banners/partial-partici
 import { DemographicsModal, type DemographicsData } from "@/components/modals/demographics-modal";
 import { EncouragementToast } from "@/components/gamification/encouragement-toast";
 import { StatementSubmissionModal } from "@/components/modals/statement-submission-modal";
+import { UnlockCelebrationOverlay } from "@/components/gamification/unlock-celebration-overlay";
+import { ResultsSubNavigation, type ResultsTabType } from "@/components/results-v2/results-sub-navigation";
+import { ConnectComingSoon } from "@/components/results-v2/connect-coming-soon";
+import { ResultsActionButtons } from "@/components/results-v2/results-action-buttons";
+import { ResultsSignupBanner } from "@/components/results-v2/results-signup-banner";
 
 // v2.0 Components - Lazy Loaded (Results tab only) with loading fallbacks
 const InsightCard = dynamic(() => import("@/components/results-v2/insight-card").then(mod => ({ default: mod.InsightCard })), {
@@ -70,25 +74,7 @@ const DemographicHeatmap = dynamic(() => import("@/components/results-v2/demogra
   ssr: false
 });
 
-const MoreStatementsPrompt = dynamic(() => import("@/components/results-v2/more-statements-prompt").then(mod => ({ default: mod.MoreStatementsPrompt })), {
-  loading: () => (
-    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
-      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
-      <p className="text-gray-600 text-sm">טוען...</p>
-    </div>
-  ),
-  ssr: false
-});
-
-const VotingCompleteBanner = dynamic(() => import("@/components/results-v2/voting-complete-banner").then(mod => ({ default: mod.VotingCompleteBanner })), {
-  loading: () => (
-    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
-      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
-      <p className="text-gray-600 text-sm">טוען...</p>
-    </div>
-  ),
-  ssr: false
-});
+// Removed MoreStatementsPrompt and VotingCompleteBanner - replaced by ResultsActionButtons
 
 // Actions
 import { getPollBySlugAction } from "@/actions/polls-actions";
@@ -219,6 +205,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Core state
   const [activeTab, setActiveTab] = useState<TabType>("vote");
+  const [resultsTab, setResultsTab] = useState<ResultsTabType>("insight");
   const [poll, setPoll] = useState<Poll | null>(null);
   const [statementManager, setStatementManager] = useState<StatementManager | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,6 +225,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [showAddButtonPulse, setShowAddButtonPulse] = useState(false);
   const [triggeredMilestones, setTriggeredMilestones] = useState<Set<number>>(new Set());
+  const [showUnlockOverlay, setShowUnlockOverlay] = useState(false);
 
   // Demographics state
   const [hasDemographics, setHasDemographics] = useState(false);
@@ -279,13 +267,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   } | null>(null);
   const RESULTS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-  // Optimization #6: Client-side heatmap cache
-  const heatmapCacheRef = useRef<{
-    pollId: string;
-    data: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]>;
-    timestamp: number;
-  } | null>(null);
-  const HEATMAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  // Removed heatmapCacheRef - not used in current implementation
 
   // Progress tracking - single source of truth from statementManager
   const progress = statementManager?.getProgress();
@@ -479,6 +461,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
             getComputedStyle(document.documentElement).getPropertyValue('--confetti-purple-500').trim() || '#a855f7',
           ],
         });
+
+        // Show unlock celebration overlay for 2 seconds, then auto-switch to Results
+        setShowUnlockOverlay(true);
+        // Overlay will auto-dismiss after 2 seconds via its useEffect
+        // When it dismisses, we'll switch to Results tab
+
         setEncouragementMessage(voting.milestoneThresholdReached);
         setShowEncouragement(true);
         break;
@@ -581,10 +569,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               setStatementManager(manager);
               setCurrentStatement(null);
 
-              // Auto-switch to results tab if they have demographics
-              if (demographicsResult.success && demographicsResult.data) {
-                setActiveTab("results");
-              }
+              // Auto-switch to results tab (user has voted on all statements, so definitely 10+)
+              setActiveTab("results");
             } else {
               // Fix #2: Fetch statement batch (was sequential, now remains separate due to conditional logic)
               // Note: Can't parallelize with votes/progress because we need totalVoted check first
@@ -602,6 +588,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 setStatementManager(manager);
                 const nextStmt = manager.getNextStatement();
                 setCurrentStatement(nextStmt);
+
+                // Auto-landing logic: If user has 10+ votes, send them to Results view
+                const totalVoted = Object.keys(userVotesLookup).length;
+                const votesRequiredForResults = Math.min(10, totalStatements);
+                if (totalVoted >= votesRequiredForResults) {
+                  setActiveTab("results");
+                }
               }
             }
           }
@@ -1318,6 +1311,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     }
   }, [userId, poll]);
 
+  // Handle unlock celebration overlay dismissal
+  const handleUnlockOverlayDismiss = useCallback(() => {
+    setShowUnlockOverlay(false);
+    // Auto-switch to Results tab after celebration
+    setActiveTab("results");
+  }, []);
+
   // Handle "Sign Up" button in collection footer (anonymous users)
   const handleSignUpFromCollection = useCallback(() => {
     openSignUp();
@@ -1362,6 +1362,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         onDismiss={() => setShowEncouragement(false)}
       />
 
+      {/* Gamification: Unlock Celebration Overlay */}
+      <UnlockCelebrationOverlay
+        isVisible={showUnlockOverlay}
+        onDismiss={handleUnlockOverlayDismiss}
+      />
+
       {/* Sticky Back Button Header */}
       <header className="sticky top-0 z-50 bg-gradient-header border-b border-primary-500-20">
         <div className="container mx-auto px-4 py-4 sm:py-3">
@@ -1392,31 +1398,11 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           )}
         </div>
 
-        {/* Tab Navigation - show during grace period, hide after */}
-        {(!isPollClosed || inGracePeriod) && (
-          <div className="mb-8">
-            <TabNavigation
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              resultsLocked={resultsLocked}
-              votesCompleted={votedCount}
-              votesRequired={votesRequiredForResults}
-            />
-          </div>
-        )}
+        {/* Tab Navigation - removed from Results view, only sub-navigation will be shown */}
 
         {/* Vote Tab */}
         {activeTab === "vote" && (
           <div className="space-y-6">
-            {/* Progress Segments */}
-            {progress && (
-              <ProgressSegments
-                total={progress.statementsInCurrentBatch}
-                current={progress.positionInBatch}
-                showStats={showVoteStats}
-              />
-            )}
-
             {/* Voting Interface */}
             <AnimatePresence mode="wait">
               {showStatementModal ? (
@@ -1436,25 +1422,44 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   }}
                 />
               ) : currentStatement ? (
-                <div className="relative" key={currentStatement.id}>
-                  {/* Static visual glow for prominence - uses design token colors */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-purple-500/5 via-primary-pink-500/5 to-primary-purple-500/5 rounded-2xl blur-xl -z-10"
-                       style={{
-                         background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.08), rgba(219, 39, 119, 0.08), transparent)'
-                       }}
-                  />
-                  <SplitVoteCard
-                    statementText={currentStatement.text}
-                    onVote={handleVote}
-                    onAddStatement={() => setShowStatementModal(true)}
-                    showStats={showVoteStats}
-                    agreePercent={voteStats?.agreePercent}
-                    disagreePercent={voteStats?.disagreePercent}
-                    passPercent={voteStats?.passPercent}
-                    disabled={isSavingVote}
-                    allowAddStatement={poll?.allowUserStatements || false}
-                    showAddButtonPulse={showAddButtonPulse}
-                  />
+                <div className="w-full max-w-2xl mx-auto space-y-4" key={currentStatement.id}>
+                  {/* Progress Segments */}
+                  {progress && (
+                    <ProgressSegments
+                      total={progress.statementsInCurrentBatch}
+                      current={progress.positionInBatch}
+                      showStats={showVoteStats}
+                    />
+                  )}
+
+                  <div className="relative">
+                    {/* Static visual glow for prominence - uses design token colors */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-purple-500/5 via-primary-pink-500/5 to-primary-purple-500/5 rounded-2xl blur-xl -z-10"
+                         style={{
+                           background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.08), rgba(219, 39, 119, 0.08), transparent)'
+                         }}
+                    />
+                    <SplitVoteCard
+                      statementText={currentStatement.text}
+                      onVote={handleVote}
+                      onAddStatement={() => setShowStatementModal(true)}
+                      showStats={showVoteStats}
+                      agreePercent={voteStats?.agreePercent}
+                      disagreePercent={voteStats?.disagreePercent}
+                      passPercent={voteStats?.passPercent}
+                      disabled={isSavingVote}
+                      allowAddStatement={poll?.allowUserStatements || false}
+                      showAddButtonPulse={showAddButtonPulse}
+                      voteProgress={
+                        progress
+                          ? {
+                              current: progress.positionInBatch + 1, // +1 because position is 0-indexed
+                              required: progress.statementsInCurrentBatch,
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
                 </div>
               ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
@@ -1527,92 +1532,172 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               </div>
             ) : (
               <>
-                {/* Personal Insight Card - with loading and error states */}
-                {isGeneratingInsight ? (
-                  <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-                    <p className="text-lg font-medium">מייצר לך תובנה אישית...</p>
-                    <p className="text-sm text-primary-200 mt-2">זה יכול לקחת כמה שניות</p>
-                  </div>
-                ) : insightError ? (
-                  <div className="bg-gradient-error rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
-                    <div className="text-5xl mb-4">⚠️</div>
-                    <h3 className="text-xl font-bold mb-2">שגיאה ביצירת תובנה</h3>
-                    <p className="text-white-80 mb-6">{insightError}</p>
-                    <button
-                      onClick={() => loadResultsData()}
-                      className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-white-95 transition-colors shadow-lg"
-                    >
-                      נסה שוב
-                    </button>
-                  </div>
-                ) : resultsData.insight ? (
-                  <InsightCard
-                    profile={resultsData.insight.profile}
-                    emoji={resultsData.insight.emoji}
-                    description={resultsData.insight.description}
-                    pollSlug={poll.slug}
-                    pollQuestion={poll.question}
-                    showSignUpPrompt={!dbUser?.clerkUserId}
-                    isAuthenticated={!!dbUser?.clerkUserId}
-                    artifacts={userArtifacts}
-                    userId={userId || undefined}
-                    currentPollId={poll.id}
-                    newlyEarned={newlyEarnedArtifact || undefined}
-                    onDismissNewBadge={handleDismissNewBadge}
-                    onSignUp={handleSignUpFromCollection}
-                    onEarnMore={handleEarnMore}
-                  />
-                ) : null}
+                {/* Determine if we should show sub-navigation */}
+                {(() => {
+                  const showResultsSubNav =
+                    !isPollClosed ||
+                    inGracePeriod ||
+                    (isPollClosed && !inGracePeriod && votedCount >= votesRequiredForResults);
 
-                {/* More Statements or Voting Complete - hide for closed polls */}
+                  return showResultsSubNav ? (
+                    <>
+                      {/* Results Sub-Navigation (3 tabs) */}
+                      <ResultsSubNavigation
+                        activeTab={resultsTab}
+                        onTabChange={setResultsTab}
+                      />
+
+                      {/* Results Content based on selected tab */}
+                      <div className="space-y-6">
+                        {resultsTab === "insight" && (
+                          <>
+                            {/* Personal Insight Card - with loading and error states */}
+                            {isGeneratingInsight ? (
+                              <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                                <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+                                <p className="text-lg font-medium">מייצר לך תובנה אישית...</p>
+                                <p className="text-sm text-primary-200 mt-2">זה יכול לקחת כמה שניות</p>
+                              </div>
+                            ) : insightError ? (
+                              <div className="bg-gradient-error rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                                <div className="text-5xl mb-4">⚠️</div>
+                                <h3 className="text-xl font-bold mb-2">שגיאה ביצירת תובנה</h3>
+                                <p className="text-white-80 mb-6">{insightError}</p>
+                                <button
+                                  onClick={() => loadResultsData()}
+                                  className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-white-95 transition-colors shadow-lg"
+                                >
+                                  נסה שוב
+                                </button>
+                              </div>
+                            ) : resultsData.insight ? (
+                              <InsightCard
+                                profile={resultsData.insight.profile}
+                                emoji={resultsData.insight.emoji}
+                                description={resultsData.insight.description}
+                                pollSlug={poll.slug}
+                                pollQuestion={poll.question}
+                                showSignUpPrompt={!dbUser?.clerkUserId}
+                                isAuthenticated={!!dbUser?.clerkUserId}
+                                artifacts={userArtifacts}
+                                userId={userId || undefined}
+                                currentPollId={poll.id}
+                                newlyEarned={newlyEarnedArtifact || undefined}
+                                onDismissNewBadge={handleDismissNewBadge}
+                                onSignUp={handleSignUpFromCollection}
+                                onEarnMore={handleEarnMore}
+                              />
+                            ) : null}
+                          </>
+                        )}
+
+                        {resultsTab === "results" && (
+                          <>
+                            {/* Aggregate Stats */}
+                            {resultsData.stats && (
+                              <AggregateStats
+                                participantCount={resultsData.stats.participantCount}
+                                statementCount={resultsData.stats.statementCount}
+                                totalVotes={resultsData.stats.totalVotes}
+                              />
+                            )}
+
+                            {/* Demographic Heatmap */}
+                            {resultsData.heatmapData ? (
+                              <DemographicHeatmap
+                                pollId={poll.id}
+                                data={resultsData.heatmapData}
+                                isLoading={false}
+                              />
+                            ) : (
+                              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+                                <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                                  {results.heatmapTitle}
+                                </h3>
+                                <div className="text-center py-12 text-gray-500">
+                                  <p>טוען נתוני חום דמוגרפיים...</p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {resultsTab === "connect" && (
+                          <ConnectComingSoon />
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Closed poll with <10 votes: Just show aggregate results, no sub-nav */}
+                      {/* Aggregate Stats */}
+                      {resultsData.stats && (
+                        <AggregateStats
+                          participantCount={resultsData.stats.participantCount}
+                          statementCount={resultsData.stats.statementCount}
+                          totalVotes={resultsData.stats.totalVotes}
+                        />
+                      )}
+
+                      {/* Demographic Heatmap */}
+                      {resultsData.heatmapData ? (
+                        <DemographicHeatmap
+                          pollId={poll.id}
+                          data={resultsData.heatmapData}
+                          isLoading={false}
+                        />
+                      ) : (
+                        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                            {results.heatmapTitle}
+                          </h3>
+                          <div className="text-center py-12 text-gray-500">
+                            <p>טוען נתוני חום דמוגרפיים...</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Action Buttons Section (below content, only for open polls) */}
                 {!isPollClosed && (
-                  <>
-                    {hasMoreStatements ? (
-                      <MoreStatementsPrompt
-                        remainingStatements={totalStatements - votedCount}
-                        onContinue={handleContinueBatch}
-                      />
-                    ) : (
-                      <VotingCompleteBanner
-                        pollSlug={poll.slug}
-                        pollQuestion={poll.question}
-                      />
-                    )}
-                  </>
-                )}
-
-                {/* Aggregate Stats */}
-                {resultsData.stats && (
-                  <AggregateStats
-                    participantCount={resultsData.stats.participantCount}
-                    statementCount={resultsData.stats.statementCount}
-                    totalVotes={resultsData.stats.totalVotes}
+                  <ResultsActionButtons
+                    hasMoreStatements={hasMoreStatements}
+                    allowUserStatements={poll.allowUserStatements}
+                    isPollClosed={isPollClosed}
+                    onContinueVoting={handleContinueBatch}
+                    onAddStatement={() => setShowStatementModal(true)}
                   />
                 )}
 
-                {/* Demographic Heatmap */}
-                {resultsData.heatmapData ? (
-                  <DemographicHeatmap
-                    pollId={poll.id}
-                    data={resultsData.heatmapData}
-                    isLoading={false}
-                  />
-                ) : (
-                  <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
-                      {results.heatmapTitle}
-                    </h3>
-                    <div className="text-center py-12 text-gray-500">
-                      <p>טוען נתוני חום דמוגרפיים...</p>
-                    </div>
-                  </div>
+                {/* Signup Banner (only for anonymous users) */}
+                {!dbUser?.clerkUserId && (
+                  <ResultsSignupBanner onSignUp={openSignUp} />
                 )}
               </>
             )}
           </div>
         )}
       </main>
+
+      {/* Statement Submission Modal - Results View (Popup Overlay) */}
+      {activeTab === "results" && (
+        <StatementSubmissionModal
+          open={showStatementModal}
+          onOpenChange={setShowStatementModal}
+          pollId={poll.id}
+          pollTitle={poll.question}
+          userId={userId}
+          autoApprove={poll.autoApproveStatements}
+          onUserCreated={(newUserId) => {
+            setUserId(newUserId);
+            if (statementManager) {
+              statementManager.userId = newUserId;
+            }
+          }}
+        />
+      )}
 
       {/* Demographics Modal */}
       <DemographicsModal
