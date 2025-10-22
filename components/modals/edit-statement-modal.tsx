@@ -80,6 +80,7 @@ export function EditStatementModal({
             rows={4}
             disabled={isSubmitting}
             placeholder="הזן טקסט הצהרה..."
+            className="text-gray-900 dark:text-white"
           />
         </div>
 

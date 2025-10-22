@@ -124,30 +124,55 @@ export async function getUserPollInsightsByPollIdAction(pollId: string) {
  * PHASE 5 SECURITY: Only allows users to access their own insights OR system admins
  */
 export async function getUserPollInsightAction(userId: string, pollId: string) {
+  console.log("[getUserPollInsightAction] ===== CALLED =====");
+  console.log("[getUserPollInsightAction] userId:", userId);
+  console.log("[getUserPollInsightAction] pollId:", pollId);
+  console.log("[getUserPollInsightAction] Timestamp:", new Date().toISOString());
+
   try {
+    console.log("[getUserPollInsightAction] Step 1: Checking authentication...");
     // PHASE 5 SECURITY: Authorization check
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) {
+      console.log("[getUserPollInsightAction] ❌ No clerkUserId - returning auth error");
       return { success: false, error: "Authentication required" };
     }
+    console.log("[getUserPollInsightAction] ✅ Authentication successful, clerkUserId:", clerkUserId);
 
+    console.log("[getUserPollInsightAction] Step 2: Finding current user...");
     const currentUser = await UserService.findByClerkId(clerkUserId);
     if (!currentUser) {
+      console.log("[getUserPollInsightAction] ❌ User not found in database");
       return { success: false, error: "User not found" };
     }
+    console.log("[getUserPollInsightAction] ✅ Current user found:", currentUser.id);
 
+    console.log("[getUserPollInsightAction] Step 3: Checking authorization...");
     // Only allow users to access their own insights OR system admins
     const roles = await UserService.getUserRoles(currentUser.id);
     const isAdmin = roles.some(r => r.role === 'system_admin');
+    console.log("[getUserPollInsightAction] User roles:", roles.map(r => r.role));
+    console.log("[getUserPollInsightAction] Is admin:", isAdmin);
 
     if (currentUser.id !== userId && !isAdmin) {
+      console.log("[getUserPollInsightAction] ❌ Unauthorized access attempt");
       return { success: false, error: "Unauthorized access to user insight" };
     }
+    console.log("[getUserPollInsightAction] ✅ Authorization passed");
 
+    console.log("[getUserPollInsightAction] Step 4: Fetching insight from database...");
+    const fetchStart = Date.now();
     const insight = await getUserPollInsight(userId, pollId);
+    const fetchDuration = Date.now() - fetchStart;
+    console.log("[getUserPollInsightAction] ✅ Database fetch completed in", fetchDuration, "ms");
+    console.log("[getUserPollInsightAction] Insight found:", !!insight);
+
+    console.log("[getUserPollInsightAction] ===== RETURNING SUCCESS =====");
     return { success: true, data: insight };
   } catch (error) {
-    console.error("Error fetching user poll insight:", error);
+    console.error("[getUserPollInsightAction] ❌ ERROR:", error);
+    console.error("[getUserPollInsightAction] Error stack:", error instanceof Error ? error.stack : "No stack");
+    console.log("[getUserPollInsightAction] ===== RETURNING ERROR =====");
     return { success: false, error: "Failed to fetch user poll insight" };
   }
 }
@@ -212,28 +237,49 @@ export async function getInsightWithPollDetailsAction(userId: string, pollId: st
  * This combines generation + persistence in one atomic operation (server-side)
  */
 export async function generateAndSaveInsightAction(userId: string, pollId: string) {
+  console.log("[generateAndSaveInsightAction] ===== CALLED =====");
+  console.log("[generateAndSaveInsightAction] userId:", userId);
+  console.log("[generateAndSaveInsightAction] pollId:", pollId);
+
   try {
+    console.log("[generateAndSaveInsightAction] Calling AIService.generatePersonalInsight...");
+    const generateStartTime = Date.now();
+
     // Generate insight using AIService (same as old UI)
     const generated = await AIService.generatePersonalInsight(userId, pollId);
 
+    const generateDuration = Date.now() - generateStartTime;
+    console.log("[generateAndSaveInsightAction] AIService.generatePersonalInsight completed in", generateDuration, "ms");
+    console.log("[generateAndSaveInsightAction] Generated insight:", {
+      titleLength: generated.title.length,
+      bodyLength: generated.body.length
+    });
+
+    console.log("[generateAndSaveInsightAction] Saving to database...");
     // Save to database immediately
     const saveResult = await upsertUserPollInsight(userId, pollId, generated.title, generated.body);
+    console.log("[generateAndSaveInsightAction] ✅ Saved to database successfully");
 
     revalidatePath("/polls");
 
-    return {
+    const result = {
       success: true,
       data: {
         title: saveResult.title,
         body: saveResult.body
       }
     };
+    console.log("[generateAndSaveInsightAction] ===== RETURNING SUCCESS =====");
+    return result;
   } catch (error) {
-    console.error("Error generating and saving insight:", error);
-    return {
+    console.error("[generateAndSaveInsightAction] ❌ ERROR:", error);
+    console.error("[generateAndSaveInsightAction] Error stack:", error instanceof Error ? error.stack : "No stack");
+    const result = {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate insight"
     };
+    console.log("[generateAndSaveInsightAction] ===== RETURNING ERROR =====");
+    return result;
   }
 }
 

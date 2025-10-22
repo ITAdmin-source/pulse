@@ -36,7 +36,13 @@
       "Bash(if not exist testsintegrationworkflows mkdir testsintegrationworkflows)",
       "Bash(if not exist .claudedocs mkdir .claudedocs)",
       "Bash(if not exist libclustering mkdir libclustering)",
-      "Bash(if not exist apppolls[slug]opinionmap mkdir apppolls[slug]opinionmap)"
+      "Bash(if not exist apppolls[slug]opinionmap mkdir apppolls[slug]opinionmap)",
+      "Read(//c/Users/Guy/Downloads/**)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [

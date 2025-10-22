@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
 // v2.0 Components - Core (always loaded)
-import { TabNavigation } from "@/components/polls-v2/tab-navigation";
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
@@ -38,6 +37,11 @@ import { PartialParticipationBanner } from "@/components/banners/partial-partici
 import { DemographicsModal, type DemographicsData } from "@/components/modals/demographics-modal";
 import { EncouragementToast } from "@/components/gamification/encouragement-toast";
 import { StatementSubmissionModal } from "@/components/modals/statement-submission-modal";
+import { UnlockCelebrationOverlay } from "@/components/gamification/unlock-celebration-overlay";
+import { ResultsSubNavigation, type ResultsTabType } from "@/components/results-v2/results-sub-navigation";
+import { ConnectComingSoon } from "@/components/results-v2/connect-coming-soon";
+import { ResultsActionButtons } from "@/components/results-v2/results-action-buttons";
+import { ResultsSignupBanner } from "@/components/results-v2/results-signup-banner";
 
 // v2.0 Components - Lazy Loaded (Results tab only) with loading fallbacks
 const InsightCard = dynamic(() => import("@/components/results-v2/insight-card").then(mod => ({ default: mod.InsightCard })), {
@@ -70,25 +74,7 @@ const DemographicHeatmap = dynamic(() => import("@/components/results-v2/demogra
   ssr: false
 });
 
-const MoreStatementsPrompt = dynamic(() => import("@/components/results-v2/more-statements-prompt").then(mod => ({ default: mod.MoreStatementsPrompt })), {
-  loading: () => (
-    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
-      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
-      <p className="text-gray-600 text-sm">טוען...</p>
-    </div>
-  ),
-  ssr: false
-});
-
-const VotingCompleteBanner = dynamic(() => import("@/components/results-v2/voting-complete-banner").then(mod => ({ default: mod.VotingCompleteBanner })), {
-  loading: () => (
-    <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
-      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
-      <p className="text-gray-600 text-sm">טוען...</p>
-    </div>
-  ),
-  ssr: false
-});
+// Removed MoreStatementsPrompt and VotingCompleteBanner - replaced by ResultsActionButtons
 
 // Actions
 import { getPollBySlugAction } from "@/actions/polls-actions";
@@ -219,6 +205,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Core state
   const [activeTab, setActiveTab] = useState<TabType>("vote");
+  const [resultsTab, setResultsTab] = useState<ResultsTabType>("insight");
   const [poll, setPoll] = useState<Poll | null>(null);
   const [statementManager, setStatementManager] = useState<StatementManager | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,6 +225,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [showAddButtonPulse, setShowAddButtonPulse] = useState(false);
   const [triggeredMilestones, setTriggeredMilestones] = useState<Set<number>>(new Set());
+  const [showUnlockOverlay, setShowUnlockOverlay] = useState(false);
 
   // Demographics state
   const [hasDemographics, setHasDemographics] = useState(false);
@@ -250,17 +238,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [resultsData, setResultsData] = useState<{
     insight: { profile: string; emoji: string; description: string } | null;
     stats: { participantCount: number; statementCount: number; totalVotes: number } | null;
-    heatmapData: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]>;
+    heatmapData: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]> | null;
     hasMoreStatements: boolean;
   }>({
     insight: null,
     stats: null,
-    heatmapData: {
-      gender: [],
-      ageGroup: [],
-      ethnicity: [],
-      politicalParty: []
-    },
+    heatmapData: null,
     hasMoreStatements: false
   });
   const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -284,13 +267,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   } | null>(null);
   const RESULTS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-  // Optimization #6: Client-side heatmap cache
-  const heatmapCacheRef = useRef<{
-    pollId: string;
-    data: Record<"gender" | "ageGroup" | "ethnicity" | "politicalParty", HeatmapStatementData[]>;
-    timestamp: number;
-  } | null>(null);
-  const HEATMAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  // Removed heatmapCacheRef - not used in current implementation
 
   // Progress tracking - single source of truth from statementManager
   const progress = statementManager?.getProgress();
@@ -484,6 +461,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
             getComputedStyle(document.documentElement).getPropertyValue('--confetti-purple-500').trim() || '#a855f7',
           ],
         });
+
+        // Show unlock celebration overlay for 2 seconds, then auto-switch to Results
+        setShowUnlockOverlay(true);
+        // Overlay will auto-dismiss after 2 seconds via its useEffect
+        // When it dismisses, we'll switch to Results tab
+
         setEncouragementMessage(voting.milestoneThresholdReached);
         setShowEncouragement(true);
         break;
@@ -586,10 +569,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               setStatementManager(manager);
               setCurrentStatement(null);
 
-              // Auto-switch to results tab if they have demographics
-              if (demographicsResult.success && demographicsResult.data) {
-                setActiveTab("results");
-              }
+              // Auto-switch to results tab (user has voted on all statements, so definitely 10+)
+              setActiveTab("results");
             } else {
               // Fix #2: Fetch statement batch (was sequential, now remains separate due to conditional logic)
               // Note: Can't parallelize with votes/progress because we need totalVoted check first
@@ -607,6 +588,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 setStatementManager(manager);
                 const nextStmt = manager.getNextStatement();
                 setCurrentStatement(nextStmt);
+
+                // Auto-landing logic: If user has 10+ votes, send them to Results view
+                const totalVoted = Object.keys(userVotesLookup).length;
+                const votesRequiredForResults = Math.min(10, totalStatements);
+                if (totalVoted >= votesRequiredForResults) {
+                  setActiveTab("results");
+                }
               }
             }
           }
@@ -853,9 +841,23 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Load results data
   const loadResultsData = useCallback(async (forceRefresh = false) => {
+    console.log("[Results] ===== LOAD RESULTS DATA CALLED =====");
+    console.log("[Results] poll:", poll?.id, poll?.slug);
+    console.log("[Results] userId:", userId);
+    console.log("[Results] isPollClosed:", isPollClosed);
+    console.log("[Results] votedCount:", votedCount);
+    console.log("[Results] totalStatements:", totalStatements);
+    console.log("[Results] forceRefresh:", forceRefresh);
+
     // For closed polls, allow loading without userId (anonymous users without DB entry)
-    if (!poll) return;
-    if (!isPollClosed && !userId) return;
+    if (!poll) {
+      console.log("[Results] EARLY EXIT: No poll");
+      return;
+    }
+    if (!isPollClosed && !userId) {
+      console.log("[Results] EARLY EXIT: Not closed and no userId");
+      return;
+    }
 
     // Fix #2: Check ref-based cache validity
     const cache = resultsCacheRef.current;
@@ -871,126 +873,50 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       return;
     }
 
+    console.log("[Results] Starting fresh data load...");
     setIsLoadingResults(true);
     try {
       // Check if user is anonymous (no Clerk ID)
       const isAnonymous = !dbUser?.clerkUserId;
+      console.log("[Results] isAnonymous:", isAnonymous);
+      console.log("[Results] dbUser:", dbUser ? { id: dbUser.id, clerkUserId: dbUser.clerkUserId } : null);
 
       // Check if user has reached the threshold for insight generation
       // Threshold is 10 votes OR all statements if poll has fewer than 10
       // Also require at least 1 vote (prevent edge case where totalStatements = 0)
       const insightThreshold = Math.min(10, totalStatements);
       const hasReachedInsightThreshold = votedCount > 0 && votedCount >= insightThreshold;
+      console.log("[Results] insightThreshold:", insightThreshold);
+      console.log("[Results] hasReachedInsightThreshold:", hasReachedInsightThreshold);
 
       // For anonymous users, check localStorage first (synchronous)
       let insightFromStorage = null;
       if (isAnonymous && hasReachedInsightThreshold) {
         insightFromStorage = getInsightFromStorage(poll.id);
+        console.log("[Results] insightFromStorage:", insightFromStorage ? "Found" : "Not found");
       }
 
       // Quick check: Do we need to generate insight?
       // Set generating state BEFORE waiting for async calls
       // Only generate if user has reached threshold
       if (!insightFromStorage && hasReachedInsightThreshold) {
+        console.log("[Results] Will need to generate insight - setting isGeneratingInsight to true");
         // Optimistically assume we'll need to generate
         // Will be corrected if DB has cached version
         setIsGeneratingInsight(true);
       }
 
-      // For users below threshold, don't fetch insight (but still fetch aggregate stats for closed polls)
-      // For closed polls, always fetch aggregate stats/heatmap regardless of vote count
-      const shouldFetchInsight = hasReachedInsightThreshold && userId;
-      const [insightResult, pollResultsResult, allHeatmapData, artifacts] = await Promise.all([
-        shouldFetchInsight ? getUserPollInsightAction(userId, poll.id) : Promise.resolve({ success: false, data: null }),
-        getPollResultsAction(poll.id),
-        getAllHeatmapDataAction(poll.id, 3), // OPTIMIZED: Single call instead of 4 separate calls
-        userId ? loadUserArtifacts() : Promise.resolve([])
-      ]);
+      // PROGRESSIVE LOADING: Split into fast and slow data fetches
+      // Fast data: ONLY stats (load first, show immediately - <1 second)
+      // Slow data: heatmap + insight (load in background - may take 10-300 seconds)
 
-      // Update artifacts state
-      setUserArtifacts(artifacts);
+      console.log("[Results] ===== PHASE 1: LOADING FAST DATA (stats only) =====");
+      const pollResultsResult = await getPollResultsAction(poll.id);
 
-      // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
-      let insight = null;
-      let isNewArtifact = false;
-      if (insightFromStorage) {
-        // ✅ Anonymous user with localStorage insight
-        const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
-        insight = {
-          emoji: emojiMatch ? emojiMatch[1] : "🌟",
-          profile: emojiMatch ? emojiMatch[2] : insightFromStorage.title,
-          description: insightFromStorage.body
-        };
-        setIsGeneratingInsight(false); // Turn off since we have cached version
-      } else if (insightResult.success && insightResult.data) {
-        // ✅ Insight exists in DB - use cached version
-        const { title, body } = insightResult.data;
-        const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
+      console.log("[Results] Fast data loaded!");
+      console.log("[Results] pollResultsResult:", pollResultsResult.success ? "Success" : "Failed");
 
-        // Extract emoji from title using regex: "🌟 משתנה חברתי" -> emoji: "🌟", profile: "משתנה חברתי"
-        const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);
-
-        insight = {
-          emoji: emojiMatch ? emojiMatch[1] : "🌟",
-          profile: emojiMatch ? emojiMatch[2] : title,
-          description: body
-        };
-        isNewArtifact = dbIsNew || false;
-        setIsGeneratingInsight(false); // Turn off since we have cached version
-      } else if (userId && hasReachedInsightThreshold) {
-        // ❌ No insight in DB/localStorage - generate using AIService and save
-        // Only attempt if user has userId (skip for anonymous without DB entry)
-        // isGeneratingInsight already set to true above
-        setInsightError(null);
-
-        try {
-          const generateResult = await generateAndSaveInsightAction(userId, poll.id);
-
-          if (generateResult.success && generateResult.data) {
-            // Extract emoji from generated title
-            const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
-
-            insight = {
-              emoji: emojiMatch ? emojiMatch[1] : "💡",
-              profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
-              description: generateResult.data.body
-            };
-
-            // Newly generated insights are always "new" for authenticated users
-            isNewArtifact = !isAnonymous;
-
-            // Save to localStorage for anonymous users
-            if (isAnonymous) {
-              saveInsightToStorage(
-                poll.id,
-                poll.question,
-                generateResult.data.title,
-                generateResult.data.body
-              );
-              console.log("[PollPage] Saved insight to localStorage for anonymous user");
-            }
-          } else {
-            throw new Error(generateResult.error || "Failed to generate insight");
-          }
-        } catch (error) {
-          console.error("Error generating insight:", error);
-          const errorMessage = error instanceof Error ? error.message : "לא הצלחנו ליצור תובנה אישית";
-          setInsightError(errorMessage);
-          // Don't set insight - will show error state in UI
-        } finally {
-          setIsGeneratingInsight(false);
-        }
-      }
-
-      // Set newly earned artifact badge for authenticated users (first view only)
-      if (!isAnonymous && isNewArtifact && insight) {
-        setNewlyEarnedArtifact({
-          emoji: insight.emoji,
-          profile: insight.profile
-        });
-      }
-
-      // Process aggregate stats
+      // Process aggregate stats (so we can show them immediately)
       let stats = null;
       if (pollResultsResult.success && pollResultsResult.data) {
         const resultsData = pollResultsResult.data;
@@ -1001,53 +927,304 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         };
       }
 
-      // Optimization #6: Use client-side heatmap cache
-      let heatmapData;
-      const heatmapCache = heatmapCacheRef.current;
-      const heatmapCacheValid = heatmapCache
-        && heatmapCache.pollId === poll.id
-        && Date.now() - heatmapCache.timestamp < HEATMAP_CACHE_TTL;
-
-      if (heatmapCacheValid) {
-        console.log("[Results] Using cached heatmap data");
-        heatmapData = heatmapCache.data;
-      } else {
-        // Fetch fresh heatmap data
-        heatmapData = allHeatmapData.success && allHeatmapData.data ? allHeatmapData.data : {
-          gender: [],
-          ageGroup: [],
-          ethnicity: [],
-          politicalParty: []
-        };
-
-        // Update heatmap cache
-        heatmapCacheRef.current = {
-          pollId: poll.id,
-          data: heatmapData,
-          timestamp: Date.now()
-        };
-      }
-
-      const newData = {
-        insight,
+      // SHOW RESULTS IMMEDIATELY (without heatmap or insight)
+      console.log("[Results] Setting initial results data (stats only - heatmap loading in background)");
+      const initialData = {
+        insight: null, // Will be loaded in background
         stats,
-        heatmapData,
+        heatmapData: null, // Will be loaded in background
         hasMoreStatements
       };
+      setResultsData(initialData);
+      setIsLoadingResults(false); // Stop main loading spinner
 
-      setResultsData(newData);
-
-      // Fix #2: Update ref-based cache
+      // Update cache with initial data
       resultsCacheRef.current = {
         pollId: poll.id,
         votedCount,
-        data: newData,
+        data: initialData,
         timestamp: Date.now()
       };
+
+      // PRIORITY: Start insight generation FIRST (more important than heatmap)
+      // Then start heatmap with a small delay to ensure parallel execution
+      console.log("[Results] ===== PHASE 1B+2: LOADING INSIGHT & HEATMAP IN PARALLEL =====");
+
+      // Process insight (check localStorage for anonymous, DB for authenticated, then generate if needed)
+      let insight: { emoji: string; profile: string; description: string } | null = null;
+
+      // STEP 1: If insight is in localStorage, load it immediately (synchronous)
+      if (insightFromStorage) {
+        console.log("[Results] Using localStorage insight");
+        // ✅ Anonymous user with localStorage insight
+        const emojiMatch = insightFromStorage.title.match(/^([^\s]+)\s+(.+)$/);
+        insight = {
+          emoji: emojiMatch ? emojiMatch[1] : "🌟",
+          profile: emojiMatch ? emojiMatch[2] : insightFromStorage.title,
+          description: insightFromStorage.body
+        };
+        setIsGeneratingInsight(false);
+
+        // Update results data with insight
+        setResultsData(prev => ({ ...prev, insight }));
+        if (resultsCacheRef.current) {
+          resultsCacheRef.current.data.insight = insight;
+        }
+
+        console.log("[Results] Insight from localStorage loaded");
+
+        // Still need to load heatmap even if insight is cached
+        // Start heatmap with 50ms delay to ensure it doesn't block anything
+        setTimeout(() => {
+          (async () => {
+            try {
+              console.log("[Results] Loading heatmap in background...");
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+              );
+
+              const heatmapPromise = getAllHeatmapDataAction(poll.id, 3);
+              const allHeatmapData = await Promise.race([heatmapPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+              console.log("[Results] Heatmap loaded successfully!");
+              const heatmapData = allHeatmapData.success && allHeatmapData.data
+                ? allHeatmapData.data
+                : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+              setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = heatmapData;
+              }
+            } catch (error) {
+              console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+              const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+              setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+              }
+            }
+          })();
+        }, 50);
+      } else if (hasReachedInsightThreshold && userId) {
+        // STEP 2: Load insight AND heatmap in parallel (insight has priority)
+        console.log("[Results] Loading insight (priority) and heatmap in parallel...");
+
+        // Use Promise.allSettled to force true parallel execution
+        const insightPromise = (async () => {
+          try {
+            // OPTIMIZATION: Anonymous users don't have insights in DB
+            // Skip the DB check for anonymous users to avoid auth error and delay
+            if (isAnonymous) {
+              console.log("[Results] Anonymous user - skipping DB check, generating new insight...");
+              // Generate new insight directly
+              setInsightError(null);
+
+              const generateStartTime = Date.now();
+              const generateResult = await generateAndSaveInsightAction(userId, poll.id);
+              const generateDuration = Date.now() - generateStartTime;
+              console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
+
+              if (generateResult.success && 'data' in generateResult) {
+                console.log("[Results] ✅ Insight generated successfully!");
+                const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
+
+                const generatedInsight = {
+                  emoji: emojiMatch ? emojiMatch[1] : "💡",
+                  profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
+                  description: generateResult.data.body
+                };
+
+                setResultsData(prev => ({ ...prev, insight: generatedInsight }));
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.insight = generatedInsight;
+                }
+
+                // Save to localStorage for anonymous users
+                saveInsightToStorage(poll.id, poll.question, generateResult.data.title, generateResult.data.body);
+              } else {
+                const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
+                console.error("[Results] ❌ Generation failed:", errorMsg);
+                setInsightError(errorMsg);
+              }
+
+              setIsGeneratingInsight(false);
+              return; // Exit early for anonymous users
+            }
+
+            // AUTHENTICATED USERS: First try to fetch existing insight from DB
+            console.log("[Results] Authenticated user - checking for existing insight in DB...");
+            const insightResult = await getUserPollInsightAction(userId, poll.id);
+
+            if (insightResult.success && insightResult.data) {
+              console.log("[Results] ✅ Found existing insight in DB");
+              const { title, body } = insightResult.data;
+              const dbIsNew = insightResult.data.isNewArtifact as boolean | undefined;
+              const emojiMatch = title.match(/^([^\s]+)\s+(.+)$/);
+
+              const loadedInsight = {
+                emoji: emojiMatch ? emojiMatch[1] : "🌟",
+                profile: emojiMatch ? emojiMatch[2] : title,
+                description: body
+              };
+
+              setIsGeneratingInsight(false);
+              setResultsData(prev => ({ ...prev, insight: loadedInsight }));
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.insight = loadedInsight;
+              }
+
+              // Set artifact badge if it's new
+              if (!isAnonymous && dbIsNew) {
+                setNewlyEarnedArtifact({
+                  emoji: loadedInsight.emoji,
+                  profile: loadedInsight.profile
+                });
+              }
+            } else {
+              // No existing insight - generate new one
+              console.log("[Results] No existing insight - generating new one...");
+              setInsightError(null);
+
+              const generateStartTime = Date.now();
+              const generateResult = await generateAndSaveInsightAction(userId, poll.id);
+              const generateDuration = Date.now() - generateStartTime;
+              console.log("[Results] generateAndSaveInsightAction completed in", generateDuration, "ms");
+
+              if (generateResult.success && 'data' in generateResult) {
+                console.log("[Results] ✅ Insight generated successfully!");
+                const emojiMatch = generateResult.data.title.match(/^([^\s]+)\s+(.+)$/);
+
+                const generatedInsight = {
+                  emoji: emojiMatch ? emojiMatch[1] : "💡",
+                  profile: emojiMatch ? emojiMatch[2] : generateResult.data.title,
+                  description: generateResult.data.body
+                };
+
+                setResultsData(prev => ({ ...prev, insight: generatedInsight }));
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.insight = generatedInsight;
+                }
+
+                // Save to localStorage for anonymous users
+                if (isAnonymous) {
+                  saveInsightToStorage(poll.id, poll.question, generateResult.data.title, generateResult.data.body);
+                }
+
+                // Set artifact badge for authenticated users
+                if (!isAnonymous) {
+                  setNewlyEarnedArtifact({
+                    emoji: generatedInsight.emoji,
+                    profile: generatedInsight.profile
+                  });
+                }
+              } else {
+                const errorMsg = 'error' in generateResult ? generateResult.error : "Failed to generate insight";
+                console.error("[Results] ❌ Generation failed:", errorMsg);
+                setInsightError(errorMsg);
+              }
+            }
+          } catch (error) {
+            console.error("[Results] ❌ ERROR loading insight:", error);
+            const errorMessage = error instanceof Error ? error.message : "לא הצלחנו ליצור תובנה אישית";
+            setInsightError(errorMessage);
+          } finally {
+            setIsGeneratingInsight(false);
+          }
+        })();
+
+        // Heatmap promise (starts with 50ms delay to ensure insight starts first)
+        const heatmapPromise = new Promise((resolve) => {
+          setTimeout(() => {
+            (async () => {
+              try {
+                console.log("[Results] Loading heatmap in background (delayed 50ms)...");
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+                );
+
+                const heatmapDataPromise = getAllHeatmapDataAction(poll.id, 3);
+                const allHeatmapData = await Promise.race([heatmapDataPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+                console.log("[Results] Heatmap loaded successfully!");
+                const heatmapData = allHeatmapData.success && allHeatmapData.data
+                  ? allHeatmapData.data
+                  : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+                setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.heatmapData = heatmapData;
+                }
+                resolve(true);
+              } catch (error) {
+                console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+                const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+                setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+                if (resultsCacheRef.current) {
+                  resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+                }
+                resolve(false);
+              }
+            })();
+          }, 50);
+        });
+
+        // Execute both in parallel using Promise.allSettled (insight already started, heatmap delayed 50ms)
+        // This ensures they run independently and don't block each other
+        Promise.allSettled([insightPromise, heatmapPromise]).then((results) => {
+          console.log("[Results] Both insight and heatmap processes completed (or timed out)");
+          console.log("[Results] Insight:", results[0].status, "Heatmap:", results[1].status);
+        });
+      } else {
+        console.log("[Results] No insight needed (threshold not reached or no userId)");
+        setIsGeneratingInsight(false);
+
+        // Still load heatmap even if no insight
+        setTimeout(() => {
+          (async () => {
+            try {
+              console.log("[Results] Loading heatmap only (no insight needed)...");
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Heatmap timeout")), 10000)
+              );
+
+              const heatmapDataPromise = getAllHeatmapDataAction(poll.id, 3);
+              const allHeatmapData = await Promise.race([heatmapDataPromise, timeoutPromise]) as Awaited<ReturnType<typeof getAllHeatmapDataAction>>;
+
+              console.log("[Results] Heatmap loaded successfully!");
+              const heatmapData = allHeatmapData.success && allHeatmapData.data
+                ? allHeatmapData.data
+                : { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+
+              setResultsData(prev => prev ? { ...prev, heatmapData } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = heatmapData;
+              }
+            } catch (error) {
+              console.warn("[Results] Heatmap failed to load (timeout or error):", error);
+              const emptyHeatmap = { gender: [], ageGroup: [], ethnicity: [], politicalParty: [] };
+              setResultsData(prev => prev ? { ...prev, heatmapData: emptyHeatmap } : prev);
+              if (resultsCacheRef.current) {
+                resultsCacheRef.current.data.heatmapData = emptyHeatmap;
+              }
+            }
+          })();
+        }, 50);
+      }
+
+      // Load artifacts in background (don't block)
+      if (userId) {
+        loadUserArtifacts().then(artifacts => {
+          setUserArtifacts(artifacts);
+        }).catch(error => {
+          console.error("[Results] Error loading artifacts:", error);
+        });
+      }
+
+      console.log("[Results] ===== RESULTS LOADED SUCCESSFULLY (stats & heatmap shown, insight loading in background) =====");
     } catch (error) {
-      console.error("Error loading results:", error);
+      console.error("[Results] ❌ FATAL ERROR in loadResultsData:", error);
+      console.error("[Results] Error stack:", error instanceof Error ? error.stack : "No stack");
       toast.error("שגיאה בטעינת תוצאות");
-    } finally {
       setIsLoadingResults(false);
     }
   }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
@@ -1134,6 +1311,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     }
   }, [userId, poll]);
 
+  // Handle unlock celebration overlay dismissal
+  const handleUnlockOverlayDismiss = useCallback(() => {
+    setShowUnlockOverlay(false);
+    // Auto-switch to Results tab after celebration
+    setActiveTab("results");
+  }, []);
+
   // Handle "Sign Up" button in collection footer (anonymous users)
   const handleSignUpFromCollection = useCallback(() => {
     openSignUp();
@@ -1178,6 +1362,12 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         onDismiss={() => setShowEncouragement(false)}
       />
 
+      {/* Gamification: Unlock Celebration Overlay */}
+      <UnlockCelebrationOverlay
+        isVisible={showUnlockOverlay}
+        onDismiss={handleUnlockOverlayDismiss}
+      />
+
       {/* Sticky Back Button Header */}
       <header className="sticky top-0 z-50 bg-gradient-header border-b border-primary-500-20">
         <div className="container mx-auto px-4 py-4 sm:py-3">
@@ -1198,7 +1388,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         <div className="text-center mb-4 sm:mb-6 px-4">
           <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">{poll.emoji || '📊'}</div>
           <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">{poll.question}</h1>
+            <h1 className="text-2xl sm:text-3xl font-medium text-white">{poll.question}</h1>
             {isPollClosed && (
               <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
             )}
@@ -1208,31 +1398,11 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           )}
         </div>
 
-        {/* Tab Navigation - show during grace period, hide after */}
-        {(!isPollClosed || inGracePeriod) && (
-          <div className="mb-8">
-            <TabNavigation
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              resultsLocked={resultsLocked}
-              votesCompleted={votedCount}
-              votesRequired={votesRequiredForResults}
-            />
-          </div>
-        )}
+        {/* Tab Navigation - removed from Results view, only sub-navigation will be shown */}
 
         {/* Vote Tab */}
         {activeTab === "vote" && (
           <div className="space-y-6">
-            {/* Progress Segments */}
-            {progress && (
-              <ProgressSegments
-                total={progress.statementsInCurrentBatch}
-                current={progress.positionInBatch}
-                showStats={showVoteStats}
-              />
-            )}
-
             {/* Voting Interface */}
             <AnimatePresence mode="wait">
               {showStatementModal ? (
@@ -1252,25 +1422,44 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                   }}
                 />
               ) : currentStatement ? (
-                <div className="relative" key={currentStatement.id}>
-                  {/* Static visual glow for prominence - uses design token colors */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-purple-500/5 via-primary-pink-500/5 to-primary-purple-500/5 rounded-2xl blur-xl -z-10"
-                       style={{
-                         background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.08), rgba(219, 39, 119, 0.08), transparent)'
-                       }}
-                  />
-                  <SplitVoteCard
-                    statementText={currentStatement.text}
-                    onVote={handleVote}
-                    onAddStatement={() => setShowStatementModal(true)}
-                    showStats={showVoteStats}
-                    agreePercent={voteStats?.agreePercent}
-                    disagreePercent={voteStats?.disagreePercent}
-                    passPercent={voteStats?.passPercent}
-                    disabled={isSavingVote}
-                    allowAddStatement={poll?.allowUserStatements || false}
-                    showAddButtonPulse={showAddButtonPulse}
-                  />
+                <div className="w-full max-w-2xl mx-auto space-y-4" key={currentStatement.id}>
+                  {/* Progress Segments */}
+                  {progress && (
+                    <ProgressSegments
+                      total={progress.statementsInCurrentBatch}
+                      current={progress.positionInBatch}
+                      showStats={showVoteStats}
+                    />
+                  )}
+
+                  <div className="relative">
+                    {/* Static visual glow for prominence - uses design token colors */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-purple-500/5 via-primary-pink-500/5 to-primary-purple-500/5 rounded-2xl blur-xl -z-10"
+                         style={{
+                           background: 'radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.08), rgba(219, 39, 119, 0.08), transparent)'
+                         }}
+                    />
+                    <SplitVoteCard
+                      statementText={currentStatement.text}
+                      onVote={handleVote}
+                      onAddStatement={() => setShowStatementModal(true)}
+                      showStats={showVoteStats}
+                      agreePercent={voteStats?.agreePercent}
+                      disagreePercent={voteStats?.disagreePercent}
+                      passPercent={voteStats?.passPercent}
+                      disabled={isSavingVote}
+                      allowAddStatement={poll?.allowUserStatements || false}
+                      showAddButtonPulse={showAddButtonPulse}
+                      voteProgress={
+                        progress
+                          ? {
+                              current: progress.positionInBatch + 1, // +1 because position is 0-indexed
+                              required: progress.statementsInCurrentBatch,
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
                 </div>
               ) : !hasMoreStatements ? (
                 <div key="voting-finished" className="bg-white rounded-3xl shadow-2xl p-8 text-center">
@@ -1343,81 +1532,172 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               </div>
             ) : (
               <>
-                {/* Personal Insight Card - with loading and error states */}
-                {isGeneratingInsight ? (
-                  <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-                    <p className="text-lg font-medium">מייצר לך תובנה אישית...</p>
-                    <p className="text-sm text-primary-200 mt-2">זה יכול לקחת כמה שניות</p>
-                  </div>
-                ) : insightError ? (
-                  <div className="bg-gradient-error rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
-                    <div className="text-5xl mb-4">⚠️</div>
-                    <h3 className="text-xl font-bold mb-2">שגיאה ביצירת תובנה</h3>
-                    <p className="text-white-80 mb-6">{insightError}</p>
-                    <button
-                      onClick={() => loadResultsData()}
-                      className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-white-95 transition-colors shadow-lg"
-                    >
-                      נסה שוב
-                    </button>
-                  </div>
-                ) : resultsData.insight ? (
-                  <InsightCard
-                    profile={resultsData.insight.profile}
-                    emoji={resultsData.insight.emoji}
-                    description={resultsData.insight.description}
-                    pollSlug={poll.slug}
-                    pollQuestion={poll.question}
-                    showSignUpPrompt={!dbUser?.clerkUserId}
-                    isAuthenticated={!!dbUser?.clerkUserId}
-                    artifacts={userArtifacts}
-                    userId={userId || undefined}
-                    currentPollId={poll.id}
-                    newlyEarned={newlyEarnedArtifact || undefined}
-                    onDismissNewBadge={handleDismissNewBadge}
-                    onSignUp={handleSignUpFromCollection}
-                    onEarnMore={handleEarnMore}
-                  />
-                ) : null}
+                {/* Determine if we should show sub-navigation */}
+                {(() => {
+                  const showResultsSubNav =
+                    !isPollClosed ||
+                    inGracePeriod ||
+                    (isPollClosed && !inGracePeriod && votedCount >= votesRequiredForResults);
 
-                {/* More Statements or Voting Complete - hide for closed polls */}
+                  return showResultsSubNav ? (
+                    <>
+                      {/* Results Sub-Navigation (3 tabs) */}
+                      <ResultsSubNavigation
+                        activeTab={resultsTab}
+                        onTabChange={setResultsTab}
+                      />
+
+                      {/* Results Content based on selected tab */}
+                      <div className="space-y-6">
+                        {resultsTab === "insight" && (
+                          <>
+                            {/* Personal Insight Card - with loading and error states */}
+                            {isGeneratingInsight ? (
+                              <div className="bg-gradient-insight rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                                <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+                                <p className="text-lg font-medium">מייצר לך תובנה אישית...</p>
+                                <p className="text-sm text-primary-200 mt-2">זה יכול לקחת כמה שניות</p>
+                              </div>
+                            ) : insightError ? (
+                              <div className="bg-gradient-error rounded-2xl p-6 sm:p-8 shadow-2xl text-white text-center">
+                                <div className="text-5xl mb-4">⚠️</div>
+                                <h3 className="text-xl font-bold mb-2">שגיאה ביצירת תובנה</h3>
+                                <p className="text-white-80 mb-6">{insightError}</p>
+                                <button
+                                  onClick={() => loadResultsData()}
+                                  className="bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-white-95 transition-colors shadow-lg"
+                                >
+                                  נסה שוב
+                                </button>
+                              </div>
+                            ) : resultsData.insight ? (
+                              <InsightCard
+                                profile={resultsData.insight.profile}
+                                emoji={resultsData.insight.emoji}
+                                description={resultsData.insight.description}
+                                pollSlug={poll.slug}
+                                pollQuestion={poll.question}
+                                showSignUpPrompt={!dbUser?.clerkUserId}
+                                isAuthenticated={!!dbUser?.clerkUserId}
+                                artifacts={userArtifacts}
+                                userId={userId || undefined}
+                                currentPollId={poll.id}
+                                newlyEarned={newlyEarnedArtifact || undefined}
+                                onDismissNewBadge={handleDismissNewBadge}
+                                onSignUp={handleSignUpFromCollection}
+                                onEarnMore={handleEarnMore}
+                              />
+                            ) : null}
+                          </>
+                        )}
+
+                        {resultsTab === "results" && (
+                          <>
+                            {/* Aggregate Stats */}
+                            {resultsData.stats && (
+                              <AggregateStats
+                                participantCount={resultsData.stats.participantCount}
+                                statementCount={resultsData.stats.statementCount}
+                                totalVotes={resultsData.stats.totalVotes}
+                              />
+                            )}
+
+                            {/* Demographic Heatmap */}
+                            {resultsData.heatmapData ? (
+                              <DemographicHeatmap
+                                pollId={poll.id}
+                                data={resultsData.heatmapData}
+                                isLoading={false}
+                              />
+                            ) : (
+                              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+                                <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                                  {results.heatmapTitle}
+                                </h3>
+                                <div className="text-center py-12 text-gray-500">
+                                  <p>טוען נתוני חום דמוגרפיים...</p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {resultsTab === "connect" && (
+                          <ConnectComingSoon />
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Closed poll with <10 votes: Just show aggregate results, no sub-nav */}
+                      {/* Aggregate Stats */}
+                      {resultsData.stats && (
+                        <AggregateStats
+                          participantCount={resultsData.stats.participantCount}
+                          statementCount={resultsData.stats.statementCount}
+                          totalVotes={resultsData.stats.totalVotes}
+                        />
+                      )}
+
+                      {/* Demographic Heatmap */}
+                      {resultsData.heatmapData ? (
+                        <DemographicHeatmap
+                          pollId={poll.id}
+                          data={resultsData.heatmapData}
+                          isLoading={false}
+                        />
+                      ) : (
+                        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">
+                            {results.heatmapTitle}
+                          </h3>
+                          <div className="text-center py-12 text-gray-500">
+                            <p>טוען נתוני חום דמוגרפיים...</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Action Buttons Section (below content, only for open polls) */}
                 {!isPollClosed && (
-                  <>
-                    {hasMoreStatements ? (
-                      <MoreStatementsPrompt
-                        remainingStatements={totalStatements - votedCount}
-                        onContinue={handleContinueBatch}
-                      />
-                    ) : (
-                      <VotingCompleteBanner
-                        pollSlug={poll.slug}
-                        pollQuestion={poll.question}
-                      />
-                    )}
-                  </>
-                )}
-
-                {/* Aggregate Stats */}
-                {resultsData.stats && (
-                  <AggregateStats
-                    participantCount={resultsData.stats.participantCount}
-                    statementCount={resultsData.stats.statementCount}
-                    totalVotes={resultsData.stats.totalVotes}
+                  <ResultsActionButtons
+                    hasMoreStatements={hasMoreStatements}
+                    allowUserStatements={poll.allowUserStatements}
+                    isPollClosed={isPollClosed}
+                    onContinueVoting={handleContinueBatch}
+                    onAddStatement={() => setShowStatementModal(true)}
                   />
                 )}
 
-                {/* Demographic Heatmap */}
-                <DemographicHeatmap
-                  pollId={poll.id}
-                  data={resultsData.heatmapData}
-                  isLoading={false}
-                />
+                {/* Signup Banner (only for anonymous users) */}
+                {!dbUser?.clerkUserId && (
+                  <ResultsSignupBanner onSignUp={openSignUp} />
+                )}
               </>
             )}
           </div>
         )}
       </main>
+
+      {/* Statement Submission Modal - Results View (Popup Overlay) */}
+      {activeTab === "results" && (
+        <StatementSubmissionModal
+          open={showStatementModal}
+          onOpenChange={setShowStatementModal}
+          pollId={poll.id}
+          pollTitle={poll.question}
+          userId={userId}
+          autoApprove={poll.autoApproveStatements}
+          onUserCreated={(newUserId) => {
+            setUserId(newUserId);
+            if (statementManager) {
+              statementManager.userId = newUserId;
+            }
+          }}
+        />
+      )}
 
       {/* Demographics Modal */}
       <DemographicsModal

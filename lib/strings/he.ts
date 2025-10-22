@@ -141,6 +141,7 @@ export const voting = {
   // Progress & Status
   progressLabel: (current: number, total: number) => `עמדה ${current} מתוך ${total}`,
   statementNumber: (num: number) => `עמדה ${num}`,
+  voteCounter: (current: number, required: number) => `הצבעה ${current} מתוך ${required}`,
 
   // Loading States
   loadingNext: 'טוען עמדה הבאה...',
@@ -174,6 +175,10 @@ export const voting = {
       : `עוד ${remaining} הצבעות לפרופיל ההשפעה שלך! 🎁`,
   milestoneThresholdReached: 'מדהים! פתחת את התוצאות! 🎉',
   milestoneAlmostThere: 'כמעט שם! ⭐',
+
+  // Celebration Overlay
+  unlockCelebrationTitle: 'פתחת את התוצאות!',
+  unlockCelebrationSubtitle: 'התובנות האישיות שלך מוכנות',
 } as const;
 
 // ============================================================================
@@ -181,6 +186,11 @@ export const voting = {
 // ============================================================================
 
 export const results = {
+  // Results Sub-Navigation (3 tabs)
+  tabInsight: 'תובנה',
+  tabResults: 'תוצאות',
+  tabConnect: 'קהילה',
+
   // Personal Insight Card
   insightLabel: 'פרופיל ההשפעה שלך',
   insightShareButton: 'לשיתוף הפרופיל שלי',
@@ -255,6 +265,18 @@ export const results = {
   heatmapAge: 'קבוצת גיל',
   heatmapEthnicity: 'מגזר',
   heatmapPolitics: 'נטייה פוליטית',
+
+  // Action Buttons
+  continueVotingButton: 'המשך הצבעה',
+  addStatementButtonAction: 'הוסף עמדה',
+
+  // Signup Banner
+  signupBannerTitle: 'שמרו את התובנות שלכם',
+  signupBannerMessage: 'הירשמו כדי לשמור את פרופיל ההשפעה שלכם ולעקוב אחר ההתפתחות',
+  signupBannerButton: 'הצטרפו עכשיו',
+
+  // Connect Coming Soon
+  connectComingSoon: 'בקרוב - חיבור לאנשים דומים לך',
 } as const;
 
 // ============================================================================

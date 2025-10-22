@@ -64,14 +64,22 @@ let client: ReturnType<typeof postgres>;
 
 if (process.env.NODE_ENV === "production") {
   // Production: Create new client (serverless functions are stateless)
+  // OPTIMAL: Small pool size for serverless architecture
   client = postgres(process.env.DATABASE_URL, {
-    // For Next.js serverless, small pool size is optimal (1-2 connections)
-    // Multiple serverless instances = multiple pools
+    // CRITICAL: Pool size = 2 follows Vercel/Supabase best practices for serverless
+    // Each Vercel serverless function instance has its own pool
+    // Serverless scales horizontally (more instances) not vertically (more connections per instance)
+    // With multiple instances under load: 50 instances × 2 connections = 100 total (safe)
     max: isTransactionMode ? 2 : 5,
-    idle_timeout: 20,
-    connect_timeout: 30,
+
+    // OPTIMIZATION: Reduced timeouts for faster failure detection
+    idle_timeout: 20, // Close idle connections after 20s
+    connect_timeout: 15, // Balanced timeout for stability (increased from 10s)
     max_lifetime: 60 * 30, // 30 minutes
-    onnotice: () => {}, // Suppress notices
+
+    // OPTIMIZATION: Suppress notices in production (reduce log noise)
+    onnotice: () => {},
+
     // CRITICAL: prepare: false required for Transaction Mode (port 6543)
     // Session Mode (port 5432) supports prepared statements
     prepare: isTransactionMode ? false : false, // Set to false for both modes for consistency

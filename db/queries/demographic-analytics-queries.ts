@@ -412,12 +412,42 @@ export async function getHeatmapDataForAttribute(
   attribute: DemographicAttribute,
   privacyThreshold: number = 3
 ): Promise<HeatmapStatementData[]> {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${requestId}] [getHeatmapDataForAttribute] START - pollId: ${pollId}, attribute: ${attribute}`);
+
+  // OPTIMIZATION: Early exit check - count voters with demographics for this poll
+  // This prevents expensive query when there's insufficient data
+  const earlyCheckStart = Date.now();
+  const votersWithDemographics = await db
+    .select({ count: sql<number>`COUNT(DISTINCT ${users.id})` })
+    .from(statements)
+    .innerJoin(votes, eq(statements.id, votes.statementId))
+    .innerJoin(users, eq(votes.userId, users.id))
+    .innerJoin(userDemographics, eq(users.id, userDemographics.userId))
+    .where(and(
+      eq(statements.pollId, pollId),
+      eq(statements.approved, true)
+    ))
+    .limit(1);
+
+  const voterCount = Number(votersWithDemographics[0]?.count || 0);
+  console.log(`[${requestId}] Early check (${Date.now() - earlyCheckStart}ms): ${voterCount} voters with demographics`);
+
+  // If fewer than privacyThreshold voters have demographics, return empty
+  if (voterCount < privacyThreshold) {
+    console.log(`[${requestId}] EARLY EXIT: Insufficient demographic data (${voterCount} < ${privacyThreshold})`);
+    return [];
+  }
+
   // Get demographic field based on attribute
   const { field, labelField, tableAlias } = getDemographicFieldInfo(attribute);
 
   // SINGLE QUERY: Get all vote counts grouped by statement and demographic
   // This replaces N×M queries with just ONE query
   // Uses INNER JOIN on userDemographics to only include votes from users with demographics
+  console.log(`[${requestId}] Running main heatmap query...`);
+  const queryStart = Date.now();
   const voteData = await db
     .select({
       statementId: statements.id,
@@ -439,12 +469,18 @@ export async function getHeatmapDataForAttribute(
     ))
     .groupBy(statements.id, statements.text, field, labelField);
 
+  console.log(`[${requestId}] Main query completed in ${Date.now() - queryStart}ms - ${voteData.length} rows`);
+
   if (voteData.length === 0) {
+    console.log(`[${requestId}] No vote data found - returning empty`);
     return [];
   }
 
   // Get all demographic groups for this attribute
+  console.log(`[${requestId}] Fetching demographic groups...`);
+  const groupsStart = Date.now();
   const groups = await getDemographicGroups(attribute);
+  console.log(`[${requestId}] Got ${groups.length} groups in ${Date.now() - groupsStart}ms`);
 
   // Group data by statement
   const statementMap = new Map<string, {
@@ -526,6 +562,9 @@ export async function getHeatmapDataForAttribute(
       classificationLabel: classification.label,
     });
   }
+
+  const totalDuration = Date.now() - startTime;
+  console.log(`[${requestId}] [getHeatmapDataForAttribute] COMPLETE - ${heatmapData.length} statements in ${totalDuration}ms`);
 
   return heatmapData;
 }

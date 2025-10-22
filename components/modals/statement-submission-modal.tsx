@@ -100,19 +100,26 @@ export function StatementSubmissionModal({
   if (!open) return null;
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4" dir="auto">
-          הוסף עמדה משלך
-        </h3>
-        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4" dir="auto">
-          שתף עמדה שאחרים יוכלו להצביע עליה. שמור על בהירות ומיקוד ברעיון אחד.
-        </p>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <div
+        className="relative w-full max-w-2xl mx-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4" dir="auto">
+            הוסף עמדה משלך
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4" dir="auto">
+            שתף עמדה שאחרים יוכלו להצביע עליה. שמור על בהירות ומיקוד ברעיון אחד.
+          </p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="לדוגמה: אנחנו צריכים זמני פגישה גמישים יותר"
-        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-primary-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base"
+        className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl focus:border-primary-500 focus:outline-none resize-none mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 dark:text-white"
         rows={4}
         disabled={isSubmitting}
         dir="auto"
@@ -161,6 +168,7 @@ export function StatementSubmissionModal({
           )}
         </button>
       </div>
+        </div>
       </div>
     </div>
   );

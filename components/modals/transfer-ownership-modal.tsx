@@ -154,6 +154,7 @@ export function TransferOwnershipModal({
                   setVerifiedUser(null);
                 }}
                 disabled={isVerifying || isTransferring}
+                className="text-gray-900 dark:text-white"
               />
               <Button
                 type="button"
@@ -214,7 +215,7 @@ export function TransferOwnershipModal({
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 disabled={isTransferring}
-                className="font-mono"
+                className="font-mono text-gray-900 dark:text-white"
               />
             </div>
           )}
