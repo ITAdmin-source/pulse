@@ -23,11 +23,44 @@ import {
 import { PCAEngine } from "@/lib/clustering/pca-engine";
 import { KMeansEngine } from "@/lib/clustering/kmeans-engine";
 import { ConsensusDetector } from "@/lib/clustering/consensus-detector";
+import { StatementClassifier, type EnhancedClassification } from "@/lib/clustering/statement-classifier";
+import { CoalitionAnalyzer, type CoalitionAnalysis } from "@/lib/clustering/coalition-analyzer";
+import type { CoarseGroup } from "@/components/clustering/types";
 import type {
   PollClusteringMetadata,
   UserClusteringPosition,
   StatementClassification,
 } from "@/db/schema";
+
+/**
+ * Group agreement data for a single statement
+ * Used for statement agreement heatmap visualization
+ */
+export interface GroupAgreementDetail {
+  groupId: number;
+  groupLabel: string;
+  agreementPercentage: number; // -100 to +100
+  agreeCount: number;
+  disagreeCount: number;
+  passCount: number;
+  voterCount: number; // agree + disagree (excludes pass)
+}
+
+/**
+ * Statement with group-level agreement data
+ * Complete data for heatmap row
+ */
+export interface StatementGroupAgreement {
+  statementId: string;
+  statementText: string;
+  groupAgreements: GroupAgreementDetail[];
+  classification: EnhancedClassification & {
+    averageAgreement: number;
+    standardDeviation: number;
+    bridgeScore?: number;
+    connectsGroups?: number[];
+  };
+}
 
 export interface ClusteringResult {
   pollId: string;
@@ -38,6 +71,8 @@ export interface ClusteringResult {
     numCoarseGroups: number;
     silhouetteScore: number;
     totalVarianceExplained: number;
+    qualityTier: "high" | "medium" | "low";
+    consensusLevel: "high" | "medium" | "low";
   };
   userPositions: Array<{
     userId: string;
@@ -51,11 +86,14 @@ export interface ClusteringResult {
     type: string;
     averageAgreement: number;
   }>;
+  // NEW: Optional fields for statement agreement view
+  groupAgreementMatrix?: StatementGroupAgreement[];
+  coalitionAnalysis?: CoalitionAnalysis;
 }
 
 export class ClusteringService {
   /** Minimum users required for clustering */
-  private static readonly MIN_USERS = 20;
+  private static readonly MIN_USERS = 10;
   /** Minimum statements required for clustering */
   private static readonly MIN_STATEMENTS = 6;
   /** Minimum variance explained by PCA (40%) */
@@ -73,6 +111,9 @@ export class ClusteringService {
   static async computeOpinionLandscape(
     pollId: string
   ): Promise<ClusteringResult> {
+    const startTime = Date.now();
+    console.log(`[ClusteringService] computeOpinionLandscape STARTED for poll ${pollId} at ${new Date().toISOString()}`);
+
     // =========================================================================
     // STEP 1: Build Opinion Matrix
     // =========================================================================
@@ -150,11 +191,15 @@ export class ClusteringService {
       statementIds,
     });
 
-    // Validate PCA quality
-    if (pcaResult.totalVarianceExplained < this.MIN_VARIANCE_EXPLAINED) {
-      throw new Error(
-        `PCA quality too low: ${(pcaResult.totalVarianceExplained * 100).toFixed(1)}% variance explained. ` +
-          `Minimum required: ${this.MIN_VARIANCE_EXPLAINED * 100}%.`
+    // Log PCA quality (informational only - no rejection)
+    console.log(
+      `PCA variance explained: ${(pcaResult.totalVarianceExplained * 100).toFixed(1)}%`
+    );
+
+    if (pcaResult.totalVarianceExplained < 0.30) {
+      console.warn(
+        `Very low PCA variance: ${(pcaResult.totalVarianceExplained * 100).toFixed(1)}%. ` +
+        `This may indicate extremely high consensus or limited opinion diversity.`
       );
     }
 
@@ -326,8 +371,50 @@ export class ClusteringService {
     });
 
     // =========================================================================
-    // STEP 7: Return Result
+    // STEP 7: Calculate Quality Metrics
     // =========================================================================
+
+    // Calculate consensus level based on statement classifications
+    const consensusStatements = statementClassificationsResult.filter(
+      (c) => c.type === "positive_consensus" || c.type === "negative_consensus"
+    );
+    const consensusRatio = consensusStatements.length / statementIds.length;
+
+    const consensusLevel: "high" | "medium" | "low" =
+      consensusRatio >= 0.5 ? "high" : consensusRatio >= 0.3 ? "medium" : "low";
+
+    // Determine quality tier based on variance and silhouette
+    let qualityTier: "high" | "medium" | "low";
+    if (
+      pcaResult.totalVarianceExplained >= 0.6 &&
+      kmeansResult.silhouetteScore >= 0.4
+    ) {
+      qualityTier = "high";
+    } else if (
+      pcaResult.totalVarianceExplained >= 0.4 &&
+      kmeansResult.silhouetteScore >= 0.25
+    ) {
+      qualityTier = "medium";
+    } else {
+      qualityTier = "low";
+    }
+
+    // =========================================================================
+    // STEP 8: Return Result
+    // =========================================================================
+
+    const duration = Date.now() - startTime;
+    console.log(
+      `[ClusteringService] computeOpinionLandscape COMPLETED for poll ${pollId}`,
+      {
+        duration: `${duration}ms`,
+        totalUsers: userIds.length,
+        totalStatements: statementIds.length,
+        numGroups: coarseGrouping.coarseK,
+        qualityTier,
+        completedAt: new Date().toISOString(),
+      }
+    );
 
     return {
       pollId,
@@ -338,6 +425,8 @@ export class ClusteringService {
         numCoarseGroups: coarseGrouping.coarseK,
         silhouetteScore: kmeansResult.silhouetteScore,
         totalVarianceExplained: pcaResult.totalVarianceExplained,
+        qualityTier,
+        consensusLevel,
       },
       userPositions: userIds.map((userId, idx) => ({
         userId,
@@ -390,6 +479,30 @@ export class ClusteringService {
 
     const meta = metadata[0];
 
+    // Calculate quality tier and consensus level from existing data
+    const consensusStatements = classifications.filter(
+      (c) => c.classificationType === "positive_consensus" || c.classificationType === "negative_consensus"
+    );
+    const consensusRatio = consensusStatements.length / meta.totalStatements;
+
+    const consensusLevel: "high" | "medium" | "low" =
+      consensusRatio >= 0.5 ? "high" : consensusRatio >= 0.3 ? "medium" : "low";
+
+    let qualityTier: "high" | "medium" | "low";
+    if (
+      meta.totalVarianceExplained >= 0.6 &&
+      meta.silhouetteScore >= 0.4
+    ) {
+      qualityTier = "high";
+    } else if (
+      meta.totalVarianceExplained >= 0.4 &&
+      meta.silhouetteScore >= 0.25
+    ) {
+      qualityTier = "medium";
+    } else {
+      qualityTier = "low";
+    }
+
     return {
       pollId,
       metadata: {
@@ -399,6 +512,8 @@ export class ClusteringService {
         numCoarseGroups: meta.coarseGroups.length,
         silhouetteScore: meta.silhouetteScore,
         totalVarianceExplained: meta.totalVarianceExplained,
+        qualityTier,
+        consensusLevel,
       },
       userPositions: positions.map((p) => ({
         userId: p.userId,
@@ -413,6 +528,119 @@ export class ClusteringService {
         averageAgreement: c.averageAgreement,
       })),
     };
+  }
+
+  /**
+   * Get statement agreement matrix for heatmap visualization
+   * Fetches clustering data and transforms it for the statement agreement view
+   *
+   * @param pollId - Poll ID
+   * @returns Group agreement matrix with detailed voting breakdowns, or null if not available
+   */
+  static async getGroupAgreementMatrix(
+    pollId: string
+  ): Promise<StatementGroupAgreement[] | null> {
+    // Get existing clustering metadata
+    const metadataRecords = await db
+      .select()
+      .from(pollClusteringMetadata)
+      .where(eq(pollClusteringMetadata.pollId, pollId))
+      .limit(1);
+
+    if (metadataRecords.length === 0) {
+      console.log(`[ClusteringService] No clustering metadata found for poll ${pollId}`);
+      return null;
+    }
+
+    const metadata = metadataRecords[0];
+    const coarseGroups = metadata.coarseGroups as CoarseGroup[] | null;
+
+    if (!coarseGroups || coarseGroups.length === 0) {
+      console.log(`[ClusteringService] No coarse groups in metadata for poll ${pollId}`);
+      return null;
+    }
+
+    // Get statement classifications
+    const classifications = await db
+      .select()
+      .from(statementClassifications)
+      .where(eq(statementClassifications.pollId, pollId));
+
+    if (classifications.length === 0) {
+      console.log(`[ClusteringService] No classifications found for poll ${pollId}`);
+      return null;
+    }
+
+    // Get statement texts
+    const statementIds = classifications.map((c) => c.statementId);
+    const statementRecords = await db
+      .select()
+      .from(statements)
+      .where(inArray(statements.id, statementIds));
+
+    const statementTextMap = new Map(
+      statementRecords.map((s) => [s.id, s.text])
+    );
+
+    // Transform to StatementGroupAgreement format
+    const result: StatementGroupAgreement[] = classifications.map((classification) => {
+      const groupAgreements = classification.groupAgreements as Record<number, number>;
+
+      // Transform groupAgreements to display format
+      const groupAgreementDetails: GroupAgreementDetail[] = coarseGroups.map(
+        (group, groupIdx) => {
+          const normalizedScore = groupAgreements[groupIdx] ?? 0;
+
+          // Convert from 0-1 normalized to -100 to +100 percentage
+          const agreementPercentage = (normalizedScore - 0.5) * 200;
+
+          // Note: We don't have detailed vote counts per group here
+          // These would need to be calculated separately if needed
+          return {
+            groupId: groupIdx,
+            groupLabel: group.label,
+            agreementPercentage: Math.round(agreementPercentage),
+            agreeCount: 0, // Not available in current data structure
+            disagreeCount: 0, // Not available in current data structure
+            passCount: 0, // Not available in current data structure
+            voterCount: group.userCount,
+          };
+        }
+      );
+
+      // Apply enhanced classification
+      const enhancedClassification = StatementClassifier.classifyStatement(
+        groupAgreementDetails.map((g) => ({
+          groupId: g.groupId,
+          agreementPercentage: g.agreementPercentage,
+        }))
+      );
+
+      // Calculate additional metrics
+      const agreementValues = groupAgreementDetails.map((g) => g.agreementPercentage);
+      const averageAgreement =
+        agreementValues.reduce((sum, val) => sum + val, 0) / agreementValues.length;
+
+      const variance =
+        agreementValues.reduce(
+          (sum, val) => sum + Math.pow(val - averageAgreement, 2),
+          0
+        ) / agreementValues.length;
+      const standardDeviation = Math.sqrt(variance);
+
+      return {
+        statementId: classification.statementId,
+        statementText: statementTextMap.get(classification.statementId) || "",
+        groupAgreements: groupAgreementDetails,
+        classification: {
+          ...enhancedClassification,
+          averageAgreement: Math.round(averageAgreement),
+          standardDeviation: Math.round(standardDeviation),
+        },
+      };
+    });
+
+    return result;
   }
 
   /**
@@ -482,18 +710,39 @@ export class ClusteringService {
    * @param pollId - Poll ID
    */
   static async triggerBackgroundClustering(pollId: string): Promise<void> {
+    console.log(`[ClusteringService] triggerBackgroundClustering called for poll ${pollId}`);
+
     // Check eligibility first (fast query)
     const eligibility = await this.isEligibleForClustering(pollId);
 
+    console.log(
+      `[ClusteringService] Eligibility check for poll ${pollId}:`,
+      {
+        eligible: eligibility.eligible,
+        userCount: eligibility.userCount,
+        statementCount: eligibility.statementCount,
+        reason: eligibility.reason,
+      }
+    );
+
     if (!eligibility.eligible) {
-      // Not enough data yet, skip silently
+      console.log(
+        `[ClusteringService] Skipping clustering for poll ${pollId} - not eligible:`,
+        eligibility.reason
+      );
       return;
     }
 
+    console.log(`[ClusteringService] Starting background computation for poll ${pollId}`);
+
     // Trigger async computation (don't await - run in background)
-    this.computeOpinionLandscape(pollId).catch((error) => {
-      console.error(`Background clustering failed for poll ${pollId}:`, error);
-      // Don't throw - this is background processing
-    });
+    this.computeOpinionLandscape(pollId)
+      .then(() => {
+        console.log(`[ClusteringService] Background clustering completed successfully for poll ${pollId}`);
+      })
+      .catch((error) => {
+        console.error(`[ClusteringService] Background clustering failed for poll ${pollId}:`, error);
+        // Don't throw - this is background processing
+      });
   }
 }

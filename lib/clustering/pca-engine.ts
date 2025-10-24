@@ -84,17 +84,21 @@ export class PCAEngine {
       nComponents: numComponents,
     });
 
-    // Step 5: Validate quality
+    // Step 5: Calculate variance explained
     const varianceExplained = pca.getExplainedVariance();
     const totalVarianceExplained = varianceExplained
       .slice(0, numComponents)
       .reduce((sum, val) => sum + val, 0);
 
-    // Quality check: require at least 40% variance explained
-    if (totalVarianceExplained < 0.4) {
-      throw new Error(
-        `PCA quality too low: only ${(totalVarianceExplained * 100).toFixed(1)}% variance explained. ` +
-          `Minimum required: 40%. This suggests voting patterns are too random or sparse.`
+    // Log variance for informational purposes (no rejection)
+    console.log(
+      `[PCA] Variance explained: ${(totalVarianceExplained * 100).toFixed(1)}%`
+    );
+
+    if (totalVarianceExplained < 0.30) {
+      console.warn(
+        `[PCA] Very low variance (${(totalVarianceExplained * 100).toFixed(1)}%). ` +
+        `This may indicate extremely high consensus or limited opinion diversity.`
       );
     }
 

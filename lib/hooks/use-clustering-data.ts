@@ -14,6 +14,8 @@ export interface ClusteringDataResult {
     numCoarseGroups: number;
     silhouetteScore: number;
     totalVarianceExplained: number;
+    qualityTier: "high" | "medium" | "low";
+    consensusLevel: "high" | "medium" | "low";
   };
   userPositions: Array<{
     userId: string;
@@ -65,6 +67,8 @@ export function useClusteringData(pollId: string) {
           numCoarseGroups: rawData.metadata.coarseGroups?.length || 0,
           silhouetteScore: rawData.metadata.silhouetteScore,
           totalVarianceExplained: rawData.metadata.totalVarianceExplained,
+          qualityTier: rawData.metadata.qualityTier || "medium",
+          consensusLevel: rawData.metadata.consensusLevel || "medium",
         },
         userPositions: rawData.userPositions,
         statementClassifications: rawData.statementClassifications,

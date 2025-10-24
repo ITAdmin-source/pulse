@@ -364,6 +364,33 @@ duration: 0.4
 - `new-artifact-badge.tsx` - New artifact badge
 - `interactive-artifact-slot.tsx` - Artifact slots
 
+#### Opinion Clustering (`components/clustering/`)
+- `opinion-map-client.tsx` - Client wrapper for opinion map page
+- `opinion-map-canvas.tsx` - Desktop SVG-based 2D visualization
+- `mobile-clustering-view.tsx` - Mobile card-based group statistics
+- `opinion-map-legend.tsx` - Color-coded legend with group labels
+- `statement-agreement-view.tsx` - Container for statement agreement analysis
+- `statement-agreement-heatmap.tsx` - Group-statement agreement heatmap
+- `statement-stats-cards.tsx` - Summary statistics cards
+- `coalition-analysis-sidebar.tsx` - Pairwise coalition alignment display
+- `view-toggle.tsx` - Toggle between opinion map and statement heatmap
+- `clustering-loading-skeleton.tsx` - Loading state placeholder
+- `clustering-error-state.tsx` - Error state display
+- `clustering-not-eligible.tsx` - Eligibility requirements message
+- `types.ts` - Shared TypeScript types for clustering components
+
+**Privacy-preserving design:**
+- Opinion map shows ONLY group boundaries, centroids, and current user position
+- Individual positions of other users are NOT displayed
+- Protects voting privacy while enabling opinion landscape insights
+
+**Visualization features:**
+- Color-coded opinion groups (2-5 groups)
+- Interactive hover states on desktop
+- Pulsing animation for current user marker
+- SVG-based rendering for crisp graphics
+- Mobile-optimized card-based alternative view
+
 #### Informational Banners (`components/banners/`)
 - `demographics-banner.tsx` - Demographics prompt (after 10 votes)
 - `results-locked-banner.tsx` - Results unlock explanation
@@ -455,6 +482,58 @@ export function VoteButton() {
 - Always import from `lib/strings/he.ts`
 - Organized by page/component
 - Type-safe with TypeScript
+
+### Opinion Map Strings
+
+**Complete set of 60+ Hebrew strings for clustering visualization:**
+
+```typescript
+// lib/strings/he.ts
+export const opinionMap = {
+  // Page navigation
+  pageTitle: 'מפת דעות',
+  backToResults: 'חזרה לתוצאות',
+
+  // Loading & error states
+  loading: 'בונים את מפת הדעות...',
+  computing: 'מחשבים קבוצות דעה...',
+  errorTitle: 'שגיאה בטעינת מפת הדעות',
+  errorRetry: 'נסו שוב',
+
+  // Eligibility messages
+  notEligibleTitle: 'מפת הדעות עדיין לא זמינה',
+  notEligibleMinUsers: (current: number, required: number) =>
+    `דרושים לפחות ${required} מצביעים כדי ליצור מפת דעות. כרגע: ${current} מצביעים.`,
+
+  // Legend & visualization
+  yourPosition: 'המיקום שלכם',
+  yourGroup: 'הקבוצה שלכם',
+  groupLabel: (n: number) => `קבוצה ${n}`,
+  groupSize: (count: number) => `${count} משתתפים`,
+
+  // Statement classifications
+  consensusPositive: 'קונצנזוס חיובי',
+  consensusNegative: 'קונצנזוס שלילי',
+  divisiveStatement: 'עמדה מחלקת',
+  bridgeStatement: 'עמדת גשר',
+
+  // Quality metrics
+  qualityTitle: 'איכות הניתוח',
+  silhouetteScore: 'ציון איכות',
+  varianceExplained: 'שונות מוסברת',
+
+  // ... 40+ more strings
+};
+```
+
+**Usage example:**
+
+```tsx
+import { opinionMap } from '@/lib/strings/he';
+
+<h1>{opinionMap.pageTitle}</h1>
+<p>{opinionMap.notEligibleMinUsers(8, 10)}</p>
+```
 
 ## Gamification System
 

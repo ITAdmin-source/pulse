@@ -42,7 +42,12 @@
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
       "Bash(git merge:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(tsx scripts/check-clustering-costliving.ts:*)",
+      "WebFetch(domain:www.e-revistes.uji.es)",
+      "WebFetch(domain:compdemocracy.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(if not exist componentsadmin mkdir componentsadmin)"
     ],
     "deny": [],
     "ask": [

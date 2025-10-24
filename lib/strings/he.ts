@@ -685,6 +685,28 @@ export const opinionMap = {
   qualityFair: 'סביר',
   qualityPoor: 'נמוך',
 
+  // Quality Tier Labels
+  qualityTierHigh: 'איכות גבוהה',
+  qualityTierMedium: 'איכות בינונית',
+  qualityTierLow: 'איכות נמוכה',
+
+  // Consensus Level Labels
+  consensusLevelHigh: 'הסכמה גבוהה',
+  consensusLevelMedium: 'הסכמה בינונית',
+  consensusLevelLow: 'מגוון דעות',
+
+  // Quality Indicators
+  qualityIndicatorTitle: 'מידע על איכות הניתוח',
+  qualityIndicatorHigh: 'מפת הדעות מציגה בבירור את הקבוצות השונות ואת ההבדלים ביניהן.',
+  qualityIndicatorMedium: 'מפת הדעות מציגה את הקבוצות העיקריות. יש מעט חפיפה בין הקבוצות.',
+  qualityIndicatorLowWithConsensus: 'בדיון זה יש הסכמה גבוהה על רוב העמדות. הקבוצות המוצגות עשויות להיות פחות מובחנות.',
+  qualityIndicatorLowWithoutConsensus: 'איכות הניתוח נמוכה יחסית. הקבוצות המוצגות עשויות להיות פחות מובהקות.',
+
+  consensusIndicatorTitle: 'רמת הסכמה',
+  consensusIndicatorHigh: 'דיון זה מראה הסכמה גבוהה - רוב המשתתפים מסכימים על רוב העמדות.',
+  consensusIndicatorMedium: 'דיון זה מראה הסכמה חלקית - יש הסכמה על חלק מהעמדות ומחלוקת על אחרות.',
+  consensusIndicatorLow: 'דיון זה מראה מגוון רחב של דעות - המשתתפים חלוקים על רוב העמדות.',
+
   // Tooltips & Help
   helpTitle: 'איך קוראים את המפה?',
   helpClose: 'סגרו',
@@ -727,6 +749,55 @@ export const opinionMap = {
   tableSize: 'גודל',
   tablePercentage: 'אחוז',
   tableTopStatements: 'עמדות מובילות',
+
+  // View Toggle (Dual Visualization)
+  viewToggleMap: 'מפת משתתפים',
+  viewToggleStatements: 'הסכמה על עמדות',
+  viewToggleMapDescription: 'ראו איך המשתתפים מקובצים לפי דמיון בהצבעות',
+  viewToggleStatementsDescription: 'ראו על אילו עמדות הקבוצות מסכימות או חלוקות',
+
+  // Statement Agreement View
+  statementAgreementTitle: 'הסכמה על עמדות',
+  statementAgreementDescription: 'איך כל קבוצה הצביעה על כל עמדה',
+  statementAgreementLegend: 'מקרא: ירוק = הסכמה, אדום = אי-הסכמה, אפור = נייטרלי',
+
+  // Statement Classifications (Enhanced)
+  fullConsensusTitle: 'הסכמה מלאה',
+  partialConsensusTitle: 'הסכמה חלקית',
+  splitDecisionTitle: 'פיצול שווה',
+  divisiveEnhancedTitle: 'מחלקת',
+  bridgeEnhancedTitle: 'גשר',
+
+  fullConsensusDescription: 'כל הקבוצות מסכימות',
+  partialConsensusDescription: 'רוב הקבוצות מסכימות',
+  splitDecisionDescription: 'הקבוצות מתחלקות באופן שווה',
+  divisiveEnhancedDescription: 'דעות מפוצלות',
+  bridgeEnhancedDescription: 'מחברת בין קבוצות',
+
+  // Coalition Analysis
+  coalitionTitle: 'קואליציות',
+  coalitionDescription: 'קבוצות שמסכימות לעיתים קרובות',
+  strongestCoalition: 'קואליציה חזקה ביותר',
+  coalitionAlignment: (percentage: number) => `${percentage}% הסכמה`,
+  coalitionBetween: (group1: string, group2: string) => `${group1} ⇄ ${group2}`,
+  polarizationLevel: 'רמת קיטוב',
+  polarizationHigh: 'קיטוב גבוה',
+  polarizationMedium: 'קיטוב בינוני',
+  polarizationLow: 'קיטוב נמוך',
+
+  // Statement Stats Cards
+  statsTitle: 'סטטיסטיקות עמדות',
+  statsConsensusCount: (count: number) => `${count} עמדות קונצנזוס`,
+  statsPartialCount: (count: number) => `${count} עמדות הסכמה חלקית`,
+  statsSplitCount: (count: number) => `${count} עמדות פיצול`,
+  statsDivisiveCount: (count: number) => `${count} עמדות מחלקות`,
+  statsBridgeCount: (count: number) => `${count} עמדות גשר`,
+
+  // Heatmap
+  heatmapCellLabel: (group: string, statement: string, agreement: number) =>
+    `${group} על "${statement}": ${agreement > 0 ? 'מסכימים' : agreement < 0 ? 'לא מסכימים' : 'נייטרלי'} (${Math.abs(agreement)}%)`,
+  heatmapNoData: 'אין מספיק נתונים להצגת הסכמה',
+  heatmapLoading: 'טוען נתוני הסכמה...',
 } as const;
 
 /**

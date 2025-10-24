@@ -17,6 +17,7 @@ import {
 } from "@/db/queries/votes-queries";
 import { type NewVote } from "@/db/schema/votes";
 import { UserService } from "@/lib/services/user-service";
+import { VotingService } from "@/lib/services/voting-service";
 import { createVoteSchema } from "@/lib/validations/vote";
 import { getStatementById } from "@/db/queries/statements-queries";
 import { getPollByIdAction } from "@/actions/polls-actions";
@@ -86,8 +87,8 @@ export async function createVoteAction(data: NewVote) {
       }
     }
 
-    // Create vote (database constraints will prevent duplicates)
-    const vote = await createVote(validated.data);
+    // Create vote using VotingService (includes clustering trigger logic)
+    const vote = await VotingService.castVote(validated.data);
     revalidatePath("/polls");
     return { success: true, data: vote };
   } catch (error) {

@@ -209,6 +209,106 @@ Database-managed RBAC system
 - Fine-grained control per discussion
 - Independent of authentication provider
 
+### Opinion Clustering System
+
+#### `poll_clustering_metadata` Table
+Stores PCA components, cluster centroids, and quality metrics for each poll
+
+**Key Fields:**
+- `poll_id` - UUID primary key, foreign key to polls
+- `pca_components` - JSONB array of principal component vectors [2 × statements]
+- `variance_explained` - JSONB array of variance explained by each PC [PC1, PC2]
+- `mean_vector` - JSONB array for data centering [statements]
+- `cluster_centroids` - JSONB array of K-means centroids [K × 2]
+- `num_fine_clusters` - SMALLINT K value (20/50/100)
+- `coarse_groups` - JSONB array of hierarchical opinion groups (2-5 groups)
+- `silhouette_score` - REAL clustering quality metric (-1 to 1, higher better)
+- `total_variance_explained` - REAL sum of PC1 + PC2 variance (0-1)
+- `total_users` - SMALLINT number of users in clustering
+- `total_statements` - SMALLINT number of statements analyzed
+- `computed_at` - Timestamp of last computation
+- `version` - SMALLINT schema version (default 1)
+
+**Purpose:**
+- Store complete clustering model for poll
+- Enable fast retrieval without recomputation
+- Support incremental updates (future enhancement)
+- Version tracking for algorithm changes
+
+**Relationships:**
+- One-to-one: poll (cascade delete)
+
+#### `user_clustering_positions` Table
+Stores each user's position in 2D opinion space
+
+**Key Fields:**
+- `id` - UUID primary key
+- `poll_id` - Foreign key to polls
+- `user_id` - Foreign key to users
+- `pc1` - REAL first principal component coordinate
+- `pc2` - REAL second principal component coordinate
+- `fine_cluster_id` - SMALLINT fine-grained cluster assignment (0 to K-1)
+- `coarse_group_id` - SMALLINT coarse opinion group (0 to 4)
+- `total_votes` - SMALLINT number of statements voted on
+- `agree_count` - SMALLINT number of agree votes
+- `disagree_count` - SMALLINT number of disagree votes
+- `pass_count` - SMALLINT number of pass votes
+- `computed_at` - Timestamp
+
+**Purpose:**
+- Store user's 2D coordinates for visualization
+- Track cluster assignments (fine + coarse)
+- Provide vote statistics for hover tooltips
+- Enable privacy-preserving opinion map display
+
+**Privacy Note:**
+- Individual positions NOT shown in UI (only current user)
+- Only aggregated group boundaries displayed
+- Protects user voting privacy while enabling insights
+
+**Relationships:**
+- Many-to-one: poll, user (cascade delete)
+
+**Indexes:**
+- `poll_id` - Fast retrieval of all users in a poll
+- `user_id` - Fast lookup of specific user position
+
+#### `statement_classifications` Table
+Stores consensus/divisive/bridge classification for each statement
+
+**Key Fields:**
+- `id` - UUID primary key
+- `poll_id` - Foreign key to polls
+- `statement_id` - UUID reference to statements.id
+- `classification_type` - TEXT: positive_consensus, negative_consensus, divisive, bridge, normal
+- `group_agreements` - JSONB object mapping groupId → agreement score (0-1)
+- `average_agreement` - REAL mean agreement across all groups
+- `standard_deviation` - REAL standard deviation of agreement (NOT variance!)
+- `bridge_score` - REAL bridge strength for bridge statements (0-1, nullable)
+- `connects_groups` - JSONB array of group IDs connected by bridge (nullable)
+- `computed_at` - Timestamp
+
+**Classification Types:**
+- **positive_consensus:** All groups strongly agree (>80%)
+- **negative_consensus:** All groups strongly disagree (<20%)
+- **divisive:** Groups have very different opinions (high std dev)
+- **bridge:** Connects disagreeing groups (moderate agreement)
+- **normal:** No special pattern
+
+**Purpose:**
+- Identify consensus vs. divisive statements
+- Highlight bridge opportunities between groups
+- Support statement agreement heatmap visualization
+- Enable coalition analysis
+
+**Relationships:**
+- Many-to-one: poll (cascade delete)
+- References: statement (not foreign key - allows flexible querying)
+
+**Indexes:**
+- `poll_id` - Fast retrieval of all classifications for a poll
+- `statement_id` - Fast lookup of specific statement classification
+
 ### Demographics Lookup Tables
 
 #### `age_groups`, `genders`, `ethnicities`, `political_parties`
@@ -222,7 +322,7 @@ Used for demographic data categorization and analysis.
 
 ## Row Level Security (RLS)
 
-### Status: ✅ ENABLED on ALL 14 Tables
+### Status: ✅ ENABLED on ALL 17 Tables
 
 **Defense-in-depth security measure protecting against direct database access.**
 
@@ -238,17 +338,20 @@ Used for demographic data categorization and analysis.
 2. **Compliance alignment** - GDPR, SOC 2, ISO 27001 standards
 3. **Audit trail ready** - Database logs show unauthorized access attempts
 
-### Tables Protected (14 Total)
+### Tables Protected (17 Total)
 
 **High Sensitivity:**
 - `user_demographics` - Personal demographic data
 - `votes` - Personal voting choices
 - `user_poll_insights` - Personal AI insights
+- `user_clustering_positions` - Individual user positions in opinion space
 
 **Medium Sensitivity:**
 - `users`, `user_profiles`, `user_roles`
 - `user_feedback`
 - `polls`, `statements`
+- `poll_clustering_metadata` - Clustering model and quality metrics
+- `statement_classifications` - Statement consensus/divisive classifications
 
 **Low Sensitivity:**
 - `poll_results_summaries`

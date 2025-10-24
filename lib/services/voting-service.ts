@@ -11,6 +11,67 @@ import { z } from "zod";
 
 export class VotingService {
   /**
+   * Check if clustering should be triggered based on batch completion or milestones
+   *
+   * @param userId - User ID
+   * @param pollId - Poll ID
+   * @param currentVoteCount - Total votes cast by user (including the vote just cast)
+   * @returns Object indicating if trigger should fire and the reason
+   */
+  private static async shouldTriggerClustering(
+    userId: string,
+    pollId: string,
+    currentVoteCount: number
+  ): Promise<{ shouldTrigger: boolean; reason: string }> {
+    // Milestone vote counts that always trigger clustering
+    const milestones = [10, 20, 50, 100, 200, 500];
+
+    if (milestones.includes(currentVoteCount)) {
+      return {
+        shouldTrigger: true,
+        reason: `Milestone reached: ${currentVoteCount} votes`,
+      };
+    }
+
+    // Check if batch was just completed
+    // A batch is complete when user has voted on all statements in current batch
+    // Batch size is 10, but may be less for final batch
+
+    // Get total approved statements in poll
+    const totalStatementsResult = await db
+      .select({ count: count() })
+      .from(statements)
+      .where(and(eq(statements.pollId, pollId), eq(statements.approved, true)));
+
+    const totalStatements = totalStatementsResult[0]?.count || 0;
+
+    if (totalStatements === 0) {
+      return { shouldTrigger: false, reason: "No approved statements" };
+    }
+
+    // Calculate which batch the user just completed
+    // Batches are 10 statements each, except possibly the last batch
+    const currentBatchNumber = Math.floor((currentVoteCount - 1) / 10) + 1;
+    const startOfBatch = (currentBatchNumber - 1) * 10;
+    const expectedBatchSize = Math.min(10, totalStatements - startOfBatch);
+
+    // Check if current vote count is exactly at the end of a batch
+    const positionInBatch = ((currentVoteCount - 1) % 10) + 1;
+
+    if (positionInBatch === expectedBatchSize) {
+      return {
+        shouldTrigger: true,
+        reason: `Batch ${currentBatchNumber} completed (${expectedBatchSize} statements)`,
+      };
+    }
+
+    return {
+      shouldTrigger: false,
+      reason: `Mid-batch: ${positionInBatch}/${expectedBatchSize} in batch ${currentBatchNumber}`,
+    };
+  }
+
+  /**
    * Cast vote with automatic user creation for anonymous users
    * @param statementId ID of the statement to vote on
    * @param value Vote value (-1, 0, 1)
@@ -124,18 +185,54 @@ export class VotingService {
       })
       .returning();
 
-    // Trigger background clustering update (non-blocking)
-    // This runs asynchronously and won't block the vote response
+    // Check if clustering should be triggered based on batch completion or milestones
     if (statement[0].pollId) {
-      ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
-        (error) => {
-          // Log error but don't fail the vote
-          console.error(
-            `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
-            error
-          );
+      // Get user's total vote count (including the vote just cast)
+      const userVotesResult = await db
+        .select({ count: count() })
+        .from(votes)
+        .innerJoin(statements, eq(votes.statementId, statements.id))
+        .where(
+          and(
+            eq(votes.userId, validatedData.userId),
+            eq(statements.pollId, statement[0].pollId),
+            eq(statements.approved, true)
+          )
+        );
+
+      const totalVoteCount = userVotesResult[0]?.count || 0;
+
+      const triggerCheck = await this.shouldTriggerClustering(
+        validatedData.userId,
+        statement[0].pollId,
+        totalVoteCount
+      );
+
+      console.log(
+        `[VotingService] Clustering trigger check for poll ${statement[0].pollId}:`,
+        {
+          userId: validatedData.userId,
+          totalVotes: totalVoteCount,
+          shouldTrigger: triggerCheck.shouldTrigger,
+          reason: triggerCheck.reason,
         }
       );
+
+      if (triggerCheck.shouldTrigger) {
+        console.log(
+          `[VotingService] Triggering clustering for poll ${statement[0].pollId}: ${triggerCheck.reason}`
+        );
+
+        ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
+          (error) => {
+            // Log error but don't fail the vote
+            console.error(
+              `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
+              error
+            );
+          }
+        );
+      }
     }
 
     return vote;

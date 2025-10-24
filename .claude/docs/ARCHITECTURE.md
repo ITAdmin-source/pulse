@@ -135,6 +135,46 @@ export async function createUserAction(data: CreateUserData) {
   - Demographic breakdowns
   - Results caching
 
+#### Opinion Clustering
+- **ClusteringService** (`clustering-service.ts`)
+  - **8-step clustering pipeline** (matrix → PCA → K-means → grouping → consensus → persistence)
+  - Opinion landscape computation
+  - Eligibility validation (10 users, 6 statements)
+  - Background clustering triggers
+  - Quality metrics (silhouette score, variance explained)
+  - Statement classification (consensus/divisive/bridge)
+  - Coalition analysis
+
+- **PCAEngine** (`clustering/pca-engine.ts`)
+  - Principal Component Analysis
+  - Dimensionality reduction (N-dimensions → 2D)
+  - Mean imputation for missing values
+  - User projection into existing PCA space
+
+- **KMeansEngine** (`clustering/kmeans-engine.ts`)
+  - K-means clustering with adaptive K (20/50/100)
+  - Silhouette score calculation
+  - Hierarchical coarse grouping (2-5 groups)
+  - Nearest cluster assignment
+
+- **ConsensusDetector** (`clustering/consensus-detector.ts`)
+  - Statement classification by agreement pattern
+  - Consensus detection (positive/negative)
+  - Divisive statement identification
+  - Bridge statement detection
+
+- **StatementClassifier** (`clustering/statement-classifier.ts`)
+  - Enhanced classification logic
+  - Coalition pattern detection
+  - Full/partial consensus identification
+  - Split decision analysis
+
+- **CoalitionAnalyzer** (`clustering/coalition-analyzer.ts`)
+  - Pairwise group alignment calculation
+  - Strongest coalition identification
+  - Polarization level scoring
+  - Bridge opportunity detection
+
 #### Gamification & Engagement
 - **ArtifactRarityService** (`artifact-rarity-service.ts`)
   - Rarity calculations (Common, Rare, Legendary)
@@ -328,6 +368,59 @@ Draft → Published → Closed
 - Preserves all user data
 - Seamless UX (no data loss)
 
+### Opinion Clustering Pipeline
+
+**Automatic background process triggered after each vote:**
+
+1. **Eligibility check** (fast, <50ms)
+   - Minimum 10 users who voted
+   - Minimum 6 approved statements
+   - Skip if not eligible
+
+2. **Build opinion matrix** [users × statements]
+   - Fetch all votes for poll
+   - Group by user
+   - Values: -1 (disagree), 0 (pass), 1 (agree), null (not voted)
+
+3. **PCA dimensionality reduction**
+   - Mean imputation for missing values (pass votes → null → column mean)
+   - Center data (subtract mean vector)
+   - Extract 2 principal components (PC1, PC2)
+   - Transform users to 2D coordinates
+   - Validate: variance explained should be >40%
+
+4. **K-means fine clustering**
+   - Adaptive K selection: 20 (small), 50 (medium), 100 (large)
+   - Cluster users in 2D space
+   - Calculate silhouette score (quality metric)
+   - Validate: silhouette should be >0.25
+
+5. **Hierarchical coarse grouping**
+   - Apply K-means on fine cluster centroids
+   - Test K=2 through K=5
+   - Select K with best silhouette score
+   - Create 2-5 opinion groups for visualization
+
+6. **Consensus detection**
+   - For each statement, calculate group-level agreement
+   - Classify as: positive_consensus, negative_consensus, divisive, bridge, normal
+   - Identify bridge statements connecting opposing groups
+
+7. **Database persistence** (transactional)
+   - Delete existing clustering data for poll
+   - Insert poll_clustering_metadata
+   - Insert user_clustering_positions (batch)
+   - Insert statement_classifications (batch)
+
+8. **Cache invalidation**
+   - Invalidate in-memory cache
+   - Revalidate opinion map page
+
+**Non-blocking execution:**
+- Triggered via `ClusteringService.triggerBackgroundClustering()`
+- Errors logged but not thrown
+- Never blocks vote confirmation
+
 ## State Management
 
 ### React Context API
@@ -374,6 +467,12 @@ Draft → Published → Closed
   - Tab navigation (Vote ↔ Results)
   - No separate routes
   - Results locked until 10 votes
+- `/polls/[slug]/opinionmap` - **Opinion clustering visualization**
+  - Privacy-preserving 2D opinion map
+  - Shows group boundaries and current user position
+  - Requires 10+ users and 6+ statements
+  - Desktop: SVG-based interactive canvas
+  - Mobile: Card-based group statistics
 
 ### Authenticated Pages
 - `/polls/create` - Create new poll
@@ -393,7 +492,7 @@ Draft → Published → Closed
 ## Security
 
 ### Row Level Security (RLS)
-- Enabled on ALL 14 tables
+- Enabled on ALL 17 tables (including 3 clustering tables)
 - Defense-in-depth protection
 - Blocks direct database access
 - Server Actions bypass automatically

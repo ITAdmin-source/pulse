@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Pulse** is a participatory polling platform inspired by Pol.is that enables democratic engagement through statement-based voting, user-generated content, and AI-generated insights.
+**Pulse** is a participatory polling platform inspired by Pol.is that enables democratic engagement through statement-based voting, user-generated content, AI-generated insights, and opinion clustering visualization.
 
 **Primary UI Language:** Hebrew with RTL support
-**Key Features:** Anonymous + authenticated users, database-managed RBAC, gamification system, real-time voting
+**Key Features:** Anonymous + authenticated users, database-managed RBAC, gamification system, real-time voting, opinion clustering & visualization
 
 ### Quick Reference
 
@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Architecture:** 3-layer pattern (Schemas → Queries → Actions) with Service Layer
 - **UI Framework:** Radix UI, Framer Motion, Recharts
 - **Testing:** Vitest (unit/integration), Playwright (E2E)
+- **Clustering:** PCA dimensionality reduction, K-means clustering, consensus detection
+- **ML Libraries:** ml-pca, ml-kmeans, ml-distance, ml-matrix
 
 ## Development Commands
 
@@ -73,9 +75,10 @@ export async function actionName(data: DataType) {
 
 ### Database (Supabase + Drizzle ORM)
 - **Connection:** Transaction Mode (Port 6543) with `?pgbouncer=true`
-- **RLS:** Enabled on ALL 14 tables (defense-in-depth)
+- **RLS:** Enabled on ALL 17 tables (defense-in-depth)
 - **Pattern:** Schemas (`db/schema/`) → Queries (`db/queries/`) → Actions (`actions/`)
 - **Key Tables:** polls, statements, votes, users, user_demographics, user_poll_insights
+- **Clustering Tables:** poll_clustering_metadata, user_clustering_positions, statement_classifications
 
 ### Authentication (Clerk)
 - **JWT-only** (no webhooks) with JIT user creation
@@ -90,6 +93,8 @@ export async function actionName(data: DataType) {
 - **Statement batching:** 10 statements per batch for polls with 10+ statements
 - **Minimum statements:** 6 statements required to create a poll
 - **Closed poll access:** Both voters and non-voters can view results; only voters get insights
+- **Clustering eligibility:** 10 users + 6 statements minimum for opinion clustering
+- **Background clustering:** Automatically triggered after each vote (non-blocking)
 
 ## Design System (v2.0)
 
@@ -138,6 +143,7 @@ For detailed information, see specialized documentation:
 
 - **[.claude/docs/DATABASE.md](.claude/docs/DATABASE.md)** - Database architecture, tables, RLS, connection troubleshooting
 - **[.claude/docs/ARCHITECTURE.md](.claude/docs/ARCHITECTURE.md)** - System architecture, services, patterns, workflows
+- **[.claude/docs/CLUSTERING.md](.claude/docs/CLUSTERING.md)** - Opinion clustering algorithms, visualization, caching
 - **[.claude/docs/UI_DESIGN.md](.claude/docs/UI_DESIGN.md)** - Design system, components, styling, gamification
 - **[.claude/docs/DEVELOPMENT.md](.claude/docs/DEVELOPMENT.md)** - Development guidelines, testing, deployment
 - **[USE_CASES.md](USE_CASES.md)** - User journeys and personas
@@ -188,6 +194,7 @@ npm run lint         # Check for linting issues
 
 - `/` → `/polls` - Browse discussions
 - `/polls/[slug]` - **Combined Vote/Results page** (single-page with tabs)
+- `/polls/[slug]/opinionmap` - Opinion clustering visualization (requires 10+ users)
 - `/polls/create` - Create poll (authenticated)
 - `/polls/[slug]/manage` - Poll management (owner/manager)
 - `/admin/*` - Admin interfaces
@@ -202,6 +209,9 @@ npm run lint         # Check for linting issues
 - **Immutable votes:** Enforce once-cast policy
 - **Statement batching:** 10 statements per batch for better UX
 - **Gamification:** Milestone-based encouragement with confetti effects
+- **Opinion clustering:** Pol.is-inspired PCA + K-means clustering for visualizing opinion groups
+- **Privacy-preserving visualization:** Opinion map shows group boundaries, not individual positions
+- **Multi-tier caching:** In-memory (10ms) → Database (50-100ms) for clustering performance
 
 ## Testing Coverage (Oct 2025)
 

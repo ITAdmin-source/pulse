@@ -28,19 +28,19 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "כיכר העיר - חכמת האנשים",
-  description: "דיונים  ציבוריים שמתקנים",
+  title: "נקודות חיבור",
+  description: "דיונים  ציבוריים שמובילים לפתרונות",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
-    title: "כיכר העיר - חכמת האנשים",
-    description: "דיונים  ציבוריים שמתקנים",
+    title: "נקודות חיבור",
+    description: "דיונים  ציבוריים שמובילים לפתרונות",
     type: "website",
     locale: "he_IL",
   },
   twitter: {
     card: "summary_large_image",
-    title: "כיכר העיר - חכמת האנשים",
-    description: "דיונים  ציבוריים שמתקנים",
+    title: "נקודות חיבור",
+    description: "דיונים  ציבוריים שמובילים לפתרונות",
   },
 };
 

@@ -52,6 +52,7 @@ import {
 } from "@/actions/user-roles-actions";
 import { EditStatementModal, AddStatementModal, TransferOwnershipModal } from "@/components/modals";
 import { UserSearchAutocomplete } from "@/components/admin/user-search-autocomplete";
+import { ClusteringTriggerButton } from "@/components/admin/clustering-trigger-button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { canManagePoll } from "@/lib/utils/permissions";
@@ -1030,6 +1031,20 @@ export default function ManagePage({ params }: ManagePageProps) {
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Clustering Control */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Opinion Clustering</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Manually trigger clustering computation to update the opinion map visualization.
+                  Clustering is automatically computed when users complete batches of votes.
+                </p>
+                {poll && <ClusteringTriggerButton pollId={poll.id} />}
               </CardContent>
             </Card>
 
