@@ -93,7 +93,7 @@ export async function actionName(data: DataType) {
 - **Statement batching:** 10 statements per batch for polls with 10+ statements
 - **Minimum statements:** 6 statements required to create a poll
 - **Closed poll access:** Both voters and non-voters can view results; only voters get insights
-- **Clustering eligibility:** 10 users + 6 statements minimum for opinion clustering
+- **Clustering eligibility:** 20 users + 6 statements minimum for opinion clustering
 - **Background clustering:** Automatically triggered after each vote (non-blocking)
 
 ## Design System (v2.0)
@@ -194,7 +194,7 @@ npm run lint         # Check for linting issues
 
 - `/` → `/polls` - Browse discussions
 - `/polls/[slug]` - **Combined Vote/Results page** (single-page with tabs)
-- `/polls/[slug]/opinionmap` - Opinion clustering visualization (requires 10+ users)
+- `/polls/[slug]/opinionmap` - Opinion clustering visualization (requires 20+ users)
 - `/polls/create` - Create poll (authenticated)
 - `/polls/[slug]/manage` - Poll management (owner/manager)
 - `/admin/*` - Admin interfaces

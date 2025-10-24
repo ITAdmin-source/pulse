@@ -8,7 +8,7 @@ Pulse implements a **Pol.is-inspired opinion clustering system** that analyzes v
 
 ### Key Features
 
-- **Automatic clustering** triggered after each vote (non-blocking background process)
+- **Strategic clustering triggers** on batch completion and vote milestones (non-blocking background process)
 - **Privacy-preserving visualization** showing group boundaries, not individual positions
 - **Multi-tier caching** for sub-100ms response times
 - **Consensus detection** identifying statements with broad agreement or division
@@ -17,7 +17,7 @@ Pulse implements a **Pol.is-inspired opinion clustering system** that analyzes v
 
 ### Use Cases
 
-1. **Poll creators** understand how voters cluster into opinion groups
+1. **Poll creators** understand how voters cluster into opinion groups (requires 20+ voters)
 2. **Participants** see where they fit in the opinion landscape
 3. **Researchers** analyze consensus and divisive statements
 4. **Community managers** identify bridge statements connecting different viewpoints
@@ -44,23 +44,80 @@ The clustering system follows an 8-step pipeline:
 ### Eligibility Criteria
 
 Clustering computation requires:
-- **Minimum 10 users** who have voted
+- **Minimum 20 users** who have voted (K-means mathematical requirement)
 - **Minimum 6 approved statements**
 
-These thresholds ensure statistical validity and meaningful clustering results.
+**Rationale for 20-user minimum:**
+- K-means clustering uses K=20 as the minimum number of fine clusters
+- With fewer than 20 users, cluster assignments become unreliable (less than 1 user per cluster on average)
+- Silhouette score (quality metric) becomes meaningless with sparse clusters
+- 20+ users ensures at least 1-2 users per fine cluster for meaningful groupings
+
+**Note:** Polls with 10-19 voters can still view basic results (vote percentages, statement rankings), but opinion clustering visualization requires 20+ participants for statistical validity.
 
 ### Background Triggering
 
-Clustering is automatically triggered after each vote via `VotingService`:
+Clustering is automatically triggered at strategic points during voting via `VotingService`:
+
+**Trigger conditions:**
+- **Batch completion**: After user completes each 10-statement batch
+- **Milestone votes**: At 10, 20, 50, 100, 200, 500 total votes per user
 
 ```typescript
-// lib/services/voting-service.ts
-ClusteringService.triggerBackgroundClustering(pollId).catch((error) => {
-  console.error(`Background clustering failed: ${error}`);
-});
+// lib/services/voting-service.ts:21-72
+private static async shouldTriggerClustering(
+  userId: string,
+  pollId: string,
+  currentVoteCount: number
+): Promise<{ shouldTrigger: boolean; reason: string }> {
+  // Milestone vote counts that always trigger clustering
+  const milestones = [10, 20, 50, 100, 200, 500];
+
+  if (milestones.includes(currentVoteCount)) {
+    return {
+      shouldTrigger: true,
+      reason: `Milestone reached: ${currentVoteCount} votes`,
+    };
+  }
+
+  // Check if batch was just completed
+  const currentBatchNumber = Math.floor((currentVoteCount - 1) / 10) + 1;
+  const startOfBatch = (currentBatchNumber - 1) * 10;
+  const expectedBatchSize = Math.min(10, totalStatements - startOfBatch);
+
+  const positionInBatch = ((currentVoteCount - 1) % 10) + 1;
+
+  if (positionInBatch === expectedBatchSize) {
+    return {
+      shouldTrigger: true,
+      reason: `Batch ${currentBatchNumber} completed (${expectedBatchSize} statements)`,
+    };
+  }
+
+  return { shouldTrigger: false, reason: 'Mid-batch' };
+}
 ```
 
-The trigger is **non-blocking** and won't delay vote confirmation.
+**Batch size calculation:**
+- Standard batches: 10 statements
+- Final batch: Remaining statements (may be < 10)
+- Example: Poll with 23 statements → Batch 1: 10, Batch 2: 10, Batch 3: 3
+- Clustering triggers after completing Batch 3 (3 statements)
+
+**Note**: Batch composition depends on poll's `statementOrderMode` setting:
+- `sequential`: Chronological order (createdAt)
+- `random`: Deterministic shuffle using poll-specific seed
+- `weighted`: Future - weighted by controversy/importance
+
+The trigger is **non-blocking** and won't delay vote confirmation:
+
+```typescript
+// lib/services/voting-service.ts:226-234
+ClusteringService.triggerBackgroundClustering(pollId).catch((error) => {
+  // Log error but don't fail the vote
+  console.error(`Background clustering failed for poll ${pollId}:`, error);
+});
+```
 
 ---
 
@@ -188,12 +245,27 @@ PCAEngine.projectUser(userVotes, components, meanVector, statementMeans): [pc1, 
 
 **Quality metric:**
 - `totalVarianceExplained` should be >40% for meaningful clustering
-- Low variance (<30%) indicates high consensus or limited diversity
+- Low variance (<30%) **logs a warning** but computation proceeds
+- **No rejection based on variance** - results are always persisted with quality tier marked as "low"
 
 **Mathematical note:**
 - Uses `ml-pca` library with covariance method
 - Centers data but doesn't scale (preserves agreement magnitude)
 - Returns eigenvectors for projection of new users
+
+**Incremental projection method:**
+```typescript
+PCAEngine.projectUser(userVotes, components, meanVector, statementMeans): [pc1, pc2]
+```
+
+Projects a new user's votes onto existing PCA space without recomputation:
+1. Impute missing values using statement means
+2. Center data using existing mean vector
+3. Project onto existing principal components
+4. Return [PC1, PC2] coordinates
+
+**Use case**: Real-time updates when new users vote (future optimization)
+**Status**: Implemented but not yet used in production pipeline
 
 ---
 
@@ -203,6 +275,7 @@ PCAEngine.projectUser(userVotes, components, meanVector, statementMeans): [pc1, 
 
 **Adaptive K selection:**
 ```typescript
+10-19 users  → ERROR (insufficient for K-means clustering)
 20-49 users  → K=20  (ensures 1-2.5 users per cluster)
 50-99 users  → K=50  (ensures 1-2 users per cluster)
 100+ users   → K=100 (Pol.is approach, ensures 1+ users per cluster)
@@ -225,9 +298,23 @@ KMeansEngine.assignToNearestCluster(userCoords, centroids): clusterId
 **Hierarchical grouping:**
 After fine clustering (K=20/50/100), creates 2-5 coarse groups:
 1. Apply K-means on cluster centroids
-2. Test K=2 through K=5
+2. Test K=2 through K=min(5, numFineClusters)
 3. Select K with best silhouette score
 4. Map fine clusters → coarse groups
+
+**Note**: Polls with few fine clusters may have fewer coarse groups (e.g., 2-3 groups instead of 5).
+
+**Incremental assignment method:**
+```typescript
+KMeansEngine.assignToNearestCluster(userCoords, centroids): clusterId
+```
+
+Assigns a new user to the nearest existing cluster without retraining:
+- Calculates Euclidean distance to all centroids
+- Returns cluster ID of nearest centroid
+
+**Use case**: Real-time updates when new users vote (future optimization)
+**Status**: Implemented but not yet used in production pipeline
 
 ---
 
@@ -339,6 +426,20 @@ CoalitionAnalyzer.calculatePolarizationLevel(analysis): number
 - **Response time:** 50-100ms
 - **TTL:** Until new votes trigger recomputation
 
+### Cache Configuration
+
+```typescript
+ClusteringCacheManager.getInstance().configure({
+  maxSize: 100,     // Max polls in cache (default: 100)
+  cacheTTL: 300000  // TTL in ms (default: 5 minutes)
+});
+```
+
+**Defaults:**
+- Max size: 100 polls
+- TTL: 5 minutes (300,000ms)
+- Cleanup interval: 60 seconds
+
 ### Cache Invalidation
 
 Caches are invalidated when:
@@ -439,7 +540,7 @@ const data = await getCachedClusteringData(pollId, async () => {
 - Non-blocking async computation trigger
 - Checks eligibility first
 - Fires and forgets (errors logged, not thrown)
-- Called automatically after each vote
+- Called automatically on batch completion and vote milestones
 
 **`getGroupAgreementMatrix(pollId): StatementGroupAgreement[] | null`**
 - Fetch detailed statement-group agreement data
@@ -493,6 +594,14 @@ Low:    < 30% consensus statements
 **`triggerBackgroundClusteringAction(pollId)`**
 - Non-blocking trigger (fires and forgets)
 - Always returns success (errors logged only)
+
+**`manualTriggerClusteringAction(pollId)`**
+- Force immediate clustering computation (admin/manager only)
+- **Blocks until completion** (unlike background trigger)
+- Returns detailed metrics including duration
+- Bypasses debouncing and idempotency checks
+- Invalidates caches after completion
+- Returns: `{success, data: {metadata, duration, triggeredAt}}`
 
 **`getCompleteClusteringDataAction(pollId, options)`**
 - Fetch complete clustering data for opinion map page
@@ -582,8 +691,9 @@ where:
 
 ### Insufficient Data
 
-**Error:** "Insufficient users for clustering: X. Minimum required: 10."
+**Error:** "Insufficient users for clustering: X. Minimum required: 20."
 **Resolution:** Wait for more users to vote
+**Note:** 20 users minimum ensures statistically valid K-means clustering with K=20 fine clusters
 
 **Error:** "Insufficient statements for clustering: X. Minimum required: 6."
 **Resolution:** Add more approved statements to poll
@@ -629,8 +739,8 @@ This ensures votes are never blocked by clustering failures.
 
 1. **Background computation:** Never blocks user interactions
 2. **Multi-tier caching:** Sub-100ms response for cached results
-3. **Debouncing:** Don't recompute on every single vote
-4. **Incremental updates:** Future optimization (not yet implemented)
+3. **Strategic triggering:** Only on batch completion and milestones (not every vote)
+4. **Incremental updates:** Future optimization (methods implemented but not yet used)
 
 ### Database Performance
 
@@ -705,9 +815,10 @@ npm run test:integration -- clustering
 ### Short-term (Q1 2026)
 
 1. **Incremental clustering updates**
-   - Avoid full recomputation on each vote
+   - Avoid full recomputation on each batch
    - Project new users into existing PCA space
    - Reassign to nearest cluster (no retraining)
+   - **Status:** Methods implemented (projectUser, assignToNearestCluster), not yet integrated
 
 2. **Advanced visualizations**
    - Interactive filters (by demographic, vote pattern)
@@ -762,4 +873,33 @@ npm run test:integration -- clustering
 
 ---
 
-**Last Updated:** 2025-01-24 (clustering branch)
+## Change Log
+
+### 2025-10-24: Fixed MIN_USERS Discrepancy
+
+**Issue:** There was a discrepancy between eligibility check (10 users) and K-means requirements (20 users):
+- `ClusteringService.MIN_USERS` was set to 10
+- `KMeansEngine.determineOptimalK()` threw error if users < 20
+- Result: Polls with 10-19 users passed eligibility but failed during clustering computation
+
+**Solution:** Raised `MIN_USERS` from 10 to 20 in `clustering-service.ts:96`
+
+**Rationale:**
+- K-means uses minimum K=20 fine clusters
+- With 10 users and K=20 clusters → 0.5 users per cluster (unreliable)
+- Silhouette score becomes meaningless with sparse data
+- 20+ users ensures 1-2 users per fine cluster for valid statistical groupings
+
+**Files Changed:**
+- `lib/services/clustering-service.ts:96` - Raised MIN_USERS constant to 20
+- `.claude/docs/CLUSTERING.md` - Updated documentation (lines 44-56, 18-23, 692-696)
+- `CLAUDE.md` - Updated quick reference (lines 96, 197)
+
+**Impact:**
+- Polls now require 20+ voters to show opinion clustering visualization
+- Polls with 10-19 voters can still view basic results (percentages, rankings)
+- Consistent behavior between eligibility check and clustering execution
+
+---
+
+**Last Updated:** 2025-10-24 (clustering branch - fixed MIN_USERS discrepancy)

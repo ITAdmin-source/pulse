@@ -92,8 +92,8 @@ export interface ClusteringResult {
 }
 
 export class ClusteringService {
-  /** Minimum users required for clustering */
-  private static readonly MIN_USERS = 10;
+  /** Minimum users required for clustering (must be 20+ for K-means) */
+  private static readonly MIN_USERS = 20;
   /** Minimum statements required for clustering */
   private static readonly MIN_STATEMENTS = 6;
   /** Minimum variance explained by PCA (40%) */
