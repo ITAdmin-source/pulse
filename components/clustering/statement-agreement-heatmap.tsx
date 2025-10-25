@@ -86,7 +86,7 @@ export function StatementAgreementHeatmap({
       partial_consensus: { label: opinionMap.partialConsensusTitle, color: "bg-blue-100 text-blue-800" },
       split_decision: { label: opinionMap.splitDecisionTitle, color: "bg-yellow-100 text-yellow-800" },
       divisive: { label: opinionMap.divisiveEnhancedTitle, color: "bg-red-100 text-red-800" },
-      bridge: { label: opinionMap.bridgeEnhancedTitle, color: "bg-purple-100 text-purple-800" },
+      bridge: { label: opinionMap.bridgeEnhancedTitle, color: "bg-primary-100 text-primary-800" },
       normal: { label: "רגיל", color: "bg-gray-100 text-gray-800" },
     };
     return badges[type as keyof typeof badges] || badges.normal;
@@ -132,9 +132,9 @@ export function StatementAgreementHeatmap({
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+          <thead className="bg-gradient-tab-active text-white">
             <tr>
-              <th className="p-3 text-right text-sm font-semibold sticky right-0 bg-purple-600 z-10">
+              <th className="p-3 text-right text-sm font-semibold sticky right-0 bg-primary-600 z-10">
                 <button
                   onClick={() => toggleSort("classification")}
                   className="flex items-center gap-1 hover:underline"

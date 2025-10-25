@@ -35,7 +35,7 @@ export function ViewToggle({ currentView, onViewChange, className = "" }: ViewTo
         {currentView === "map" && (
           <motion.div
             layoutId="activeViewTab"
-            className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg"
+            className="absolute inset-0 bg-gradient-tab-active rounded-lg"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}
@@ -59,7 +59,7 @@ export function ViewToggle({ currentView, onViewChange, className = "" }: ViewTo
         {currentView === "statements" && (
           <motion.div
             layoutId="activeViewTab"
-            className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg"
+            className="absolute inset-0 bg-gradient-tab-active rounded-lg"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}

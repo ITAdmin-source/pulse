@@ -277,10 +277,10 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         clusteringData.metadata.consensusLevel === "high"
-                          ? "bg-purple-100 text-purple-800"
+                          ? "bg-primary-100 text-primary-800"
                           : clusteringData.metadata.consensusLevel === "medium"
                           ? "bg-indigo-100 text-indigo-800"
-                          : "bg-pink-100 text-pink-800"
+                          : "bg-secondary-100 text-secondary-800"
                       }`}
                     >
                       {clusteringData.metadata.consensusLevel === "high"

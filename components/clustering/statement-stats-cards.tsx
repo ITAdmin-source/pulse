@@ -68,8 +68,8 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.bridgeEnhancedTitle,
       description: opinionMap.bridgeEnhancedDescription,
       icon: Link,
-      color: "bg-purple-50 border-purple-200 text-purple-700",
-      iconColor: "text-purple-600",
+      color: "bg-primary-50 border-primary-200 text-primary-700",
+      iconColor: "text-primary-600",
     },
   ];
 

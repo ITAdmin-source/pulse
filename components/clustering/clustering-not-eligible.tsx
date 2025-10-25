@@ -25,7 +25,7 @@ export function ClusteringNotEligible({
     <div className="flex min-h-[600px] items-center justify-center bg-white rounded-2xl shadow-xl p-8">
       <div className="text-center space-y-6 max-w-md">
         {/* Info icon with gradient */}
-        <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+        <div className="mx-auto w-20 h-20 rounded-full bg-gradient-eligibility flex items-center justify-center">
           <div className="text-4xl">📊</div>
         </div>
 
@@ -47,13 +47,13 @@ export function ClusteringNotEligible({
                   <Users className="w-5 h-5" />
                   <span className="font-medium">משתתפים</span>
                 </div>
-                <span className="text-sm font-bold text-purple-600">
+                <span className="text-sm font-bold text-primary-600">
                   {userCount} / {requiredUsers}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                  className="bg-gradient-progress h-2 rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (userCount / requiredUsers) * 100)}%`,
                   }}
@@ -70,13 +70,13 @@ export function ClusteringNotEligible({
                   <FileText className="w-5 h-5" />
                   <span className="font-medium">עמדות</span>
                 </div>
-                <span className="text-sm font-bold text-purple-600">
+                <span className="text-sm font-bold text-primary-600">
                   {statementCount} / {requiredStatements}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                  className="bg-gradient-progress h-2 rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (statementCount / requiredStatements) * 100)}%`,
                   }}

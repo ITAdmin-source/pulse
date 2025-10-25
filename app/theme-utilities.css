@@ -43,6 +43,27 @@
   background: linear-gradient(to bottom right, var(--gradient-page-from), var(--gradient-page-via), var(--gradient-page-to));
 }
 
+/* Clustering UI gradients */
+.bg-gradient-eligibility {
+  background: linear-gradient(to bottom right, var(--gradient-eligibility-from), var(--gradient-eligibility-to));
+}
+
+.bg-gradient-progress {
+  background: linear-gradient(to right, var(--gradient-progress-from), var(--gradient-progress-to));
+}
+
+.bg-gradient-legend-active {
+  background: linear-gradient(to right, var(--gradient-legend-active-from), var(--gradient-legend-active-to));
+}
+
+.bg-gradient-tab-active {
+  background: linear-gradient(to bottom right, var(--gradient-tab-active-from), var(--gradient-tab-active-to));
+}
+
+.bg-gradient-coalition-card {
+  background: linear-gradient(to right, var(--gradient-coalition-card-from), var(--gradient-coalition-card-to));
+}
+
 /* Primary Colors */
 .bg-primary-900 { background-color: var(--color-primary-900); }
 .bg-primary-800 { background-color: var(--color-primary-800); }
@@ -72,6 +93,16 @@
 .border-primary-400-40 { border-color: var(--border-purple-400-40); }
 .border-primary-400-60 { border-color: var(--border-purple-400-60); }
 .border-primary-200 { border-color: var(--border-purple-200); }
+.border-primary-300 { border-color: var(--color-primary-300); }
+
+/* Secondary (Pink) Colors */
+.bg-secondary-100 { background-color: var(--color-secondary-100); }
+.bg-secondary-50 { background-color: var(--color-secondary-50); }
+.text-secondary-800 { color: var(--color-pink-800); }
+
+/* Indigo Colors (for consensus badges) */
+.bg-indigo-100 { background-color: var(--color-indigo-100); }
+.text-indigo-800 { color: var(--color-indigo-800); }
 
 /* Hover States */
 .hover-bg-primary-700:hover {

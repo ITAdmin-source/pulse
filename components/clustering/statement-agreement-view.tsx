@@ -61,7 +61,7 @@ export function StatementAgreementView({ pollId, groups }: StatementAgreementVie
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-lg">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600 mb-3" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600 mb-3" />
         <p className="text-gray-600">{opinionMap.heatmapLoading}</p>
       </div>
     );

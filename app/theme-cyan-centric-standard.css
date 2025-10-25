@@ -161,4 +161,31 @@
   /* Light Header Gradient (for tables/sections) */
   --gradient-header-light-from: #ecfeff;
   --gradient-header-light-to: #cffafe;
+
+  /* Clustering UI Gradients */
+  --gradient-eligibility-from: #ecfeff;     /* primary-50 - Tomorrow Cyan light */
+  --gradient-eligibility-to: #cffafe;       /* primary-100 */
+
+  --gradient-progress-from: #16c3ea;        /* Tomorrow Cyan */
+  --gradient-progress-to: #6294bf;          /* Daily Gray */
+
+  --gradient-legend-active-from: #ecfeff;   /* primary-50 */
+  --gradient-legend-active-to: #cffafe;     /* primary-100 */
+
+  --gradient-tab-active-from: #16c3ea;      /* Tomorrow Cyan */
+  --gradient-tab-active-to: #6294bf;        /* Daily Gray */
+
+  --gradient-coalition-card-from: #ecfeff;  /* primary-50 */
+  --gradient-coalition-card-to: #cffafe;    /* primary-100 */
+
+  /* Secondary/Pink Colors (for consensus badges) */
+  --color-secondary-100: #fef2f2;           /* red-50 for low consensus */
+  --color-secondary-50: #fef2f2;
+
+  /* Indigo Colors (for consensus badges) */
+  --color-indigo-100: #e0f2fe;              /* sky-100 for medium consensus */
+  --color-indigo-800: #075985;              /* sky-800 */
+
+  /* Pink for text */
+  --color-pink-800: #9f1239;                /* pink-800 */
 }

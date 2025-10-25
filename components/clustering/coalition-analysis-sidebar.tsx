@@ -55,7 +55,7 @@ export function CoalitionAnalysisSidebar({
   return (
     <div className={`bg-white rounded-xl shadow-lg p-4 ${className}`}>
       <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-        <ArrowLeftRight className="w-5 h-5 text-purple-600" />
+        <ArrowLeftRight className="w-5 h-5 text-primary-600" />
         {opinionMap.coalitionTitle}
       </h3>
 
@@ -98,7 +98,7 @@ export function CoalitionAnalysisSidebar({
           return (
             <div
               key={`${group1Id}-${group2Id}`}
-              className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg"
+              className="p-3 bg-gradient-coalition-card border border-primary-200 rounded-lg"
             >
               {/* Coalition Pair */}
               <div className="flex items-center gap-2 mb-2">
@@ -130,7 +130,7 @@ export function CoalitionAnalysisSidebar({
               {/* Progress Bar */}
               <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
+                  className="h-full bg-gradient-progress rounded-full transition-all"
                   style={{ width: `${coalition.alignmentPercentage}%` }}
                 />
               </div>

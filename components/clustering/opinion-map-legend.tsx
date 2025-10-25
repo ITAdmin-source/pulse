@@ -37,7 +37,7 @@ export function OpinionMapLegend({
               key={group.id}
               className={`flex items-center justify-between p-3 rounded-lg transition-all ${
                 isUserGroup
-                  ? "bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300"
+                  ? "bg-gradient-legend-active border-2 border-primary-300"
                   : "bg-gray-50 hover:bg-gray-100"
               }`}
             >
@@ -53,11 +53,11 @@ export function OpinionMapLegend({
                       {group.label}
                     </span>
                     {isUserGroup && (
-                      <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                      <MapPin className="w-4 h-4 text-primary-600 flex-shrink-0" />
                     )}
                   </div>
                   {isUserGroup && (
-                    <span className="text-xs text-purple-600 font-medium">
+                    <span className="text-xs text-primary-600 font-medium">
                       {opinionMap.yourGroup}
                     </span>
                   )}
@@ -77,7 +77,7 @@ export function OpinionMapLegend({
       {currentUserGroupId !== undefined && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="w-4 h-4 text-purple-600" />
+            <MapPin className="w-4 h-4 text-primary-600" />
             <span>{opinionMap.yourPosition}</span>
           </div>
         </div>

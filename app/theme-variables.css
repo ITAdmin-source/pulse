@@ -33,9 +33,16 @@
   /* Pink Scale (Secondary) */
   --color-secondary-600: #db2777;    /* pink-600 - Secondary accent */
   --color-secondary-500: #ec4899;    /* pink-500 - Secondary accent light */
+  --color-secondary-100: #fce7f3;    /* pink-100 - Light pink for badges */
+  --color-secondary-50: #fdf2f8;     /* pink-50 - Very light pink for backgrounds */
 
-  /* Indigo (for insights) */
+  /* Indigo (for insights and consensus badges) */
   --color-indigo-600: #4f46e5;       /* indigo-600 - Insight gradients */
+  --color-indigo-100: #e0e7ff;       /* indigo-100 - Light indigo for badges */
+  --color-indigo-800: #3730a3;       /* indigo-800 - Dark indigo for badge text */
+
+  /* Pink for text */
+  --color-pink-800: #9f1239;         /* pink-800 - Dark pink for badge text */
 
   /* ============================================================================
    * BACKGROUND GRADIENTS
@@ -45,6 +52,22 @@
   --gradient-page-from: #0f172a;     /* slate-900 */
   --gradient-page-via: #581c87;      /* purple-900 */
   --gradient-page-to: #0f172a;       /* slate-900 */
+
+  /* Clustering UI Gradients */
+  --gradient-eligibility-from: #f3e8ff;     /* purple-100 */
+  --gradient-eligibility-to: #fce7f3;       /* pink-100 */
+
+  --gradient-progress-from: #a855f7;        /* purple-500 */
+  --gradient-progress-to: #ec4899;          /* pink-500 */
+
+  --gradient-legend-active-from: #faf5ff;   /* purple-50 */
+  --gradient-legend-active-to: #fdf2f8;     /* pink-50 */
+
+  --gradient-tab-active-from: #9333ea;      /* purple-600 */
+  --gradient-tab-active-to: #db2777;        /* pink-600 */
+
+  --gradient-coalition-card-from: #faf5ff;  /* purple-50 */
+  --gradient-coalition-card-to: #fdf2f8;    /* pink-50 */
 
   /* Header Gradient (with opacity) */
   --gradient-header-from: rgba(88, 28, 135, 0.8);      /* purple-900/80 */
