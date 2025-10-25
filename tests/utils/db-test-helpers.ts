@@ -10,9 +10,73 @@ import { fixtureScenarios, testPolls, testUsers, testStatements, testVotes, test
 
 export class DatabaseTestHelper {
   /**
+   * 🚨 SAFETY CHECK: Prevent accidental production database deletion
+   */
+  private assertTestEnvironment(): void {
+    const dbUrl = process.env.DATABASE_URL || '';
+    const nodeEnv = process.env.NODE_ENV || '';
+
+    // CRITICAL: Block if this looks like production
+    const isProduction =
+      nodeEnv === 'production' ||
+      dbUrl.includes('supabase.com') ||
+      dbUrl.includes('prod') ||
+      dbUrl.includes('production');
+
+    if (isProduction) {
+      const error = `
+╔═══════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL ERROR: PRODUCTION DATABASE DELETION BLOCKED! 🚨          ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                       ║
+║  Integration tests attempted to DELETE ALL DATA from what appears    ║
+║  to be a PRODUCTION database!                                        ║
+║                                                                       ║
+║  DATABASE_URL: ${dbUrl.substring(0, 50)}...                          ║
+║  NODE_ENV: ${nodeEnv}                                                ║
+║                                                                       ║
+║  ⚠️  This operation has been BLOCKED to protect your data.           ║
+║                                                                       ║
+║  TO RUN INTEGRATION TESTS SAFELY:                                    ║
+║  1. Create a separate test database in Supabase                      ║
+║  2. Set TEST_DATABASE_URL in .env.local                              ║
+║  3. Update tests/setup.ts to use TEST_DATABASE_URL                   ║
+║                                                                       ║
+║  NEVER run integration tests against production data!                ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
+      `;
+      throw new Error(error);
+    }
+
+    // Additional safety: Require explicit test environment variable
+    if (process.env.ALLOW_DESTRUCTIVE_TESTS !== 'true') {
+      const error = `
+╔═══════════════════════════════════════════════════════════════════════╗
+║  🚨 SAFETY CHECK: ALLOW_DESTRUCTIVE_TESTS not set                     ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                       ║
+║  Integration tests will DELETE ALL DATA from the database.           ║
+║                                                                       ║
+║  To proceed, set in your test environment:                           ║
+║  ALLOW_DESTRUCTIVE_TESTS=true                                        ║
+║                                                                       ║
+║  ⚠️  ONLY do this with a dedicated TEST database!                    ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
+      `;
+      throw new Error(error);
+    }
+  }
+
+  /**
    * Clean all test data from the database
+   * 🚨 DESTRUCTIVE: Deletes ALL data - only use in test environments!
    */
   async cleanup(): Promise<void> {
+    // CRITICAL SAFETY CHECK
+    this.assertTestEnvironment();
+
     try {
       // Delete in reverse dependency order to avoid foreign key violations
       await db.delete(votes)

@@ -26,7 +26,7 @@ export function StatementAgreementHeatmap({
   const [sortBy, setSortBy] = useState<"classification" | "averageAgreement">(
     "classification"
   );
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Sort statements
   const sortedStatements = [...statements].sort((a, b) => {
