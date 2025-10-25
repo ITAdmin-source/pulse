@@ -55,20 +55,20 @@ export function CoalitionAnalysisSidebar({
   return (
     <div className={`bg-white rounded-xl shadow-lg p-4 ${className}`}>
       <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-        <ArrowLeftRight className="w-5 h-5 text-primary-600" />
+        <ArrowLeftRight className="w-5 h-5 text-gray-600" />
         {opinionMap.coalitionTitle}
       </h3>
 
       <p className="text-sm text-gray-600 mb-4">{opinionMap.coalitionDescription}</p>
 
       {/* Polarization Level */}
-      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+      <div className="mb-4 p-3 border border-gray-200 rounded-lg">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
             <TrendingDown className="w-4 h-4" />
             {opinionMap.polarizationLevel}
           </span>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full ${polarizationColor}`}>
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${polarizationColor}`}>
             {polarizationLabel}
           </span>
         </div>
@@ -98,27 +98,27 @@ export function CoalitionAnalysisSidebar({
           return (
             <div
               key={`${group1Id}-${group2Id}`}
-              className="p-3 bg-gradient-coalition-card border border-primary-200 rounded-lg"
+              className="p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               {/* Coalition Pair */}
               <div className="flex items-center gap-2 mb-2">
                 <div
-                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  className="w-3 h-3 rounded-full border border-gray-300 shadow-sm"
                   style={{ backgroundColor: color1.primary }}
                   aria-label={label1}
                 />
-                <span className="text-sm font-semibold text-gray-900">{label1}</span>
-                <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">{label1}</span>
+                <ArrowLeftRight className="w-3 h-3 text-gray-400" />
                 <div
-                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  className="w-3 h-3 rounded-full border border-gray-300 shadow-sm"
                   style={{ backgroundColor: color2.primary }}
                   aria-label={label2}
                 />
-                <span className="text-sm font-semibold text-gray-900">{label2}</span>
+                <span className="text-sm font-medium text-gray-900">{label2}</span>
               </div>
 
               {/* Alignment Percentage */}
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-gray-600">
                   {opinionMap.coalitionAlignment(coalition.alignmentPercentage)}
                 </span>
@@ -128,9 +128,9 @@ export function CoalitionAnalysisSidebar({
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-progress rounded-full transition-all"
+                  className="h-full bg-gray-600 rounded-full transition-all"
                   style={{ width: `${coalition.alignmentPercentage}%` }}
                 />
               </div>

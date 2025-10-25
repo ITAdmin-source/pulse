@@ -50,7 +50,9 @@
       "Bash(if not exist componentsadmin mkdir componentsadmin)",
       "WebFetch(domain:arxiv.org)",
       "Bash(npm run db:health:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "WebFetch(domain:pol.is)",
+      "WebFetch(domain:pol-is.github.io)"
     ],
     "deny": [],
     "ask": [

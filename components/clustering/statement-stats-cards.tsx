@@ -32,8 +32,9 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.fullConsensusTitle,
       description: opinionMap.fullConsensusDescription,
       icon: CheckCircle2,
-      color: "bg-green-50 border-green-200 text-green-700",
+      color: "bg-white border-gray-200 text-gray-700",
       iconColor: "text-green-600",
+      countColor: "text-green-600",
     },
     {
       type: "partial_consensus",
@@ -41,8 +42,9 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.partialConsensusTitle,
       description: opinionMap.partialConsensusDescription,
       icon: TrendingUp,
-      color: "bg-blue-50 border-blue-200 text-blue-700",
+      color: "bg-white border-gray-200 text-gray-700",
       iconColor: "text-blue-600",
+      countColor: "text-blue-600",
     },
     {
       type: "split_decision",
@@ -50,8 +52,9 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.splitDecisionTitle,
       description: opinionMap.splitDecisionDescription,
       icon: Split,
-      color: "bg-yellow-50 border-yellow-200 text-yellow-700",
+      color: "bg-white border-gray-200 text-gray-700",
       iconColor: "text-yellow-600",
+      countColor: "text-yellow-600",
     },
     {
       type: "divisive",
@@ -59,8 +62,9 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.divisiveEnhancedTitle,
       description: opinionMap.divisiveEnhancedDescription,
       icon: Zap,
-      color: "bg-red-50 border-red-200 text-red-700",
+      color: "bg-white border-gray-200 text-gray-700",
       iconColor: "text-red-600",
+      countColor: "text-red-600",
     },
     {
       type: "bridge",
@@ -68,8 +72,9 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
       label: opinionMap.bridgeEnhancedTitle,
       description: opinionMap.bridgeEnhancedDescription,
       icon: Link,
-      color: "bg-primary-50 border-primary-200 text-primary-700",
+      color: "bg-white border-gray-200 text-gray-700",
       iconColor: "text-primary-600",
+      countColor: "text-primary-600",
     },
   ];
 
@@ -80,16 +85,16 @@ export function StatementStatsCards({ statements, className = "" }: StatementSta
         return (
           <div
             key={card.type}
-            className={`border-2 rounded-xl p-3 transition-all hover:shadow-md ${card.color}`}
+            className={`border rounded-lg p-3 transition-all hover:border-gray-300 hover:shadow-sm ${card.color}`}
           >
             <div className="flex items-start gap-2 mb-1">
-              <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${card.iconColor}`} />
+              <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${card.iconColor}`} />
               <div className="flex-1 min-w-0">
-                <div className="text-2xl font-bold">{card.count}</div>
-                <div className="text-xs font-semibold truncate">{card.label}</div>
+                <div className={`text-2xl font-bold ${card.countColor}`}>{card.count}</div>
+                <div className="text-xs font-medium truncate text-gray-600">{card.label}</div>
               </div>
             </div>
-            <p className="text-xs opacity-75 line-clamp-2">{card.description}</p>
+            <p className="text-xs text-gray-500 line-clamp-2">{card.description}</p>
           </div>
         );
       })}

@@ -102,42 +102,15 @@ export function StatementAgreementHeatmap({
 
   return (
     <div className={`bg-white rounded-xl shadow-lg overflow-hidden ${className}`}>
-      {/* Legend */}
-      <div className="p-4 bg-gray-50 border-b border-gray-200">
-        <div className="text-sm text-gray-700 font-medium mb-2">מקרא:</div>
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-600 rounded"></div>
-            <span>הסכמה חזקה (&gt;80%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-500 rounded"></div>
-            <span>הסכמה (60-80%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gray-100 rounded border border-gray-300"></div>
-            <span>נייטרלי</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-red-500 rounded"></div>
-            <span>אי-הסכמה (60-80%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-red-600 rounded"></div>
-            <span>אי-הסכמה חזקה (&gt;80%)</span>
-          </div>
-        </div>
-      </div>
-
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gradient-tab-active text-white">
+          <thead className="bg-gray-50 border-b-2 border-gray-200">
             <tr>
-              <th className="p-3 text-right text-sm font-semibold sticky right-0 bg-primary-600 z-10">
+              <th className="p-3 text-right text-sm font-semibold sticky right-0 bg-gray-50 z-10 text-gray-700">
                 <button
                   onClick={() => toggleSort("classification")}
-                  className="flex items-center gap-1 hover:underline"
+                  className="flex items-center gap-1 hover:text-gray-900"
                 >
                   סוג עמדה
                   {sortBy === "classification" &&
@@ -148,10 +121,10 @@ export function StatementAgreementHeatmap({
                     ))}
                 </button>
               </th>
-              <th className="p-3 text-right text-sm font-semibold min-w-[200px]">
+              <th className="p-3 text-right text-sm font-semibold min-w-[200px] text-gray-700">
                 <button
                   onClick={() => toggleSort("averageAgreement")}
-                  className="flex items-center gap-1 hover:underline"
+                  className="flex items-center gap-1 hover:text-gray-900"
                 >
                   נוסח העמדה
                   {sortBy === "averageAgreement" &&
@@ -167,15 +140,15 @@ export function StatementAgreementHeatmap({
                 return (
                   <th
                     key={group.id}
-                    className="p-3 text-center text-sm font-semibold min-w-[80px]"
+                    className="p-3 text-center text-sm font-semibold min-w-[80px] text-gray-700"
                   >
                     <div className="flex flex-col items-center gap-1">
                       <div
-                        className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                        className="w-4 h-4 rounded-full border-2 border-gray-300 shadow-sm"
                         style={{ backgroundColor: color.primary }}
                       />
                       <span>{group.label}</span>
-                      <span className="text-xs font-normal opacity-75">
+                      <span className="text-xs font-normal text-gray-500">
                         ({group.userCount})
                       </span>
                     </div>
@@ -229,6 +202,33 @@ export function StatementAgreementHeatmap({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Compact Legend Footer */}
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600">
+          <span className="font-medium text-gray-700">מקרא:</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-green-600 rounded"></div>
+            <span>&gt;80%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <span>60-80%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-gray-100 rounded border border-gray-300"></div>
+            <span>נייטרלי</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-red-500 rounded"></div>
+            <span>60-80%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-red-600 rounded"></div>
+            <span>&gt;80%</span>
+          </div>
+        </div>
       </div>
     </div>
   );
