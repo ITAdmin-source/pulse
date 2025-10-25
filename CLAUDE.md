@@ -13,10 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Tech Stack:** Next.js 15, TypeScript, Supabase (PostgreSQL), Drizzle ORM, Clerk Auth, Tailwind CSS v4
 - **Architecture:** 3-layer pattern (Schemas → Queries → Actions) with Service Layer
-- **UI Framework:** Radix UI, Framer Motion, Recharts
+- **UI Framework:** Radix UI, Framer Motion, Recharts, D3-shape
 - **Testing:** Vitest (unit/integration), Playwright (E2E)
-- **Clustering:** PCA dimensionality reduction, K-means clustering, consensus detection
+- **Clustering:** PCA dimensionality reduction, K-means clustering, consensus detection, smoothed convex hulls
 - **ML Libraries:** ml-pca, ml-kmeans, ml-distance, ml-matrix
+- **Visualization:** d3-shape (Catmull-Rom splines for convex hull smoothing)
 
 ## Development Commands
 
@@ -110,6 +111,7 @@ export async function actionName(data: DataType) {
 - **Gradients:** Purple/pink headers (`from-purple-600 to-pink-600`)
 - **Voting buttons:** Flat colors (green-500, red-500, gray-100) - NO gradients
 - **Design tokens:** Import from `lib/design-tokens-v2.ts`
+- **CSS variables:** Use `theme-variables.css` for theme-switchable colors
 - **RTL support:** Use logical properties (ms-*, me-*, start, end)
 
 ### Component Organization
@@ -133,6 +135,7 @@ export async function actionName(data: DataType) {
 - ✅ Use Zod schemas for validation
 - ✅ Import Hebrew strings from `lib/strings/he.ts`
 - ✅ Follow design tokens for styling consistency
+- ✅ Use CSS variables (not hardcoded colors) for theme support
 - ✅ Never allow vote updates (immutability)
 
 ### Key Contexts & Hooks
@@ -215,8 +218,10 @@ npm run lint         # Check for linting issues
 - **Statement batching:** 10 statements per batch for better UX
 - **Gamification:** Milestone-based encouragement with confetti effects
 - **Opinion clustering:** Pol.is-inspired PCA + K-means clustering for visualizing opinion groups
-- **Privacy-preserving visualization:** Opinion map shows group boundaries, not individual positions
+- **Privacy-preserving visualization:** Opinion map shows smoothed convex hulls (not individual positions)
+- **Convex hull visualization:** Graham Scan algorithm with D3-shape Catmull-Rom smoothing
 - **Multi-tier caching:** In-memory (10ms) → Database (50-100ms) for clustering performance
+- **CSS theme system:** 100+ CSS variables for theme-switchable styling without code changes
 
 ## Testing Coverage (Oct 2025)
 

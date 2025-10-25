@@ -596,10 +596,100 @@ const threshold = totalVotes >= 10;
 
 ## CSS Theme System
 
-### CSS Variables
+### CSS Variables Architecture
 
-**Theme CSS variables for consistent theming:**
+**Centralized theme system using CSS custom properties for consistent, theme-switchable styling.**
 
+#### Core Theme Files (`/app` directory)
+
+**Base Files:**
+- `theme-variables.css` - Main purple/pink theme variables (100+ variables)
+- `theme-utilities.css` - Utility classes using CSS variables
+- `globals.css` - Global styles and imports
+
+**Theme Variants:**
+
+Each theme has two versions (standard and brand):
+
+| Theme Name | Standard File | Brand File |
+|------------|--------------|------------|
+| Blue Foundation | `theme-blue-foundation-standard.css` | `theme-blue-foundation-brand.css` |
+| Cyan Centric | `theme-cyan-centric-standard.css` | `theme-cyan-centric-brand.css` |
+| Natural Gradient | `theme-natural-gradient-standard.css` | `theme-natural-gradient-brand.css` |
+| Vibrant Spectrum | `theme-vibrant-spectrum-standard.css` | `theme-vibrant-spectrum-brand.css` |
+
+**Standard vs Brand:**
+- **Standard**: Neutral color scheme for general use
+- **Brand**: Branded colors with stronger identity
+
+#### Variable Categories
+
+**Primary Brand Colors:**
+```css
+:root {
+  /* Purple Scale (Primary) */
+  --color-primary-900: #581c87;      /* purple-900 */
+  --color-primary-600: #9333ea;      /* purple-600 - Main purple */
+  --color-primary-300: #d8b4fe;      /* purple-300 */
+
+  /* Pink Scale (Secondary) */
+  --color-secondary-600: #db2777;    /* pink-600 */
+  --color-secondary-500: #ec4899;    /* pink-500 */
+}
+```
+
+**Background Gradients:**
+```css
+:root {
+  /* Page Background */
+  --gradient-page-from: #0f172a;     /* slate-900 */
+  --gradient-page-via: #581c87;      /* purple-900 */
+  --gradient-page-to: #0f172a;       /* slate-900 */
+
+  /* Poll Card Header */
+  --gradient-poll-header-from: #9333ea;  /* purple-600 */
+  --gradient-poll-header-to: #db2777;    /* pink-600 */
+
+  /* Insight Card */
+  --gradient-insight-from: #4f46e5;   /* indigo-600 */
+  --gradient-insight-via: #9333ea;    /* purple-600 */
+  --gradient-insight-to: #db2777;     /* pink-600 */
+}
+```
+
+**White Overlays (for dark backgrounds):**
+```css
+:root {
+  --white-overlay-5: rgba(255, 255, 255, 0.05);
+  --white-overlay-10: rgba(255, 255, 255, 0.1);
+  --white-overlay-20: rgba(255, 255, 255, 0.2);
+  /* ... up to 95% */
+}
+```
+
+**Status Colors:**
+```css
+:root {
+  --status-success: #22c55e;          /* green-500 */
+  --status-error: #ef4444;            /* red-500 */
+  --status-warning: #eab308;          /* yellow-500 */
+  --status-info: #3b82f6;             /* blue-500 */
+}
+```
+
+**Voting Colors:**
+```css
+:root {
+  --voting-agree: #22c55e;            /* green-500 */
+  --voting-agree-hover: #16a34a;      /* green-600 */
+  --voting-disagree: #ef4444;         /* red-500 */
+  --voting-disagree-hover: #dc2626;   /* red-600 */
+  --voting-pass: #f3f4f6;             /* gray-100 */
+  --voting-pass-hover: #e5e7eb;       /* gray-200 */
+}
+```
+
+**Confetti Colors (for celebrations):**
 ```css
 :root {
   --confetti-purple-600: #9333ea;
@@ -607,22 +697,86 @@ const threshold = totalVotes >= 10;
   --confetti-blue-600: #2563eb;
   --confetti-green-500: #22c55e;
   --confetti-red-500: #ef4444;
-  /* ... more variables */
 }
 ```
 
-**Pre-configured Themes:**
-- blue-foundation
-- cyan-centric
-- natural-gradient
-- vibrant-spectrum
-- purple-passion
-- sunset-glow
+#### Theme Usage in Components
 
-**Integration:**
-- Works with `lib/design-tokens-v2.ts`
-- Centralized theme configuration
-- Easy theme switching
+**Clustering Components (CSS Variables):**
+
+Since October 2025, clustering UI components use CSS variables instead of hardcoded Tailwind classes:
+
+```tsx
+// ✅ Correct - uses CSS variables
+<div style={{
+  backgroundColor: 'var(--gradient-eligibility-from)',
+  borderColor: 'var(--color-primary-400)'
+}}>
+
+// ❌ Old approach - hardcoded colors
+<div className="bg-purple-100 border-purple-400">
+```
+
+**Benefits:**
+- Theme switching without code changes
+- Centralized color management
+- Easy brand customization
+- Consistent styling across components
+
+**Components using CSS variables:**
+- `clustering-not-eligible.tsx`
+- `coalition-analysis-sidebar.tsx`
+- `opinion-map-client.tsx`
+- `opinion-map-legend.tsx`
+- `statement-agreement-heatmap.tsx`
+- `statement-agreement-view.tsx`
+- `statement-stats-cards.tsx`
+- `view-toggle.tsx`
+
+#### How to Change Theme Colors
+
+**Method 1: Edit theme-variables.css** (Recommended)
+
+1. Open `/app/theme-variables.css`
+2. Modify CSS variable values
+3. No code changes needed - variables are referenced everywhere
+4. See comments in file for guidance
+
+**Method 2: Use Alternative Theme File**
+
+1. Import different theme file in `globals.css`
+2. Available themes: blue-foundation, cyan-centric, natural-gradient, vibrant-spectrum
+3. Choose standard or brand version
+
+**Method 3: Override at Runtime** (Advanced)
+
+```typescript
+// Set CSS variables programmatically
+document.documentElement.style.setProperty('--color-primary-600', '#3b82f6');
+```
+
+#### Integration with Design Tokens
+
+**Dual System:**
+- **CSS Variables** (`theme-variables.css`) - For dynamic theming
+- **Design Tokens** (`lib/design-tokens-v2.ts`) - For TypeScript constants
+
+**When to use which:**
+- CSS Variables: Component styling, gradients, colors
+- Design Tokens: Animations, spacing, breakpoints, TypeScript logic
+
+**Example Integration:**
+```tsx
+import { designTokens } from '@/lib/design-tokens-v2';
+
+// Use design tokens for animations
+<motion.div
+  transition={{ duration: designTokens.animation.quick }}
+  style={{
+    backgroundColor: 'var(--color-primary-600)' // CSS variable for color
+  }}
+/>
+```
 
 ## Component Styling Rules
 
