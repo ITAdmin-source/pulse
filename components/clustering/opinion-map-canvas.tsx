@@ -7,8 +7,9 @@
  */
 
 import { useMemo, useState } from "react";
-import { UserPosition, CoarseGroup, getGroupColor } from "./types";
+import { UserPosition, CoarseGroup, getGroupColor, Point2D } from "./types";
 import { opinionMap } from "@/lib/strings/he";
+import { computeSmoothedHull, estimateRadius } from "@/lib/clustering/convex-hull";
 
 interface OpinionMapCanvasProps {
   userPositions: UserPosition[];
@@ -25,24 +26,29 @@ export function OpinionMapCanvas({
 }: OpinionMapCanvasProps) {
   const [hoveredGroupId, setHoveredGroupId] = useState<number | null>(null);
 
-  // Calculate visualization bounds from group centroids
+  // SVG padding to ensure labels are visible when clusters are near edges
+  const SVG_TOP_PADDING = 40;
+  const SVG_BOTTOM_PADDING = 20;
+
+  // Calculate visualization bounds from ALL user positions (not just centroids)
+  // This ensures convex hulls stay within viewport
   const bounds = useMemo(() => {
-    if (groups.length === 0) {
+    if (userPositions.length === 0) {
       return { minX: -1, maxX: 1, minY: -1, maxY: 1, width: 2, height: 2 };
     }
 
-    const centroids = groups.map((g) => g.centroid);
-    const pc1Values = centroids.map((c) => c[0]);
-    const pc2Values = centroids.map((c) => c[1]);
+    const pc1Values = userPositions.map((u) => u.pc1);
+    const pc2Values = userPositions.map((u) => u.pc2);
 
     const minX = Math.min(...pc1Values);
     const maxX = Math.max(...pc1Values);
     const minY = Math.min(...pc2Values);
     const maxY = Math.max(...pc2Values);
 
-    // Add 20% padding for better visualization
-    const paddingX = (maxX - minX) * 0.2;
-    const paddingY = (maxY - minY) * 0.2;
+    // Add padding for labels and visual breathing room
+    // Extra Y padding at top for labels (already have SVG_TOP_PADDING too)
+    const paddingX = (maxX - minX) * 0.15;
+    const paddingY = (maxY - minY) * 0.20;
 
     return {
       minX: minX - paddingX,
@@ -52,7 +58,7 @@ export function OpinionMapCanvas({
       width: maxX - minX + 2 * paddingX,
       height: maxY - minY + 2 * paddingY,
     };
-  }, [groups]);
+  }, [userPositions]);
 
   // Transform data coordinates to SVG coordinates
   const toSVG = (pc1: number, pc2: number) => {
@@ -68,30 +74,59 @@ export function OpinionMapCanvas({
 
   const currentUserPosition = userPositions.find((p) => p.userId === currentUserId);
 
-  // Calculate group boundaries (convex hulls approximated as circles for MVP)
-  const getGroupRadius = (group: CoarseGroup) => {
-    // Approximate radius based on group size
-    // Larger groups = larger visual area
-    return Math.max(60, Math.sqrt(group.userCount) * 15);
-  };
+  // Compute smoothed convex hulls for all groups
+  const groupBoundaries = useMemo(() => {
+    return groups.map((group) => {
+      // Get all user positions in this group
+      const groupUsers = userPositions.filter((u) => u.coarseGroupId === group.id);
+
+      // Convert to SVG coordinates
+      const svgPoints: Point2D[] = groupUsers.map((u) => {
+        const { x, y } = toSVG(u.pc1, u.pc2);
+        return { x, y };
+      });
+
+      // Compute smoothed hull
+      const hullResult = computeSmoothedHull(svgPoints);
+
+      // Fallback to circle for small groups (1-2 users) or degenerate cases
+      if (!hullResult) {
+        const centroidSVG = toSVG(group.centroid[0], group.centroid[1]);
+        const radius = estimateRadius(svgPoints);
+        return {
+          groupId: group.id,
+          type: "circle" as const,
+          centroid: centroidSVG,
+          radius,
+        };
+      }
+
+      return {
+        groupId: group.id,
+        type: "hull" as const,
+        path: hullResult.path,
+        hull: hullResult.hull,
+      };
+    });
+  }, [groups, userPositions, bounds, toSVG]);
 
   return (
     <div className={`bg-white rounded-xl shadow-xl p-6 ${className}`}>
       {/* SVG Canvas */}
       <svg
-        viewBox="0 0 800 600"
+        viewBox={`0 -${SVG_TOP_PADDING} 800 ${600 + SVG_TOP_PADDING + SVG_BOTTOM_PADDING}`}
         className="w-full h-auto border border-gray-200 rounded-lg"
         role="img"
         aria-label={opinionMap.ariaLabel}
       >
         {/* Background */}
-        <rect width="800" height="600" fill="#F9FAFB" />
+        <rect x="0" y={`-${SVG_TOP_PADDING}`} width="800" height={600 + SVG_TOP_PADDING + SVG_BOTTOM_PADDING} fill="#F9FAFB" />
 
         {/* Grid lines */}
         <g stroke="#E5E7EB" strokeWidth="1" opacity="0.3">
           {/* Vertical lines */}
           {[0, 200, 400, 600, 800].map((x) => (
-            <line key={`v-${x}`} x1={x} y1="0" x2={x} y2="600" />
+            <line key={`v-${x}`} x1={x} y1={`-${SVG_TOP_PADDING}`} x2={x} y2={600 + SVG_BOTTOM_PADDING} />
           ))}
           {/* Horizontal lines */}
           {[0, 150, 300, 450, 600].map((y) => (
@@ -99,36 +134,62 @@ export function OpinionMapCanvas({
           ))}
         </g>
 
-        {/* Group boundaries (semi-transparent regions) */}
-        {groups.map((group) => {
+        {/* Group boundaries (smoothed convex hulls or circle fallbacks) */}
+        {groups.map((group, idx) => {
           const color = getGroupColor(group.id);
-          const { x, y } = toSVG(group.centroid[0], group.centroid[1]);
-          const radius = getGroupRadius(group);
+          const boundary = groupBoundaries[idx];
+          const { x: centroidX, y: centroidY } = toSVG(group.centroid[0], group.centroid[1]);
           const isHovered = hoveredGroupId === group.id;
+
+          // Calculate label position based on boundary type
+          let labelY: number;
+          if (boundary.type === "circle") {
+            labelY = centroidY - boundary.radius - 10;
+          } else {
+            // For hulls, find the topmost point (minimum Y)
+            const minY = Math.min(...boundary.hull.map((p) => p.y));
+            labelY = minY - 10;
+          }
 
           return (
             <g key={`group-${group.id}`}>
-              {/* Group region (circle approximation) */}
-              <circle
-                cx={x}
-                cy={y}
-                r={radius}
-                fill={color.light}
-                stroke={color.primary}
-                strokeWidth="2"
-                opacity={isHovered ? 0.3 : 0.15}
-                className="transition-opacity cursor-pointer"
-                onMouseEnter={() => setHoveredGroupId(group.id)}
-                onMouseLeave={() => setHoveredGroupId(null)}
-                role="button"
-                tabIndex={0}
-                aria-label={opinionMap.ariaGroup(group.id + 1)}
-              />
+              {/* Group region (hull path or circle fallback) */}
+              {boundary.type === "hull" ? (
+                <path
+                  d={boundary.path}
+                  fill={color.light}
+                  stroke={color.primary}
+                  strokeWidth="2"
+                  opacity={isHovered ? 0.3 : 0.15}
+                  className="transition-opacity cursor-pointer"
+                  onMouseEnter={() => setHoveredGroupId(group.id)}
+                  onMouseLeave={() => setHoveredGroupId(null)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={opinionMap.ariaGroup(group.id + 1)}
+                />
+              ) : (
+                <circle
+                  cx={boundary.centroid.x}
+                  cy={boundary.centroid.y}
+                  r={boundary.radius}
+                  fill={color.light}
+                  stroke={color.primary}
+                  strokeWidth="2"
+                  opacity={isHovered ? 0.3 : 0.15}
+                  className="transition-opacity cursor-pointer"
+                  onMouseEnter={() => setHoveredGroupId(group.id)}
+                  onMouseLeave={() => setHoveredGroupId(null)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={opinionMap.ariaGroup(group.id + 1)}
+                />
+              )}
 
               {/* Group centroid marker */}
               <circle
-                cx={x}
-                cy={y}
+                cx={centroidX}
+                cy={centroidY}
                 r="8"
                 fill={color.primary}
                 stroke="white"
@@ -138,8 +199,8 @@ export function OpinionMapCanvas({
 
               {/* Group label */}
               <text
-                x={x}
-                y={y - radius - 10}
+                x={centroidX}
+                y={labelY}
                 textAnchor="middle"
                 fill={color.dark}
                 fontSize="16"
@@ -151,8 +212,8 @@ export function OpinionMapCanvas({
 
               {/* User count label */}
               <text
-                x={x}
-                y={y - radius - 28}
+                x={centroidX}
+                y={labelY - 18}
                 textAnchor="middle"
                 fill="#6B7280"
                 fontSize="12"
@@ -173,7 +234,7 @@ export function OpinionMapCanvas({
               cy={toSVG(currentUserPosition.pc1, currentUserPosition.pc2).y}
               r="20"
               fill="none"
-              stroke={getGroupColor(currentUserPosition.coarseGroupId).primary}
+              stroke="var(--primary)"
               strokeWidth="2"
               opacity="0.5"
             >
@@ -198,8 +259,8 @@ export function OpinionMapCanvas({
               cx={toSVG(currentUserPosition.pc1, currentUserPosition.pc2).x}
               cy={toSVG(currentUserPosition.pc1, currentUserPosition.pc2).y}
               r="10"
-              fill="white"
-              stroke={getGroupColor(currentUserPosition.coarseGroupId).primary}
+              fill="var(--background)"
+              stroke="var(--primary)"
               strokeWidth="3"
               className="drop-shadow-lg"
             />
@@ -209,7 +270,7 @@ export function OpinionMapCanvas({
               x={toSVG(currentUserPosition.pc1, currentUserPosition.pc2).x}
               y={toSVG(currentUserPosition.pc1, currentUserPosition.pc2).y + 25}
               textAnchor="middle"
-              fill="#1F2937"
+              fill="var(--foreground)"
               fontSize="14"
               fontWeight="600"
               className="pointer-events-none"
@@ -221,9 +282,9 @@ export function OpinionMapCanvas({
       </svg>
 
       {/* Privacy-preserving legend */}
-      <div className="mt-4 flex items-center justify-center gap-6 text-sm text-gray-600">
+      <div className="mt-4 flex items-center justify-center gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-white border-2 border-purple-500" />
+          <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
           <span>{opinionMap.yourPosition}</span>
         </div>
         <div className="flex items-center gap-2">
