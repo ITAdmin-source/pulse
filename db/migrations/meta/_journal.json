@@ -78,6 +78,13 @@
       "when": 1761360796259,
       "tag": "0010_living_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1761371632000,
+      "tag": "0011_enable_row_level_security",
+      "breakpoints": true
     }
   ]
 }
