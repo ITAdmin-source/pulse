@@ -5,46 +5,46 @@ import { createMockPoll, createMockStatement, createMockUser, createMockVote } f
  * Database fixtures for comprehensive testing scenarios
  */
 
-// Base test users with different configurations
+// Base test users with different configurations (using proper UUIDs)
 export const testUsers = {
   anonymousUser: createMockUser({
-    id: 'user-anonymous-1',
+    id: '00000000-0000-0000-0000-000000000001',
     sessionId: 'session-anon-123',
     clerkUserId: null,
   }),
 
   authenticatedUser: createMockUser({
-    id: 'user-auth-1',
+    id: '00000000-0000-0000-0000-000000000002',
     sessionId: null,
     clerkUserId: 'clerk-auth-456',
   }),
 
   systemAdmin: createMockUser({
-    id: 'user-admin-1',
+    id: '00000000-0000-0000-0000-000000000003',
     sessionId: null,
     clerkUserId: 'clerk-admin-789',
     isAnonymous: false,
   }),
 
   pollOwner: createMockUser({
-    id: 'user-owner-1',
+    id: '00000000-0000-0000-0000-000000000004',
     sessionId: null,
     clerkUserId: 'clerk-owner-101',
     isAnonymous: false,
   }),
 
   pollManager: createMockUser({
-    id: 'user-manager-1',
+    id: '00000000-0000-0000-0000-000000000005',
     sessionId: null,
     clerkUserId: 'clerk-manager-102',
     isAnonymous: false,
   }),
 } as const
 
-// Base test polls with different states
+// Base test polls with different states (using proper UUIDs)
 export const testPolls = {
   draftPoll: createMockPoll({
-    id: 'poll-draft-1',
+    id: '10000000-0000-0000-0000-000000000001',
     slug: 'draft-poll-climate',
     question: 'What should we do about climate change?',
     description: 'A draft poll about climate policy',
@@ -57,7 +57,7 @@ export const testPolls = {
   }),
 
   publishedPoll: createMockPoll({
-    id: 'poll-published-1',
+    id: '10000000-0000-0000-0000-000000000002',
     slug: 'published-poll-education',
     question: 'How can we improve public education?',
     description: 'An active poll about education reform',
@@ -70,7 +70,7 @@ export const testPolls = {
   }),
 
   closedPoll: createMockPoll({
-    id: 'poll-closed-1',
+    id: '10000000-0000-0000-0000-000000000003',
     slug: 'closed-poll-transport',
     question: 'How should we improve public transportation?',
     description: 'A completed poll about transportation',
@@ -83,7 +83,7 @@ export const testPolls = {
   }),
 
   autoApprovePoll: createMockPoll({
-    id: 'poll-auto-approve-1',
+    id: '10000000-0000-0000-0000-000000000004',
     slug: 'auto-approve-poll-health',
     question: 'What healthcare policies should we prioritize?',
     description: 'Poll with auto-approve enabled',
@@ -96,96 +96,105 @@ export const testPolls = {
   }),
 } as const
 
-// Test statements covering different approval states
+// Test statements covering different approval states (using proper UUIDs)
 export const testStatements = {
   // Approved statements for published poll
   approvedStatement1: createMockStatement({
-    id: 'statement-approved-1',
+    id: '20000000-0000-0000-0000-000000000001',
     text: 'We should increase funding for public schools',
     pollId: testPolls.publishedPoll.id,
-    createdBy: testUsers.authenticatedUser.id,
+    submittedBy: testUsers.authenticatedUser.id,
     approved: true,
+    approvedBy: testUsers.pollOwner.id,
     createdAt: new Date('2024-02-05T10:00:00Z'),
   }),
 
   approvedStatement2: createMockStatement({
-    id: 'statement-approved-2',
+    id: '20000000-0000-0000-0000-000000000002',
     text: 'Teacher salaries should be increased significantly',
     pollId: testPolls.publishedPoll.id,
-    createdBy: testUsers.anonymousUser.id,
+    submittedBy: testUsers.anonymousUser.id,
     approved: true,
+    approvedBy: testUsers.pollOwner.id,
     createdAt: new Date('2024-02-06T10:00:00Z'),
   }),
 
   approvedStatement3: createMockStatement({
-    id: 'statement-approved-3',
+    id: '20000000-0000-0000-0000-000000000003',
     text: 'We need more vocational training programs',
     pollId: testPolls.publishedPoll.id,
-    createdBy: testUsers.authenticatedUser.id,
+    submittedBy: testUsers.authenticatedUser.id,
     approved: true,
+    approvedBy: testUsers.pollOwner.id,
     createdAt: new Date('2024-02-07T10:00:00Z'),
   }),
 
   // Pending statements (awaiting approval)
   pendingStatement1: createMockStatement({
-    id: 'statement-pending-1',
+    id: '20000000-0000-0000-0000-000000000004',
     text: 'Private school vouchers should be expanded',
     pollId: testPolls.publishedPoll.id,
-    createdBy: testUsers.authenticatedUser.id,
+    submittedBy: testUsers.authenticatedUser.id,
     approved: null,
+    approvedBy: null,
+    approvedAt: null,
     createdAt: new Date('2024-02-10T10:00:00Z'),
   }),
 
   pendingStatement2: createMockStatement({
-    id: 'statement-pending-2',
+    id: '20000000-0000-0000-0000-000000000005',
     text: 'Standardized testing should be eliminated',
     pollId: testPolls.publishedPoll.id,
-    createdBy: testUsers.anonymousUser.id,
+    submittedBy: testUsers.anonymousUser.id,
     approved: null,
+    approvedBy: null,
+    approvedAt: null,
     createdAt: new Date('2024-02-11T10:00:00Z'),
   }),
 
   // Statements for auto-approve poll (automatically approved)
   autoApprovedStatement: createMockStatement({
-    id: 'statement-auto-approved-1',
+    id: '20000000-0000-0000-0000-000000000006',
     text: 'Universal healthcare should be implemented',
     pollId: testPolls.autoApprovePoll.id,
-    createdBy: testUsers.authenticatedUser.id,
+    submittedBy: testUsers.authenticatedUser.id,
     approved: true,
+    approvedBy: testUsers.pollOwner.id,
     createdAt: new Date('2024-02-16T10:00:00Z'),
   }),
 
   // Statements for closed poll
   closedPollStatement: createMockStatement({
-    id: 'statement-closed-1',
+    id: '20000000-0000-0000-0000-000000000007',
     text: 'Bus rapid transit should be prioritized',
     pollId: testPolls.closedPoll.id,
-    createdBy: testUsers.authenticatedUser.id,
+    submittedBy: testUsers.authenticatedUser.id,
     approved: true,
+    approvedBy: testUsers.pollOwner.id,
     createdAt: new Date('2024-01-05T10:00:00Z'),
   }),
 } as const
 
-// Test votes creating various distribution patterns
+// Test votes creating various distribution patterns (using proper UUIDs)
 export const testVotes = {
   // Votes creating polarized distribution on statement 1
   polarizedVotes: [
     createMockVote({
-      id: 'vote-polarized-1',
+      id: '30000000-0000-0000-0000-000000000001',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.approvedStatement1.id,
       value: 1,
       createdAt: new Date('2024-02-08T10:00:00Z'),
     }),
     createMockVote({
-      id: 'vote-polarized-2',
+      id: '30000000-0000-0000-0000-000000000002',
       userId: testUsers.anonymousUser.id,
       statementId: testStatements.approvedStatement1.id,
       value: 1,
       createdAt: new Date('2024-02-08T11:00:00Z'),
     }),
     createMockVote({
-      id: 'vote-polarized-3',
+      id: '30000000-0000-0000-0000-000000000003',
       userId: testUsers.pollManager.id,
       statementId: testStatements.approvedStatement1.id,
       value: -1,
@@ -196,28 +205,28 @@ export const testVotes = {
   // Votes creating consensus distribution on statement 2
   consensusVotes: [
     createMockVote({
-      id: 'vote-consensus-1',
+      id: '30000000-0000-0000-0000-000000000004',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.approvedStatement2.id,
       value: 1,
       createdAt: new Date('2024-02-09T10:00:00Z'),
     }),
     createMockVote({
-      id: 'vote-consensus-2',
+      id: '30000000-0000-0000-0000-000000000005',
       userId: testUsers.anonymousUser.id,
       statementId: testStatements.approvedStatement2.id,
       value: 1,
       createdAt: new Date('2024-02-09T11:00:00Z'),
     }),
     createMockVote({
-      id: 'vote-consensus-3',
+      id: '30000000-0000-0000-0000-000000000006',
       userId: testUsers.pollManager.id,
       statementId: testStatements.approvedStatement2.id,
       value: 1,
       createdAt: new Date('2024-02-09T12:00:00Z'),
     }),
     createMockVote({
-      id: 'vote-consensus-4',
+      id: '30000000-0000-0000-0000-000000000007',
       userId: testUsers.pollOwner.id,
       statementId: testStatements.approvedStatement2.id,
       value: 0,
@@ -228,31 +237,31 @@ export const testVotes = {
   // Votes showing user meeting voting threshold
   thresholdVotes: [
     createMockVote({
-      id: 'vote-threshold-1',
+      id: '30000000-0000-0000-0000-000000000008',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.approvedStatement1.id,
       value: 1,
     }),
     createMockVote({
-      id: 'vote-threshold-2',
+      id: '30000000-0000-0000-0000-000000000009',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.approvedStatement2.id,
       value: 1,
     }),
     createMockVote({
-      id: 'vote-threshold-3',
+      id: '30000000-0000-0000-0000-00000000000a',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.approvedStatement3.id,
       value: 0,
     }),
     createMockVote({
-      id: 'vote-threshold-4',
+      id: '30000000-0000-0000-0000-00000000000b',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.autoApprovedStatement.id,
       value: -1,
     }),
     createMockVote({
-      id: 'vote-threshold-5',
+      id: '30000000-0000-0000-0000-00000000000c',
       userId: testUsers.authenticatedUser.id,
       statementId: testStatements.closedPollStatement.id,
       value: 1,
@@ -260,10 +269,10 @@ export const testVotes = {
   ],
 } as const
 
-// Test user roles for permission testing
+// Test user roles for permission testing (using proper UUIDs)
 export const testUserRoles = {
   systemAdminRole: {
-    id: 'role-system-admin-1',
+    id: '40000000-0000-0000-0000-000000000001',
     userId: testUsers.systemAdmin.id,
     role: 'system_admin' as const,
     pollId: null,
@@ -272,7 +281,7 @@ export const testUserRoles = {
   },
 
   pollOwnerRole: {
-    id: 'role-poll-owner-1',
+    id: '40000000-0000-0000-0000-000000000002',
     userId: testUsers.pollOwner.id,
     role: 'poll_owner' as const,
     pollId: testPolls.publishedPoll.id,
@@ -281,7 +290,7 @@ export const testUserRoles = {
   },
 
   pollManagerRole: {
-    id: 'role-poll-manager-1',
+    id: '40000000-0000-0000-0000-000000000003',
     userId: testUsers.pollManager.id,
     role: 'poll_manager' as const,
     pollId: testPolls.publishedPoll.id,

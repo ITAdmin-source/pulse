@@ -1,6 +1,12 @@
 import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
+import { config } from 'dotenv'
+import path from 'path'
+
+// Load .env.local for integration tests
+// This ensures tests use the real Supabase database
+config({ path: path.resolve(__dirname, '../.env.local') })
 
 // Import custom matchers
 import './utils/custom-matchers'
@@ -30,7 +36,12 @@ vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
 }))
 
-// Mock environment variables for testing
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
-process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'test_key'
-process.env.CLERK_SECRET_KEY = 'test_secret'
+// Mock Clerk environment variables for testing (if not in .env.local)
+if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'test_key'
+}
+if (!process.env.CLERK_SECRET_KEY) {
+  process.env.CLERK_SECRET_KEY = 'test_secret'
+}
+
+// Do NOT override DATABASE_URL - let it come from .env.local for integration tests
