@@ -71,6 +71,13 @@
       "when": 1760933071985,
       "tag": "0009_furry_marvel_apes",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761360796259,
+      "tag": "0010_living_mantis",
+      "breakpoints": true
     }
   ]
 }

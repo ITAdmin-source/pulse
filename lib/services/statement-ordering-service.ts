@@ -1,4 +1,5 @@
-import { stringToSeed, seededShuffle } from "@/lib/utils/seeded-random";
+import { stringToSeed, seededShuffle, SeededRandom } from "@/lib/utils/seeded-random";
+import { StatementWeightingService } from "./statement-weighting-service";
 
 /**
  * Statement type for ordering
@@ -88,18 +89,25 @@ class RandomStrategy implements OrderingStrategy {
 }
 
 /**
- * Weighted Strategy - Sophisticated routing based on statement characteristics
+ * Weighted Strategy - Adaptive routing based on statement characteristics
  *
- * Phase 2 Implementation (Future):
- * - Calculates weights based on 4 factors:
- *   1. Predictiveness (how well it differentiates groups)
- *   2. Consensus potential (likelihood of agreement)
- *   3. Recency (time-based boost for new statements)
- *   4. Pass rate penalty (penalty for high "unsure" rates)
- * - Uses cached weights (5-minute TTL)
+ * Two operating modes:
+ * 1. Clustering Mode (20+ users): Uses 4 factors
+ *    - Predictiveness (how well it differentiates groups)
+ *    - Consensus potential (likelihood of agreement)
+ *    - Recency (time-based boost for new statements)
+ *    - Pass rate penalty (penalty for high "unsure" rates)
+ *
+ * 2. Cold Start Mode (<20 users): Uses 3 factors
+ *    - Vote count boost (prioritize less-voted statements)
+ *    - Recency (time-based boost for new statements)
+ *    - Pass rate penalty (penalty for high "unsure" rates)
+ *
+ * Features:
+ * - Uses cached weights (smart invalidation on clustering/approval)
  * - Weighted random selection (higher weight = more likely to appear first)
- *
- * Current: Falls back to random strategy
+ * - Deterministic for same user (same order on page refresh)
+ * - Graceful fallback to random on errors
  */
 class WeightedStrategy implements OrderingStrategy {
   async orderStatements(
@@ -107,20 +115,111 @@ class WeightedStrategy implements OrderingStrategy {
     context: OrderingContext
   ): Promise<Statement[]> {
     try {
-      // TODO Phase 2: Implement weight calculation and weighted random selection
-      // const weights = await this.calculateWeights(statements, context.pollId);
-      // return this.weightedRandomOrder(statements, weights, context);
+      // Get weights for all statements
+      const statementIds = statements.map(s => s.id);
+      const statementWeights = await StatementWeightingService.getStatementWeights(
+        context.pollId,
+        statementIds
+      );
 
-      // Fallback to random strategy for now
-      console.log("[WeightedStrategy] Not yet implemented, falling back to random");
-      const randomStrategy = new RandomStrategy();
-      return await randomStrategy.orderStatements(statements, context);
+      // Create weight map
+      const weightMap = new Map(
+        statementWeights.map(sw => [sw.statementId, sw.weight])
+      );
+
+      // Perform weighted random ordering
+      return this.weightedRandomOrder(statements, weightMap, context);
     } catch (error) {
       console.error("[WeightedStrategy] Error, falling back to random:", error);
       // Graceful fallback
       const randomStrategy = new RandomStrategy();
       return await randomStrategy.orderStatements(statements, context);
     }
+  }
+
+  /**
+   * Weighted random selection using cumulative distribution
+   *
+   * Algorithm:
+   * 1. Calculate cumulative weights for all statements
+   * 2. Generate seeded random number in [0, totalWeight]
+   * 3. Binary search to find statement where random falls
+   * 4. Repeat for remaining statements
+   *
+   * Deterministic: Same user + poll + batch = same order
+   *
+   * @param statements - Statements to order
+   * @param weights - Map of statementId → weight
+   * @param context - User, poll, batch context
+   * @returns Statements ordered by weighted random selection
+   */
+  private weightedRandomOrder(
+    statements: Statement[],
+    weights: Map<string, number>,
+    context: OrderingContext
+  ): Statement[] {
+    // Generate deterministic seed
+    const seed = this.generateSeed(context);
+    const rng = new SeededRandom(seed);
+
+    // Create ordered list to shuffle
+    const orderedStatements = [...statements];
+    const result: Statement[] = [];
+    const remaining = new Set(orderedStatements.map(s => s.id));
+
+    // Iteratively select statements using weighted random
+    while (remaining.size > 0) {
+      // Build cumulative weight array for remaining statements
+      const remainingStmts = orderedStatements.filter(s =>
+        remaining.has(s.id)
+      );
+      const cumulativeWeights: number[] = [];
+      let cumulative = 0;
+
+      for (const stmt of remainingStmts) {
+        const weight = weights.get(stmt.id) ?? 0.5; // Default weight if missing
+        cumulative += weight;
+        cumulativeWeights.push(cumulative);
+      }
+
+      const totalWeight = cumulative;
+
+      // Select using weighted random
+      const rand = rng.next() * totalWeight;
+      let selectedIdx = 0;
+
+      // Find first index where cumulative >= random
+      for (let i = 0; i < cumulativeWeights.length; i++) {
+        if (rand <= cumulativeWeights[i]) {
+          selectedIdx = i;
+          break;
+        }
+      }
+
+      const selected = remainingStmts[selectedIdx];
+      result.push(selected);
+      remaining.delete(selected.id);
+    }
+
+    return result;
+  }
+
+  /**
+   * Generate deterministic seed from user + poll + batch context
+   * Optional override seed for testing specific orderings
+   */
+  private generateSeed(context: OrderingContext): number {
+    const { userId, pollId, batchNumber, pollConfig } = context;
+
+    // Use override seed if provided (for testing)
+    if (pollConfig?.randomSeed) {
+      const seedInput = `${userId}-${pollConfig.randomSeed}-${batchNumber}`;
+      return stringToSeed(seedInput);
+    }
+
+    // Default seed: userId + pollId + batchNumber
+    const seedInput = `${userId}-${pollId}-${batchNumber}`;
+    return stringToSeed(seedInput);
   }
 }
 

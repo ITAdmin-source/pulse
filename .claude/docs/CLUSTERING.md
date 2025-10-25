@@ -107,7 +107,7 @@ private static async shouldTriggerClustering(
 **Note**: Batch composition depends on poll's `statementOrderMode` setting:
 - `sequential`: Chronological order (createdAt)
 - `random`: Deterministic shuffle using poll-specific seed
-- `weighted`: Future - weighted by controversy/importance
+- `weighted`: Adaptive routing based on predictiveness, consensus, recency, and pass rates (see STATEMENT_ORDERING.md)
 
 The trigger is **non-blocking** and won't delay vote confirmation:
 
@@ -452,6 +452,8 @@ Caches are invalidated when:
 invalidateAllCaches(pollId);
 revalidatePath(`/polls/${pollId}/opinionmap`);
 ```
+
+**Note:** Clustering recomputation also triggers statement weight cache invalidation (for weighted ordering mode). See `lib/services/clustering-service.ts:373-385` and STATEMENT_ORDERING.md for details.
 
 ### Usage
 

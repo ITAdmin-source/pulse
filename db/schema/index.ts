@@ -13,3 +13,4 @@ export * from './user-poll-insights';
 export * from './poll-results-summaries';
 export * from './user-feedback';
 export * from './clustering';
+export * from './statement-weights';

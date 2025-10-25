@@ -312,6 +312,16 @@ export async function approveStatementAction(id: string) {
     if (!updatedStatement) {
       return { success: false, error: "Statement not found" };
     }
+
+    // Invalidate statement weights cache (affects recency distribution)
+    try {
+      const { StatementWeightingService } = await import("@/lib/services/statement-weighting-service");
+      await StatementWeightingService.invalidateWeights(statement.pollId);
+    } catch (error) {
+      console.error("Failed to invalidate statement weights:", error);
+      // Non-fatal - statement was approved successfully
+    }
+
     revalidatePath("/polls");
     revalidateTag("statements"); // Invalidate statements cache
     return { success: true, data: updatedStatement };

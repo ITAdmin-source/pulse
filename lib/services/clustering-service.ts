@@ -371,6 +371,20 @@ export class ClusteringService {
     });
 
     // =========================================================================
+    // INVALIDATE STATEMENT WEIGHTS CACHE
+    // =========================================================================
+    // After successful clustering computation, invalidate statement weights
+    // so that weighted ordering can use fresh group agreement data
+    try {
+      const { StatementWeightingService } = await import("./statement-weighting-service");
+      await StatementWeightingService.invalidateWeights(pollId);
+      console.log(`[ClusteringService] Invalidated statement weights cache for poll ${pollId}`);
+    } catch (error) {
+      console.error(`[ClusteringService] Failed to invalidate statement weights:`, error);
+      // Non-fatal - clustering succeeded, weight invalidation is optimization
+    }
+
+    // =========================================================================
     // STEP 7: Calculate Quality Metrics
     // =========================================================================
 

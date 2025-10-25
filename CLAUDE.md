@@ -75,10 +75,11 @@ export async function actionName(data: DataType) {
 
 ### Database (Supabase + Drizzle ORM)
 - **Connection:** Transaction Mode (Port 6543) with `?pgbouncer=true`
-- **RLS:** Enabled on ALL 17 tables (defense-in-depth)
+- **RLS:** Enabled on ALL 18 tables (defense-in-depth)
 - **Pattern:** Schemas (`db/schema/`) → Queries (`db/queries/`) → Actions (`actions/`)
 - **Key Tables:** polls, statements, votes, users, user_demographics, user_poll_insights
 - **Clustering Tables:** poll_clustering_metadata, user_clustering_positions, statement_classifications
+- **Ordering Table:** statement_weights (caches weights for weighted statement ordering)
 
 ### Authentication (Clerk)
 - **JWT-only** (no webhooks) with JIT user creation
@@ -92,6 +93,9 @@ export async function actionName(data: DataType) {
 - **Demographics:** Mandatory AFTER 10 votes, BEFORE results (all 4 fields required)
 - **Statement batching:** 10 statements per batch for polls with 10+ statements
 - **Minimum statements:** 6 statements required to create a poll
+- **Statement ordering modes:** Sequential (chronological), Random (seeded shuffle), Weighted (adaptive routing)
+- **Weighted ordering:** Uses 4 factors in clustering mode (20+ users), 3 factors in cold start (<20 users)
+- **Weight caching:** Smart event-driven invalidation (on clustering recomputation and statement approval)
 - **Closed poll access:** Both voters and non-voters can view results; only voters get insights
 - **Clustering eligibility:** 20 users + 6 statements minimum for opinion clustering
 - **Background clustering:** Automatically triggered after each vote (non-blocking)
@@ -144,6 +148,7 @@ For detailed information, see specialized documentation:
 - **[.claude/docs/DATABASE.md](.claude/docs/DATABASE.md)** - Database architecture, tables, RLS, connection troubleshooting
 - **[.claude/docs/ARCHITECTURE.md](.claude/docs/ARCHITECTURE.md)** - System architecture, services, patterns, workflows
 - **[.claude/docs/CLUSTERING.md](.claude/docs/CLUSTERING.md)** - Opinion clustering algorithms, visualization, caching
+- **[.claude/docs/STATEMENT_ORDERING.md](.claude/docs/STATEMENT_ORDERING.md)** - Weighted statement ordering, adaptive routing, weight calculation
 - **[.claude/docs/UI_DESIGN.md](.claude/docs/UI_DESIGN.md)** - Design system, components, styling, gamification
 - **[.claude/docs/DEVELOPMENT.md](.claude/docs/DEVELOPMENT.md)** - Development guidelines, testing, deployment
 - **[USE_CASES.md](USE_CASES.md)** - User journeys and personas
