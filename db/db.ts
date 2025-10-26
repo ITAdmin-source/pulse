@@ -77,6 +77,11 @@ if (process.env.NODE_ENV === "production") {
     connect_timeout: 15, // Balanced timeout for stability (increased from 10s)
     max_lifetime: 60 * 30, // 30 minutes
 
+    // CRITICAL: Statement timeout to prevent runaway queries
+    // Kills any query that takes longer than 60 seconds
+    // Prevents clustering or other long-running operations from blocking the entire app
+    statement_timeout: 60000, // 60 seconds in milliseconds
+
     // OPTIMIZATION: Suppress notices in production (reduce log noise)
     onnotice: () => {},
 
