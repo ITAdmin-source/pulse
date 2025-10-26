@@ -220,18 +220,24 @@ export class VotingService {
 
       if (triggerCheck.shouldTrigger) {
         console.log(
-          `[VotingService] Triggering clustering for poll ${statement[0].pollId}: ${triggerCheck.reason}`
+          `[VotingService] Clustering trigger detected for poll ${statement[0].pollId}: ${triggerCheck.reason}`
         );
 
-        ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
-          (error) => {
-            // Log error but don't fail the vote
-            console.error(
-              `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
-              error
-            );
-          }
+        // TEMPORARY FIX: Disable automatic clustering to prevent 5-minute timeouts
+        // TODO: Implement proper background job queue (Vercel Cron or Queue)
+        console.warn(
+          `[VotingService] ⚠️ Automatic clustering DISABLED - run manually via admin panel`
         );
+
+        // ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
+        //   (error) => {
+        //     // Log error but don't fail the vote
+        //     console.error(
+        //       `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
+        //       error
+        //     );
+        //   }
+        // );
       }
     }
 
