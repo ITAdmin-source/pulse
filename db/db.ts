@@ -64,40 +64,27 @@ let client: ReturnType<typeof postgres>;
 
 if (process.env.NODE_ENV === "production") {
   // Production: Create new client (serverless functions are stateless)
-  // OPTIMAL: Small pool size for serverless architecture
-
-  // DEBUG: Query monitoring counters
-  let totalQueriesExecuted = 0;
+  // OPTIMAL: Pool size for serverless architecture
 
   client = postgres(process.env.DATABASE_URL, {
-    // CRITICAL: Pool size = 2 follows Vercel/Supabase best practices for serverless
+    // CRITICAL: Pool size = 5 handles parallel heatmap queries (4 categories + 1 buffer)
     // Each Vercel serverless function instance has its own pool
     // Serverless scales horizontally (more instances) not vertically (more connections per instance)
-    // With multiple instances under load: 50 instances × 2 connections = 100 total (safe)
-    max: isTransactionMode ? 2 : 5,
+    // With multiple instances under load: 50 instances × 5 connections = 250 total (safe within PgBouncer's 10k limit)
+    max: 5,
 
-    // OPTIMIZATION: Reduced timeouts for faster failure detection
-    idle_timeout: 20, // Close idle connections after 20s
-    connect_timeout: 15, // Balanced timeout for stability (increased from 10s)
-    max_lifetime: 60 * 30, // 30 minutes
+    // OPTIMIZATION: Reduced timeouts for serverless environment
+    idle_timeout: 10,        // Faster cleanup for short-lived functions (down from 20s)
+    connect_timeout: 10,     // Fail fast if PgBouncer overloaded (down from 15s)
+    max_lifetime: 60 * 10,   // 10 minutes for ephemeral serverless instances (down from 30min)
 
     // OPTIMIZATION: Suppress notices in production (reduce log noise)
     onnotice: () => {},
 
     // CRITICAL: prepare: false required for Transaction Mode (port 6543)
     // Session Mode (port 5432) supports prepared statements
-    prepare: isTransactionMode ? false : false, // Set to false for both modes for consistency
-
-    // DEBUG: Detailed query monitoring
-    debug: (connection, query, params) => {
-      totalQueriesExecuted++;
-      const queryPreview = query.length > 100 ? query.substring(0, 100) + '...' : query;
-      const timestamp = new Date().toISOString();
-      console.log(`[DB:QUERY:${totalQueriesExecuted}] [${timestamp}] Pool max: ${isTransactionMode ? 2 : 5}, Query: ${queryPreview}`);
-    },
+    prepare: false,
   });
-
-  console.log('[DB] Production client created with debug logging enabled');
 } else {
   // Development: Use singleton pattern to persist client across hot reloads
   if (!global.__db_client) {

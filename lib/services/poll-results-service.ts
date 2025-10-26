@@ -335,30 +335,16 @@ export class PollResultsService {
     attribute: DemographicAttribute,
     privacyThreshold: number = 3
   ): Promise<HeatmapStatementData[]> {
-    const startTime = Date.now();
-    const requestId = Math.random().toString(36).substring(7);
     const cacheKey = `${pollId}:${attribute}:${privacyThreshold}`;
-
-    console.log(`[${requestId}] [PollResultsService.getHeatmapData] START - attribute: ${attribute}`);
 
     // Check cache
     const cached = this.heatmapCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.HEATMAP_CACHE_TTL) {
-      const cacheDuration = Date.now() - startTime;
-      console.log(`[${requestId}] [PollResultsService.getHeatmapData] CACHE HIT - ${attribute} returned in ${cacheDuration}ms`);
       return cached.data;
     }
 
-    console.log(`[${requestId}] [PollResultsService.getHeatmapData] CACHE MISS - fetching ${attribute}...`);
-    const fetchStart = Date.now();
-
     // Fetch fresh data
     const data = await getHeatmapDataForAttribute(pollId, attribute, privacyThreshold);
-
-    const fetchDuration = Date.now() - fetchStart;
-    const totalDuration = Date.now() - startTime;
-
-    console.log(`[${requestId}] [PollResultsService.getHeatmapData] COMPLETE - ${attribute} fetched in ${fetchDuration}ms (total: ${totalDuration}ms), ${data.length} statements`);
 
     // Store in cache
     this.heatmapCache.set(cacheKey, { data, timestamp: Date.now() });

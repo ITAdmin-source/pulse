@@ -1,4 +1,4 @@
-import { pgTable, uuid, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, integer, timestamp, index } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { ageGroups } from "./age-groups";
 import { genders } from "./genders";
@@ -12,7 +12,15 @@ export const userDemographics = pgTable("user_demographics", {
   ethnicityId: integer("ethnicity_id").references(() => ethnicities.id),
   politicalPartyId: integer("political_party_id").references(() => politicalParties.id),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  // CRITICAL PERFORMANCE INDEXES: Required for heatmap queries
+  // These indexes enable fast JOINs on demographic attributes
+  // Without them, PostgreSQL performs full table scans on user_demographics
+  genderIdIdx: index("user_demographics_gender_id_idx").on(table.genderId),
+  ageGroupIdIdx: index("user_demographics_age_group_id_idx").on(table.ageGroupId),
+  ethnicityIdIdx: index("user_demographics_ethnicity_id_idx").on(table.ethnicityId),
+  politicalPartyIdIdx: index("user_demographics_political_party_id_idx").on(table.politicalPartyId),
+}));
 
 export type UserDemographics = typeof userDemographics.$inferSelect;
 export type NewUserDemographics = typeof userDemographics.$inferInsert;
