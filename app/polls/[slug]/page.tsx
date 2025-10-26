@@ -697,58 +697,102 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       }
     }
 
+    // ✅ OPTIMISTIC UPDATE: Show stats IMMEDIATELY (before any async operations)
     isVotingRef.current = true;
-    setIsSavingVote(true);
 
-    try {
-      // Ensure user exists
-      let effectiveUserId = userId;
+    // Calculate and display optimistic distribution instantly (<50ms)
+    const distribution = calculateOptimisticDistribution(currentStatement.id, value);
+    setVoteStats(distribution);
+    setShowVoteStats(true); // ← Stats appear here instantly!
 
-      if (!effectiveUserId) {
-        const userResult = await ensureUserExistsAction({
-          clerkUserId: dbUser?.clerkUserId || undefined,
-          sessionId: sessionId || undefined,
+    // Record vote locally in StatementManager
+    if (statementManager) {
+      statementManager.recordVote(currentStatement.id, value);
+    }
+
+    // Trigger gamification effects
+    const newVotedCount = votedCount + 1;
+    const milestoneType = checkMilestone(newVotedCount);
+    if (milestoneType) {
+      handleMilestone(milestoneType, newVotedCount);
+    }
+
+    // Show stats for 1000ms (reduced from 1500ms for snappier UX), then advance
+    setTimeout(() => {
+      handleNextStatement();
+    }, 1000);
+
+    // Capture statement ID for async callbacks
+    const statementIdForSave = currentStatement.id;
+
+    // ✅ BACKGROUND SAVE: Save vote to database asynchronously (doesn't block UI)
+    (async () => {
+      setIsSavingVote(true);
+      try {
+        // Ensure user exists (for anonymous users on first vote)
+        let effectiveUserId = userId;
+
+        if (!effectiveUserId) {
+          const userResult = await ensureUserExistsAction({
+            clerkUserId: dbUser?.clerkUserId || undefined,
+            sessionId: sessionId || undefined,
+          });
+
+          if (!userResult.success || !userResult.data) {
+            throw new Error("User creation failed");
+          }
+
+          effectiveUserId = userResult.data.id;
+          setUserId(effectiveUserId);
+
+          if (statementManager) {
+            statementManager.userId = effectiveUserId;
+          }
+        }
+
+        // Save vote to database
+        const result = await createVoteAction({
+          userId: effectiveUserId,
+          statementId: statementIdForSave,
+          value,
         });
 
-        if (!userResult.success || !userResult.data) {
-          toast.error(pollPage.userCreateError);
-          return;
+        if (!result.success) {
+          // ✅ RETRY LOGIC: Retry once after 500ms delay
+          console.warn("Vote save failed, retrying...", result.error);
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const retryResult = await createVoteAction({
+            userId: effectiveUserId,
+            statementId: statementIdForSave,
+            value,
+          });
+
+          if (!retryResult.success) {
+            // Final failure - show error to user
+            console.error("Vote save failed after retry:", retryResult.error);
+
+            // Check if statement was deleted/rejected by admin
+            if (retryResult.error?.includes("Statement") || retryResult.error?.includes("not found")) {
+              toast.error("עמדה זו הוסרה על ידי מנהל הסקר");
+            } else {
+              toast.error("ההצבעה נכשלה. נסה שוב מאוחר יותר.");
+            }
+
+            // Note: We don't rollback optimistic update since user already advanced
+            // Vote will be lost, but UX isn't disrupted
+          } else {
+            console.log("Vote save succeeded on retry");
+          }
         }
 
-        effectiveUserId = userResult.data.id;
-        setUserId(effectiveUserId);
-
-        if (statementManager) {
-          statementManager.userId = effectiveUserId;
-        }
-      }
-
-      // Save vote
-      const result = await createVoteAction({
-        userId: effectiveUserId,
-        statementId: currentStatement.id,
-        value,
-      });
-
-      if (result.success && statementManager) {
-        statementManager.recordVote(currentStatement.id, value);
-
-        // Calculate optimistic distribution
-        const distribution = calculateOptimisticDistribution(currentStatement.id, value);
-        setVoteStats(distribution);
-        setShowVoteStats(true);
-
-        // Capture statement ID for async callback
-        const statementIdForCache = currentStatement.id;
-
-        // Fix #4: Background fetch actual distribution to update cache for next user
-        // Wait for animation to complete before updating cache to prevent flickering
+        // ✅ CACHE UPDATE: Fetch real distribution in background (for next user)
+        // Wait 500ms to avoid race condition with other voters
         setTimeout(() => {
-          getStatementVoteDistributionAction(statementIdForCache).then(
+          getStatementVoteDistributionAction(statementIdForSave).then(
             (distributionResult) => {
-              // Only update if user has moved on (prevents flickering during animation)
-              if (currentStatement?.id !== statementIdForCache && distributionResult.success && distributionResult.data) {
-                voteDistributionCache.set(statementIdForCache, {
+              if (distributionResult.success && distributionResult.data) {
+                voteDistributionCache.set(statementIdForSave, {
                   agreeCount: distributionResult.data.agreeCount,
                   disagreeCount: distributionResult.data.disagreeCount,
                   unsureCount: distributionResult.data.unsureCount,
@@ -758,43 +802,19 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               }
             }
           ).catch((error) => {
-            // Log for debugging but don't block UX
-            console.warn("Background cache update failed for statement", statementIdForCache, error);
+            console.warn("Background cache update failed for statement", statementIdForSave, error);
           });
-        }, 2000); // Wait for animation + advance delay
+        }, 500);
 
-        // Gamification: Check for milestones
-        const newVotedCount = votedCount + 1;
-        const milestoneType = checkMilestone(newVotedCount);
-
-        if (milestoneType) {
-          handleMilestone(milestoneType, newVotedCount);
-        }
-
-        // Show stats for 1.5 seconds, then advance
-        setTimeout(() => {
-          handleNextStatement();
-        }, 1500);
-      } else {
-        // Check if statement was deleted/rejected by admin
-        if (result.error?.includes("Statement") || result.error?.includes("not found")) {
-          toast.error("עמדה זו הוסרה על ידי מנהל הסקר. מדלג לעמדה הבאה...");
-          // Skip to next statement
-          setTimeout(() => {
-            handleNextStatement();
-          }, 1500);
-        } else {
-          toast.error(result.error || pollPage.voteError);
-        }
+      } catch (error) {
+        console.error("Critical error in vote save:", error);
+        toast.error(pollPage.voteError);
+      } finally {
+        isVotingRef.current = false;
+        setIsSavingVote(false);
       }
-    } catch (error) {
-      console.error("Error saving vote:", error);
-      toast.error(pollPage.voteError);
-    } finally {
-      isVotingRef.current = false;
-      setIsSavingVote(false);
-    }
-  }, [currentStatement, poll, statementManager, userId, dbUser?.clerkUserId, sessionId, votedCount, votesRequiredForResults, checkMilestone, handleMilestone, handleNextStatement]);
+    })();
+  }, [currentStatement, poll, statementManager, userId, dbUser?.clerkUserId, sessionId, votedCount, checkMilestone, handleMilestone, handleNextStatement]);
 
   // Continue to next batch (called from Results tab "More Statements" prompt)
   // Just switches to Vote tab - useEffect handles retrieving/loading batch
