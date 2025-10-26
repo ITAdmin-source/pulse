@@ -249,14 +249,30 @@ export async function getPollsAction() {
 }
 
 export async function getPollByIdAction(id: string) {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+
+  console.log(`[${requestId}] [getPollByIdAction] START - pollId: ${id}`);
+
   try {
+    const queryStart = Date.now();
     const poll = await getPollById(id);
+    const queryDuration = Date.now() - queryStart;
+
+    console.log(`[${requestId}] [getPollByIdAction] Query completed in ${queryDuration}ms`);
+
     if (!poll) {
+      console.log(`[${requestId}] [getPollByIdAction] Poll not found`);
       return { success: false, error: "Poll not found" };
     }
+
+    const totalDuration = Date.now() - startTime;
+    console.log(`[${requestId}] [getPollByIdAction] SUCCESS - Total: ${totalDuration}ms`);
+
     return { success: true, data: poll };
   } catch (error) {
-    console.error("Error fetching poll:", error);
+    const totalDuration = Date.now() - startTime;
+    console.error(`[${requestId}] [getPollByIdAction] ERROR after ${totalDuration}ms:`, error);
     return { success: false, error: "Failed to fetch poll" };
   }
 }

@@ -446,30 +446,46 @@ export async function getHeatmapDataForAttribute(
   // SINGLE QUERY: Get all vote counts grouped by statement and demographic
   // This replaces N×M queries with just ONE query
   // Uses INNER JOIN on userDemographics to only include votes from users with demographics
-  console.log(`[${requestId}] Running main heatmap query...`);
+  console.log(`[${requestId}] [QUERY START] Running main heatmap query for ${attribute}...`);
   const queryStart = Date.now();
-  const voteData = await db
-    .select({
-      statementId: statements.id,
-      statementText: statements.text,
-      groupId: field,
-      groupLabel: labelField,
-      agreeCount: sql<number>`COUNT(CASE WHEN ${votes.value} = 1 THEN 1 END)`,
-      disagreeCount: sql<number>`COUNT(CASE WHEN ${votes.value} = -1 THEN 1 END)`,
-      passCount: sql<number>`COUNT(CASE WHEN ${votes.value} = 0 THEN 1 END)`,
-    })
-    .from(statements)
-    .leftJoin(votes, eq(statements.id, votes.statementId))
-    .innerJoin(users, eq(votes.userId, users.id))
-    .innerJoin(userDemographics, eq(users.id, userDemographics.userId))
-    .innerJoin(tableAlias, eq(field, sql`${tableAlias}.id`))
-    .where(and(
-      eq(statements.pollId, pollId),
-      eq(statements.approved, true)
-    ))
-    .groupBy(statements.id, statements.text, field, labelField);
 
-  console.log(`[${requestId}] Main query completed in ${Date.now() - queryStart}ms - ${voteData.length} rows`);
+  // Query progress tracking
+  const queryTimeout = setTimeout(() => {
+    console.warn(`[${requestId}] ⚠️ QUERY TIMEOUT: Main heatmap query for ${attribute} still running after 10 seconds`);
+  }, 10000);
+
+  let voteData;
+  try {
+    voteData = await db
+      .select({
+        statementId: statements.id,
+        statementText: statements.text,
+        groupId: field,
+        groupLabel: labelField,
+        agreeCount: sql<number>`COUNT(CASE WHEN ${votes.value} = 1 THEN 1 END)`,
+        disagreeCount: sql<number>`COUNT(CASE WHEN ${votes.value} = -1 THEN 1 END)`,
+        passCount: sql<number>`COUNT(CASE WHEN ${votes.value} = 0 THEN 1 END)`,
+      })
+      .from(statements)
+      .leftJoin(votes, eq(statements.id, votes.statementId))
+      .innerJoin(users, eq(votes.userId, users.id))
+      .innerJoin(userDemographics, eq(users.id, userDemographics.userId))
+      .innerJoin(tableAlias, eq(field, sql`${tableAlias}.id`))
+      .where(and(
+        eq(statements.pollId, pollId),
+        eq(statements.approved, true)
+      ))
+      .groupBy(statements.id, statements.text, field, labelField);
+
+    clearTimeout(queryTimeout);
+    const queryDuration = Date.now() - queryStart;
+    console.log(`[${requestId}] [QUERY SUCCESS] Main query completed in ${queryDuration}ms - ${voteData.length} rows`);
+  } catch (error) {
+    clearTimeout(queryTimeout);
+    const queryDuration = Date.now() - queryStart;
+    console.error(`[${requestId}] [QUERY ERROR] Main query failed after ${queryDuration}ms:`, error);
+    throw error;
+  }
 
   if (voteData.length === 0) {
     console.log(`[${requestId}] No vote data found - returning empty`);

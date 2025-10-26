@@ -71,23 +71,34 @@ export async function getAllHeatmapDataAction(
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
 
-  console.log(`[${requestId}] [getAllHeatmapDataAction] START`, {
+  console.log(`[${requestId}] [getAllHeatmapDataAction] ========== START ==========`, {
     pollId,
     privacyThreshold,
     timestamp: new Date().toISOString(),
+    pid: process.pid,
   });
 
+  // Timeout warning mechanism
+  const timeoutWarnings = [30000, 60000, 120000]; // 30s, 60s, 120s
+  const warningTimers = timeoutWarnings.map((timeout) =>
+    setTimeout(() => {
+      console.warn(`[${requestId}] ⚠️ TIMEOUT WARNING: Request still running after ${timeout/1000}s`);
+    }, timeout)
+  );
+
   try {
-    // Validate poll
-    console.log(`[${requestId}] Validating poll...`);
+    // PHASE 1: Validate poll
+    console.log(`[${requestId}] [PHASE 1] Validating poll...`);
     const pollValidationStart = Date.now();
 
     const pollResult = await getPollByIdAction(pollId);
 
-    console.log(`[${requestId}] Poll validation took ${Date.now() - pollValidationStart}ms`);
+    const pollValidationDuration = Date.now() - pollValidationStart;
+    console.log(`[${requestId}] [PHASE 1] COMPLETE - Poll validation: ${pollValidationDuration}ms`);
 
     if (!pollResult.success || !pollResult.data) {
       console.log(`[${requestId}] Poll not found`);
+      warningTimers.forEach(clearTimeout);
       return { success: false, error: "Poll not found" };
     }
 
@@ -95,26 +106,60 @@ export async function getAllHeatmapDataAction(
 
     if (poll.status !== "published" && poll.status !== "closed") {
       console.log(`[${requestId}] Poll not available (status: ${poll.status})`);
+      warningTimers.forEach(clearTimeout);
       return { success: false, error: "Poll is not available for viewing" };
     }
 
-    // Fetch all heatmap categories
-    console.log(`[${requestId}] Fetching heatmap data for all categories...`);
+    // PHASE 2: Fetch all heatmap categories
+    console.log(`[${requestId}] [PHASE 2] Fetching heatmap data for all 4 categories in parallel...`);
     const heatmapStart = Date.now();
 
+    // Track individual category timing
+    const categoryTimings: Record<string, number> = {};
+
     const [gender, ageGroup, ethnicity, politicalParty] = await Promise.all([
-      PollResultsService.getHeatmapData(pollId, "gender", privacyThreshold),
-      PollResultsService.getHeatmapData(pollId, "ageGroup", privacyThreshold),
-      PollResultsService.getHeatmapData(pollId, "ethnicity", privacyThreshold),
-      PollResultsService.getHeatmapData(pollId, "politicalParty", privacyThreshold),
+      (async () => {
+        const catStart = Date.now();
+        console.log(`[${requestId}] [PHASE 2.1] Starting gender heatmap...`);
+        const result = await PollResultsService.getHeatmapData(pollId, "gender", privacyThreshold);
+        categoryTimings.gender = Date.now() - catStart;
+        console.log(`[${requestId}] [PHASE 2.1] COMPLETE - Gender: ${categoryTimings.gender}ms`);
+        return result;
+      })(),
+      (async () => {
+        const catStart = Date.now();
+        console.log(`[${requestId}] [PHASE 2.2] Starting ageGroup heatmap...`);
+        const result = await PollResultsService.getHeatmapData(pollId, "ageGroup", privacyThreshold);
+        categoryTimings.ageGroup = Date.now() - catStart;
+        console.log(`[${requestId}] [PHASE 2.2] COMPLETE - AgeGroup: ${categoryTimings.ageGroup}ms`);
+        return result;
+      })(),
+      (async () => {
+        const catStart = Date.now();
+        console.log(`[${requestId}] [PHASE 2.3] Starting ethnicity heatmap...`);
+        const result = await PollResultsService.getHeatmapData(pollId, "ethnicity", privacyThreshold);
+        categoryTimings.ethnicity = Date.now() - catStart;
+        console.log(`[${requestId}] [PHASE 2.3] COMPLETE - Ethnicity: ${categoryTimings.ethnicity}ms`);
+        return result;
+      })(),
+      (async () => {
+        const catStart = Date.now();
+        console.log(`[${requestId}] [PHASE 2.4] Starting politicalParty heatmap...`);
+        const result = await PollResultsService.getHeatmapData(pollId, "politicalParty", privacyThreshold);
+        categoryTimings.politicalParty = Date.now() - catStart;
+        console.log(`[${requestId}] [PHASE 2.4] COMPLETE - PoliticalParty: ${categoryTimings.politicalParty}ms`);
+        return result;
+      })(),
     ]);
 
     const heatmapDuration = Date.now() - heatmapStart;
     const totalDuration = Date.now() - startTime;
 
-    console.log(`[${requestId}] [getAllHeatmapDataAction] SUCCESS`, {
+    console.log(`[${requestId}] [getAllHeatmapDataAction] ========== SUCCESS ==========`, {
       pollId,
-      heatmapDuration,
+      phase1Duration: pollValidationDuration,
+      phase2Duration: heatmapDuration,
+      categoryTimings,
       totalDuration,
       dataSizes: {
         gender: gender.length,
@@ -124,6 +169,8 @@ export async function getAllHeatmapDataAction(
       },
     });
 
+    warningTimers.forEach(clearTimeout);
+
     return {
       success: true,
       data: { gender, ageGroup, ethnicity, politicalParty },
@@ -131,7 +178,7 @@ export async function getAllHeatmapDataAction(
   } catch (error) {
     const totalDuration = Date.now() - startTime;
 
-    console.error(`[${requestId}] [getAllHeatmapDataAction] ERROR`, {
+    console.error(`[${requestId}] [getAllHeatmapDataAction] ========== ERROR ==========`, {
       pollId,
       totalDuration,
       error: error instanceof Error ? {
@@ -140,6 +187,8 @@ export async function getAllHeatmapDataAction(
         name: error.name,
       } : error,
     });
+
+    warningTimers.forEach(clearTimeout);
 
     return { success: false, error: "Failed to fetch heatmap data" };
   }

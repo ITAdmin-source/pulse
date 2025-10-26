@@ -65,6 +65,10 @@ let client: ReturnType<typeof postgres>;
 if (process.env.NODE_ENV === "production") {
   // Production: Create new client (serverless functions are stateless)
   // OPTIMAL: Small pool size for serverless architecture
+
+  // DEBUG: Query monitoring counters
+  let totalQueriesExecuted = 0;
+
   client = postgres(process.env.DATABASE_URL, {
     // CRITICAL: Pool size = 2 follows Vercel/Supabase best practices for serverless
     // Each Vercel serverless function instance has its own pool
@@ -83,7 +87,17 @@ if (process.env.NODE_ENV === "production") {
     // CRITICAL: prepare: false required for Transaction Mode (port 6543)
     // Session Mode (port 5432) supports prepared statements
     prepare: isTransactionMode ? false : false, // Set to false for both modes for consistency
+
+    // DEBUG: Detailed query monitoring
+    debug: (connection, query, params) => {
+      totalQueriesExecuted++;
+      const queryPreview = query.length > 100 ? query.substring(0, 100) + '...' : query;
+      const timestamp = new Date().toISOString();
+      console.log(`[DB:QUERY:${totalQueriesExecuted}] [${timestamp}] Pool max: ${isTransactionMode ? 2 : 5}, Query: ${queryPreview}`);
+    },
   });
+
+  console.log('[DB] Production client created with debug logging enabled');
 } else {
   // Development: Use singleton pattern to persist client across hot reloads
   if (!global.__db_client) {
