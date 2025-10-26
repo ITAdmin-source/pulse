@@ -24,7 +24,7 @@ export default function SignUpPage() {
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-white-80">Loading...</div>
       </div>
     );
   }
@@ -37,8 +37,8 @@ export default function SignUpPage() {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">Join Pulse</h1>
-        <p className="text-gray-600">Create an account to save your progress</p>
+        <h1 className="text-3xl font-bold text-white">Join Pulse</h1>
+        <p className="text-white-80">Create an account to save your progress</p>
       </div>
 
       <SignUp
@@ -46,9 +46,9 @@ export default function SignUpPage() {
         appearance={{ baseTheme: theme === "dark" ? dark : undefined }}
       />
 
-      <div className="text-center text-sm text-gray-600">
+      <div className="text-center text-sm text-white-80">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-blue-600 hover:text-blue-700">
+        <Link href="/login" className="font-medium text-primary-300 hover-text-primary-700">
           Sign In
         </Link>
       </div>

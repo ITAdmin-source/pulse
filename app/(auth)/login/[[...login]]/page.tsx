@@ -24,7 +24,7 @@ export default function LoginPage() {
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-white-80">Loading...</div>
       </div>
     );
   }
@@ -37,8 +37,8 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome Back!</h1>
-        <p className="text-gray-600">Sign in to continue your participation</p>
+        <h1 className="text-3xl font-bold text-white">Welcome Back!</h1>
+        <p className="text-white-80">Sign in to continue your participation</p>
       </div>
 
       <SignIn
@@ -46,9 +46,9 @@ export default function LoginPage() {
         appearance={{ baseTheme: theme === "dark" ? dark : undefined }}
       />
 
-      <div className="text-center text-sm text-gray-600">
+      <div className="text-center text-sm text-white-80">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-700">
+        <Link href="/signup" className="font-medium text-primary-300 hover-text-primary-700">
           Sign Up
         </Link>
       </div>

@@ -171,8 +171,8 @@ export const voting = {
   milestone70Percent: 'עוד קצת! 💪',
   milestoneInsightTeaser: (remaining: number) =>
     remaining === 1
-      ? 'עוד הצבעה אחת לפרופיל ההשפעה שלך! 🎁'
-      : `עוד ${remaining} הצבעות לפרופיל ההשפעה שלך! 🎁`,
+      ? 'עוד הצבעה אחת לתובנה האישית שלך! 🎁'
+      : `עוד ${remaining} הצבעות לתובנה האישית שלך! 🎁`,
   milestoneThresholdReached: 'מדהים! פתחת את התוצאות! 🎉',
   milestoneAlmostThere: 'כמעט שם! ⭐',
 
@@ -192,9 +192,9 @@ export const results = {
   tabConnect: 'קהילה',
 
   // Personal Insight Card
-  insightLabel: 'פרופיל ההשפעה שלך',
-  insightShareButton: 'לשיתוף הפרופיל שלי',
-  insightSignUpLink: '💾 הירשמו לשמור פרופיל זה',
+  insightLabel: 'תובנה אישית שלך',
+  insightShareButton: 'לשיתוף התובנה שלי',
+  insightSignUpLink: '💾 הירשמו לשמור תובנה זו',
   insightLoadingError: 'לא ניתן לטעון תובנות',
 
   // Artifact Collection
@@ -203,7 +203,7 @@ export const results = {
   unlock: 'לפתוח',
   earnMore: 'להשיג יותר',
   newArtifactUnlocked: 'חפץ חדש נפתח!',
-  signUpToCollect: 'הירשמו לאסוף פרופילים',
+  signUpToCollect: 'הירשמו לאסוף תובנות',
   artifactCount: (current: number, max: number) => `${current}/${max}`,
   viewCollection: 'צפו באוסף',
   rarityCommon: 'נפוץ',
@@ -272,7 +272,7 @@ export const results = {
 
   // Signup Banner
   signupBannerTitle: 'שמרו את התובנות שלכם',
-  signupBannerMessage: 'הירשמו כדי לשמור את פרופיל ההשפעה שלכם ולעקוב אחר ההתפתחות',
+  signupBannerMessage: 'הירשמו כדי לשמור את התובנה האישית שלכם ולעקוב אחר ההתפתחות',
   signupBannerButton: 'הצטרפו עכשיו',
 
   // Connect Coming Soon
@@ -309,7 +309,7 @@ export const banners = {
 export const demographics = {
   // Modal Header
   title: 'לפני צפייה בתוצאות',
-  description: 'עזרו לנו להבין נקודות מבט שונות',
+  description: 'עזרו לנו להבין נקודות מבט שונות. כל הנתונים אנונימיים ומשמשים למטרות ניתוח סטטיסטי.',
   whyWeAskLink: 'למה אנחנו שואלים?',
 
   // Field Labels
@@ -383,21 +383,21 @@ export const addPosition = {
 export const auth = {
   // Login Page
   loginTitle: 'כניסה',
-  loginDescription: 'גישה להיסטוריית ההצבעות והפרופילים השמורים',
+  loginDescription: 'גישה להיסטוריית ההצבעות והתובנות השמורות',
   loginButton: 'כניסה',
   loginWithGoogle: 'כניסה עם Google',
   loginWithEmail: 'כניסה עם אימייל',
 
   // Sign Up Page
   signUpTitle: 'הרשמה',
-  signUpDescription: 'שמרו את פרופילי ההשפעה ועקבו אחר ההשפעה שלכם',
+  signUpDescription: 'שמרו את התובנות האישיות ועקבו אחר ההשפעה שלכם',
   signUpButton: 'הרשמה',
   signUpWithGoogle: 'הרשמה עם Google',
   signUpWithEmail: 'הרשמה עם אימייל',
 
   // Post-Poll Auth Modal (after completing first poll - anonymous users)
   postPollTitle: 'עבודה מצוינת!',
-  postPollBody: 'הירשמו לשמור את פרופיל ההשפעה שלך ולראות איך אתם משתווים לאחרים',
+  postPollBody: 'הירשמו לשמור את התובנה האישית שלך ולראות איך אתם משתווים לאחרים',
   postPollSignUp: 'הירשמו עכשיו',
   postPollDismiss: 'המשיכו כאורח/ת',
   postPollIcon: '🌟',
@@ -480,7 +480,7 @@ export const sharing = {
 
   // Share Messages
   pollShareMessage: (title: string) => `בואו להצביע בדיון: "${title}"`,
-  insightShareMessage: (profile: string) => `הפרופיל שלי: ${profile}`,
+  insightShareMessage: (profile: string) => `התובנה שלי: ${profile}`,
   resultsShareMessage: (title: string) => `תוצאות הדיון: "${title}"`,
 
   // Share Success/Error Messages
@@ -800,6 +800,22 @@ export const opinionMap = {
   heatmapLoading: 'טוען נתוני הסכמה...',
 } as const;
 
+// ============================================================================
+// ERROR PAGES
+// ============================================================================
+
+export const errorPages = {
+  // 404 Page
+  notFound: {
+    title: 'הדף לא נמצא',
+    subtitle: 'אופס! נראה שהדף שחיפשתם לא קיים',
+    description: 'הדף עשוי להיות הוזז, נמחק או שהכתובת שהוזנה אינה נכונה',
+    homeButton: 'חזרה לדף הבית',
+    pollsButton: 'דיונים פעילים',
+    errorCode: '404',
+  },
+} as const;
+
 /**
  * Format large numbers (e.g., 1000 -> 1K)
  */
@@ -833,6 +849,7 @@ export default {
   admin,
   dateTime,
   opinionMap,
+  errorPages,
 } as const;
 
 // Type for all strings
@@ -855,4 +872,5 @@ export const strings = {
   admin,
   dateTime,
   opinionMap,
+  errorPages,
 } as const;

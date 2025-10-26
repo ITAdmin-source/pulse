@@ -174,11 +174,21 @@ function detectVariantFromRoute(pathname: string): HeaderVariant {
     return "management";
   }
 
+  // Auth & Error pages - no header (cleaner experience)
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname === "/unauthorized" ||
+    pathname === "/_not-found"
+  ) {
+    return null;
+  }
+
   // New UI routes - no header needed (inline headers in pages)
   if (pathname === "/polls" || (pathname.startsWith("/polls/") && !pathname.includes("/manage"))) {
     return null;
   }
 
-  // Legacy cross-poll pages (landing, auth, etc.)
+  // Legacy cross-poll pages (landing, etc.)
   return "cross-poll";
 }

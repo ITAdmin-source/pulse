@@ -291,7 +291,7 @@ duration: 0.4
   <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full" />
 
   <h3 className="text-white text-2xl font-bold">
-    פרופיל ההשפעה שלך
+    תובנה אישית שלך
   </h3>
   <p className="text-white/90 mt-4">
     {insightText}

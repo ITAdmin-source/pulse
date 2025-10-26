@@ -41,7 +41,7 @@ export function useShareInsight() {
         console.log("[useShareInsight] Using custom share text");
       } else if (insightProfile) {
         // Insight-based share text
-        text = `גיליתי את פרופיל ההשפעה שלי: ${insightEmoji || ""} ${insightProfile}!\n\nגלה את שלך ב-"${pollQuestion}" 📊\n\n${pollUrl}`;
+        text = `גיליתי את התובנה האישית שלי: ${insightEmoji || ""} ${insightProfile}!\n\nגלה את שלך ב-"${pollQuestion}" 📊\n\n${pollUrl}`;
         console.log("[useShareInsight] Using insight-based share text");
       } else {
         // Generic share text
