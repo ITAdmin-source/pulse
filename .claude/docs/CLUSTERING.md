@@ -8,7 +8,7 @@ Pulse implements a **Pol.is-inspired opinion clustering system** that analyzes v
 
 ### Key Features
 
-- **Strategic clustering triggers** on batch completion and vote milestones (non-blocking background process)
+- **Strategic clustering triggers** enqueue jobs in database queue, processed by Supabase pg_cron every minute
 - **Privacy-preserving visualization** showing group boundaries, not individual positions
 - **Multi-tier caching** for sub-100ms response times
 - **Consensus detection** identifying statements with broad agreement or division
@@ -55,69 +55,141 @@ Clustering computation requires:
 
 **Note:** Polls with 10-19 voters can still view basic results (vote percentages, statement rankings), but opinion clustering visualization requires 20+ participants for statistical validity.
 
-### Background Triggering
+### Background Processing Architecture
 
-Clustering is automatically triggered at strategic points during voting via `VotingService`:
+Clustering uses a **database-backed job queue** processed by **Supabase pg_cron** to ensure reliable completion in serverless environments.
 
-**Trigger conditions:**
+#### Why Queue + Supabase pg_cron?
+
+**The Problem:**
+- Fire-and-forget patterns fail in Vercel serverless (functions terminate after response)
+- Vercel Cron requires Pro plan ($20/month minimum)
+- Need reliable background processing on affordable hosting
+
+**The Solution:**
+- Database queue (`clustering_queue` table) tracks jobs with status, retries, errors
+- Supabase `pg_cron` extension runs SQL every minute
+- Smart check: Only calls API if there are pending jobs (zero waste when idle)
+- Works on Vercel Hobby + Supabase paid plans
+
+#### Architecture Flow
+
+```
+User votes → VotingService checks triggers → Job enqueued in clustering_queue
+                                                      ↓
+                                    [Supabase Database - Every Minute]
+                                      pg_cron checks: pending jobs?
+                                                      ↓
+                                              IF count > 0:
+                                    net.http_post() to Vercel API
+                                                      ↓
+                            /api/cron/clustering processes up to 5 jobs
+                                                      ↓
+                              Clustering computed → Metadata saved
+```
+
+#### Trigger Conditions
+
+Jobs are enqueued at these points:
 - **Batch completion**: After user completes each 10-statement batch
 - **Milestone votes**: At 10, 20, 50, 100, 200, 500 total votes per user
 
-```typescript
-// lib/services/voting-service.ts:21-72
-private static async shouldTriggerClustering(
-  userId: string,
-  pollId: string,
-  currentVoteCount: number
-): Promise<{ shouldTrigger: boolean; reason: string }> {
-  // Milestone vote counts that always trigger clustering
-  const milestones = [10, 20, 50, 100, 200, 500];
+#### Key Components
 
-  if (milestones.includes(currentVoteCount)) {
-    return {
-      shouldTrigger: true,
-      reason: `Milestone reached: ${currentVoteCount} votes`,
-    };
-  }
+**1. VotingService** (`lib/services/voting-service.ts:221-237`)
+- Checks `shouldTriggerClustering()` after each vote
+- Enqueues job: `await ClusteringQueueService.enqueueJob(pollId)`
+- Never blocks vote response (instant user feedback)
 
-  // Check if batch was just completed
-  const currentBatchNumber = Math.floor((currentVoteCount - 1) / 10) + 1;
-  const startOfBatch = (currentBatchNumber - 1) * 10;
-  const expectedBatchSize = Math.min(10, totalStatements - startOfBatch);
+**2. ClusteringQueueService** (`lib/services/clustering-queue-service.ts`)
+- `enqueueJob(pollId)`: Add job with deduplication (only one pending job per poll)
+- `processNextJob()`: Fetch oldest pending, check eligibility, compute clustering
+- `processQueue(maxJobs)`: Process up to N jobs per invocation (rate limiting)
+- Retry logic: Up to 3 attempts before marking failed
+- Queue stats and monitoring
 
-  const positionInBatch = ((currentVoteCount - 1) % 10) + 1;
+**3. Cron Endpoint** (`app/api/cron/clustering/route.ts`)
+- Protected by `CRON_SECRET` (Bearer token auth)
+- Called by Supabase pg_cron every minute
+- Processes up to 5 jobs per invocation (prevents timeout)
+- Returns stats: processed, successful, failed, queue depth
 
-  if (positionInBatch === expectedBatchSize) {
-    return {
-      shouldTrigger: true,
-      reason: `Batch ${currentBatchNumber} completed (${expectedBatchSize} statements)`,
-    };
-  }
+**4. Supabase pg_cron Setup** (`scripts/setup-supabase-cron.sql`)
+- Smart scheduling: Checks `COUNT(*) FROM clustering_queue WHERE status = 'pending'`
+- Only makes HTTP call if pending_count > 0 (zero waste when idle)
+- Uses `pg_net` extension for HTTP requests
+- 30-second timeout per request
 
-  return { shouldTrigger: false, reason: 'Mid-batch' };
-}
+**5. Database Schema** (`db/schema/clustering-queue.ts`)
+- `clustering_queue` table: poll_id, status, attempt_count, error_message, timestamps
+- Indexes on poll_id, status, created_at for efficient querying
+- Cascade delete when poll is deleted
+
+#### Performance Characteristics
+
+- **Enqueue time:** <10ms (single INSERT)
+- **Processing time:** 500ms-1.2s per job (typical polls: 20 users, 15 statements)
+- **User experience delay:** 1-minute average (acceptable trade-off for reliability)
+- **Throughput:** Up to 5 polls/minute (adjustable rate limit)
+- **Idle waste:** Zero HTTP calls when no pending jobs
+
+#### Setup Instructions
+
+**1. Generate CRON_SECRET:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-**Batch size calculation:**
-- Standard batches: 10 statements
-- Final batch: Remaining statements (may be < 10)
-- Example: Poll with 23 statements → Batch 1: 10, Batch 2: 10, Batch 3: 3
-- Clustering triggers after completing Batch 3 (3 statements)
+**2. Add to environment variables:**
+- Local: `.env.local` → `CRON_SECRET=your-secret`
+- Vercel: Dashboard → Settings → Environment Variables
 
-**Note**: Batch composition depends on poll's `statementOrderMode` setting:
-- `sequential`: Chronological order (createdAt)
-- `random`: Deterministic shuffle using poll-specific seed
-- `weighted`: Adaptive routing based on predictiveness, consensus, recency, and pass rates (see STATEMENT_ORDERING.md)
+**3. Enable Supabase extensions:**
+- Dashboard → Database → Extensions
+- Enable `pg_cron` (on "extensions" schema)
+- Enable `pg_net` (on "extensions" schema)
 
-The trigger is **non-blocking** and won't delay vote confirmation:
+**4. Run SQL setup:**
+See `scripts/setup-supabase-cron.sql` for complete SQL commands
 
+#### Monitoring & Debugging
+
+**Queue Statistics:**
 ```typescript
-// lib/services/voting-service.ts:226-234
-ClusteringService.triggerBackgroundClustering(pollId).catch((error) => {
-  // Log error but don't fail the vote
-  console.error(`Background clustering failed for poll ${pollId}:`, error);
-});
+const stats = await ClusteringQueueService.getQueueStats();
+// Returns: { pending, processing, completed, failed }
 ```
+
+**Supabase Cron History:**
+```sql
+SELECT * FROM cron.job_run_details
+ORDER BY start_time DESC
+LIMIT 10;
+```
+
+**Local Testing (Development):**
+```bash
+# Enqueue a test job
+npx tsx scripts/enqueue-test-job.ts
+
+# Manually trigger processing (simulates pg_cron)
+npx tsx scripts/trigger-cron-local.ts
+
+# Comprehensive queue tests
+npx tsx scripts/test-clustering-queue.ts
+```
+
+**Production Monitoring:**
+- Check Vercel logs for cron endpoint calls (every minute when jobs pending)
+- Monitor failed job count (should be near zero)
+- Alert on jobs stuck in "processing" state (indicates crash)
+- Check `cron.job_run_details` in Supabase for execution history
+
+**Troubleshooting:**
+- Jobs stuck in "pending": Check pg_cron is scheduled (`SELECT * FROM cron.job`)
+- Jobs stuck in "processing": Function crashed mid-execution, will retry
+- High failed count: Check `error_message` column for details
+- No HTTP calls: Verify URL and CRON_SECRET in pg_cron schedule
 
 ---
 

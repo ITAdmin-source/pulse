@@ -223,21 +223,17 @@ export class VotingService {
           `[VotingService] Clustering trigger detected for poll ${statement[0].pollId}: ${triggerCheck.reason}`
         );
 
-        // TEMPORARY FIX: Disable automatic clustering to prevent 5-minute timeouts
-        // TODO: Implement proper background job queue (Vercel Cron or Queue)
-        console.warn(
-          `[VotingService] ⚠️ Automatic clustering DISABLED - run manually via admin panel`
-        );
-
-        // ClusteringService.triggerBackgroundClustering(statement[0].pollId).catch(
-        //   (error) => {
-        //     // Log error but don't fail the vote
-        //     console.error(
-        //       `[VotingService] Background clustering failed for poll ${statement[0].pollId}:`,
-        //       error
-        //     );
-        //   }
-        // );
+        // Enqueue clustering job for background processing via Vercel Cron
+        try {
+          const { ClusteringQueueService } = await import("./clustering-queue-service");
+          await ClusteringQueueService.enqueueJob(statement[0].pollId);
+        } catch (error) {
+          // Log error but don't fail the vote
+          console.error(
+            `[VotingService] Failed to enqueue clustering job for poll ${statement[0].pollId}:`,
+            error
+          );
+        }
       }
     }
 

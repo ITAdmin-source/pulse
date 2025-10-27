@@ -76,10 +76,10 @@ export async function actionName(data: DataType) {
 
 ### Database (Supabase + Drizzle ORM)
 - **Connection:** Transaction Mode (Port 6543) with `?pgbouncer=true`
-- **RLS:** Enabled on ALL 18 tables (defense-in-depth)
+- **RLS:** Enabled on ALL 19 tables (defense-in-depth)
 - **Pattern:** Schemas (`db/schema/`) → Queries (`db/queries/`) → Actions (`actions/`)
 - **Key Tables:** polls, statements, votes, users, user_demographics, user_poll_insights
-- **Clustering Tables:** poll_clustering_metadata, user_clustering_positions, statement_classifications
+- **Clustering Tables:** poll_clustering_metadata, user_clustering_positions, statement_classifications, clustering_queue
 - **Ordering Table:** statement_weights (caches weights for weighted statement ordering)
 
 ### Authentication (Clerk)
@@ -99,7 +99,7 @@ export async function actionName(data: DataType) {
 - **Weight caching:** Smart event-driven invalidation (on clustering recomputation and statement approval)
 - **Closed poll access:** Both voters and non-voters can view results; only voters get insights
 - **Clustering eligibility:** 20 users + 6 statements minimum for opinion clustering
-- **Background clustering:** Automatically triggered after each vote (non-blocking)
+- **Background clustering:** Jobs enqueued on batch completion/milestones, processed by Supabase pg_cron every minute (1-min avg delay)
 
 ## Design System (v2.0)
 
@@ -170,6 +170,9 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_key
 CLERK_SECRET_KEY=your_secret
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
+
+# Background Job Processing (Supabase pg_cron)
+CRON_SECRET=your-random-secret-here  # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 ## Quick Troubleshooting
@@ -197,6 +200,7 @@ npm run lint         # Check for linting issues
 - `/api/user/current` - Current user info
 - `/api/vote/cast` - Cast vote (immutable)
 - `/api/statement/submit` - Submit statement
+- `/api/cron/clustering` - Background clustering queue processor (called by Supabase pg_cron)
 
 ## Application Routes
 
@@ -222,6 +226,7 @@ npm run lint         # Check for linting issues
 - **Convex hull visualization:** Graham Scan algorithm with D3-shape Catmull-Rom smoothing
 - **Multi-tier caching:** In-memory (10ms) → Database (50-100ms) for clustering performance
 - **CSS theme system:** 100+ CSS variables for theme-switchable styling without code changes
+- **Database queue + Supabase pg_cron:** Reliable background clustering without fire-and-forget failures or Vercel Pro plan requirement
 
 ## Testing Coverage (Oct 2025)
 

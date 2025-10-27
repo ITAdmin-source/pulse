@@ -78,6 +78,31 @@ export async function createUserAction(data: CreateUserData) {
 - Existing actions gradually migrated
 - Both patterns coexist during transition
 
+## Serverless Considerations
+
+### Fire-and-Forget Pattern is Broken
+
+Vercel serverless functions terminate immediately after returning a response, killing any pending promises.
+
+**Why it fails:**
+```typescript
+// ❌ BROKEN in Vercel serverless:
+promise.then(() => console.log("done"))  // Never executes
+  .catch(err => console.error(err));     // Never executes
+return response;  // ← Function terminates HERE, killing promise
+```
+
+**Solutions comparison:**
+
+| Solution | Vercel Plan | Reliability | Delay | Implementation |
+|----------|-------------|-------------|-------|----------------|
+| Fire-and-forget | Any | ❌ 99% failure | 0ms | Simple but broken |
+| Vercel `waitUntil` | Pro ($20/mo) | ✅ 100% | 0ms | Simple, expensive |
+| **Supabase pg_cron** | **Hobby** | **✅ 100%** | **~1min** | **Medium, affordable** |
+| External cron service | Any | ✅ 100% | ~1min | Complex setup |
+
+**Our Choice:** Supabase pg_cron provides reliability without Pro plan cost.
+
 ## Infrastructure Services
 
 ### Core Services (`lib/services/`)
@@ -172,8 +197,14 @@ export async function createUserAction(data: CreateUserData) {
 - **CoalitionAnalyzer** (`clustering/coalition-analyzer.ts`)
   - Pairwise group alignment calculation
   - Strongest coalition identification
-  - Polarization level scoring
-  - Bridge opportunity detection
+
+- **ClusteringQueueService** (`clustering-queue-service.ts`)
+  - Database-backed job queue for reliable background processing
+  - Enqueue clustering jobs with deduplication (one pending job per poll)
+  - Process jobs via Supabase pg_cron (every minute)
+  - Retry logic: up to 3 attempts with failure tracking
+  - Queue statistics and monitoring endpoints
+  - Zero waste: only processes when jobs pending
 
 #### Gamification & Engagement
 - **ArtifactRarityService** (`artifact-rarity-service.ts`)

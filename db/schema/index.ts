@@ -14,3 +14,4 @@ export * from './poll-results-summaries';
 export * from './user-feedback';
 export * from './clustering';
 export * from './statement-weights';
+export * from './clustering-queue';

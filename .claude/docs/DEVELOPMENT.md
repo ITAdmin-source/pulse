@@ -28,6 +28,10 @@ Complete development guidelines and best practices for Pulse platform.
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your credentials
+
+   # Generate CRON_SECRET for background jobs:
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   # Add to .env.local: CRON_SECRET=<generated-secret>
    ```
 
 4. **Setup database**
@@ -292,6 +296,75 @@ export function VoteButton() {
   {content}
 </div>
 ```
+
+## Background Jobs
+
+### Clustering Queue (Supabase pg_cron)
+
+Automatic clustering runs via database queue processed by Supabase pg_cron every minute.
+
+#### Local Development
+
+Jobs are enqueued automatically when voting (batch completion/milestones).
+
+**Manual testing:**
+```bash
+# 1. Enqueue a test job
+npx tsx scripts/enqueue-test-job.ts
+
+# 2. Manually trigger processing (simulates pg_cron)
+npx tsx scripts/trigger-cron-local.ts
+
+# 3. Run comprehensive queue tests
+npx tsx scripts/test-clustering-queue.ts
+```
+
+**Note:** Supabase pg_cron cannot reach `localhost`, so use manual trigger script instead.
+
+#### Production Setup
+
+**Prerequisites:**
+1. CRON_SECRET in Vercel environment variables
+2. pg_cron and pg_net extensions enabled in Supabase
+3. SQL cron job scheduled (see `scripts/setup-supabase-cron.sql`)
+
+**Monitoring:**
+```sql
+-- Check cron job exists
+SELECT * FROM cron.job;
+
+-- View execution history
+SELECT * FROM cron.job_run_details
+ORDER BY start_time DESC
+LIMIT 10;
+
+-- Check queue status
+SELECT status, COUNT(*)
+FROM clustering_queue
+GROUP BY status;
+```
+
+#### Troubleshooting
+
+**Jobs stuck in "pending":**
+- Check pg_cron is scheduled: `SELECT * FROM cron.job`
+- Verify URL and CRON_SECRET in cron schedule
+- Check Vercel logs for endpoint calls
+
+**Jobs stuck in "processing":**
+- Indicates crash during computation
+- Will automatically retry (up to 3 attempts)
+- Check error_message after max attempts
+
+**High failed count:**
+- Query: `SELECT * FROM clustering_queue WHERE status = 'failed'`
+- Check error_message column for details
+- Common: "Insufficient users" (expected, not an error)
+
+**No HTTP calls from pg_cron:**
+- Verify pg_net extension enabled
+- Check cron.job_run_details for errors
+- Ensure Vercel endpoint is publicly accessible
 
 ## Testing Guidelines
 

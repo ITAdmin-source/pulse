@@ -309,6 +309,43 @@ Stores consensus/divisive/bridge classification for each statement
 - `poll_id` - Fast retrieval of all classifications for a poll
 - `statement_id` - Fast lookup of specific statement classification
 
+#### `clustering_queue` Table
+Background job queue for reliable clustering computation
+
+**Key Fields:**
+- `id` - Serial primary key
+- `poll_id` - UUID foreign key to polls (cascade delete)
+- `status` - Enum: pending, processing, completed, failed
+- `attempt_count` - Number of processing attempts (default: 0, max: 3)
+- `max_attempts` - Maximum retry attempts before marking failed (default: 3)
+- `error_message` - Error details for failed/ineligible jobs (nullable)
+- `created_at` - Job creation timestamp (indexed for FIFO)
+- `processed_at` - Job completion timestamp (nullable)
+
+**Indexes:**
+- `poll_id` - For deduplication queries (only one pending job per poll)
+- `status` - For fetching pending jobs efficiently
+- `created_at` - For FIFO processing order (oldest first)
+
+**Purpose:**
+Ensures reliable background clustering in Vercel serverless environment by persisting jobs that survive function termination. Processed by Supabase pg_cron every minute.
+
+**Deduplication:**
+Only one pending/processing job per poll at a time. Prevents redundant computation when multiple users vote simultaneously. If job already exists, enqueue is skipped.
+
+**Lifecycle:**
+```
+INSERT (status: pending)
+    ↓
+UPDATE (status: processing, attempt_count++)
+    ↓
+[Success] UPDATE (status: completed, processed_at: NOW())
+[Failure] UPDATE (status: pending/failed, error_message)
+```
+
+**Cleanup:**
+Completed/failed jobs older than 7 days can be purged via `ClusteringQueueService.cleanupOldJobs()`.
+
 ### Demographics Lookup Tables
 
 #### `age_groups`, `genders`, `ethnicities`, `political_parties`
