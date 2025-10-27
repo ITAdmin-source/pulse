@@ -20,7 +20,7 @@ async function triggerCronLocal() {
 
   try {
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${secret}`,
         'Content-Type': 'application/json',

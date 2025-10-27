@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { ClusteringQueueService } from "@/lib/services/clustering-queue-service";
 
 /**
- * Vercel Cron endpoint for processing clustering queue
+ * Supabase pg_cron endpoint for processing clustering queue
  *
- * Security: Protected by Vercel Cron secret in production
- * Schedule: Every minute (configured in vercel.json)
+ * Security: Protected by CRON_SECRET in production
+ * Schedule: Every minute (configured via Supabase pg_cron)
  *
  * Usage:
- * - Production: Automatically triggered by Vercel Cron
- * - Local: curl http://localhost:3000/api/cron/clustering -H "Authorization: Bearer YOUR_CRON_SECRET"
+ * - Production: Automatically triggered by Supabase pg_cron
+ * - Local: curl -X POST http://localhost:3000/api/cron/clustering -H "Authorization: Bearer YOUR_CRON_SECRET"
  */
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
