@@ -9,6 +9,7 @@ import { ClusteringService } from "@/lib/services/clustering-service";
 import {
   getCompleteClusteringData,
   getUserClusteringPosition,
+  getCoarseGroupDemographics,
 } from "@/db/queries/clustering-queries";
 import {
   getCachedClusteringData,
@@ -301,6 +302,25 @@ export async function getCompleteClusteringDataAction(
       );
     }
 
+    // Fetch demographics for each coarse group
+    const groupDemographics = await getCoarseGroupDemographics(pollId);
+
+    // Attach demographics to coarse groups
+    const coarseGroupsWithDemographics = (meta.coarseGroups as any[]).map((group: any) => {
+      const demographics = groupDemographics.find((d) => d.coarseGroupId === group.id);
+      return {
+        ...group,
+        demographics: demographics
+          ? {
+              ageGroups: demographics.ageGroups,
+              genders: demographics.genders,
+              ethnicities: demographics.ethnicities,
+              politicalParties: demographics.politicalParties,
+            }
+          : undefined,
+      };
+    });
+
     return {
       success: true,
       data: {
@@ -316,7 +336,7 @@ export async function getCompleteClusteringDataAction(
         },
         userPositions: data.userPositions,
         statementClassifications: data.statementClassifications,
-        coarseGroups: meta.coarseGroups,
+        coarseGroups: coarseGroupsWithDemographics,
         groupAgreementMatrix,
         coalitionAnalysis,
       },

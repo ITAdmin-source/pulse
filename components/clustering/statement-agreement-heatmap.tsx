@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { opinionMap } from "@/lib/strings/he";
 import type { StatementGroupAgreement } from "@/lib/services/clustering-service";
 import type { CoarseGroup } from "@/components/clustering/types";
@@ -15,12 +15,14 @@ import { GROUP_COLORS } from "@/components/clustering/types";
 interface StatementAgreementHeatmapProps {
   statements: StatementGroupAgreement[];
   groups: CoarseGroup[];
+  currentUserGroupId?: number;
   className?: string;
 }
 
 export function StatementAgreementHeatmap({
   statements,
   groups,
+  currentUserGroupId,
   className = "",
 }: StatementAgreementHeatmapProps) {
   const [sortBy, setSortBy] = useState<"classification" | "averageAgreement">(
@@ -137,17 +139,30 @@ export function StatementAgreementHeatmap({
               </th>
               {groups.map((group) => {
                 const color = GROUP_COLORS[group.id % GROUP_COLORS.length];
+                const isUserGroup = currentUserGroupId === group.id;
                 return (
                   <th
                     key={group.id}
-                    className="p-3 text-center text-sm font-semibold min-w-[80px] text-gray-700"
+                    className={`p-3 text-center text-sm min-w-[80px] ${
+                      isUserGroup
+                        ? "bg-gradient-to-b from-purple-50 to-pink-50 border-2 border-primary-300 font-bold text-gray-900"
+                        : "font-semibold text-gray-700"
+                    }`}
                   >
                     <div className="flex flex-col items-center gap-1">
+                      {isUserGroup && (
+                        <MapPin className="w-4 h-4 text-primary-600" />
+                      )}
                       <div
-                        className="w-4 h-4 rounded-full border-2 border-gray-300 shadow-sm"
+                        className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                         style={{ backgroundColor: color.primary }}
                       />
-                      <span>{group.label}</span>
+                      <span className={isUserGroup ? "font-bold" : ""}>{group.label}</span>
+                      {isUserGroup && (
+                        <span className="text-xs bg-primary-600 text-white px-2 py-0.5 rounded-full">
+                          שלך
+                        </span>
+                      )}
                       <span className="text-xs font-normal text-gray-500">
                         ({group.userCount})
                       </span>

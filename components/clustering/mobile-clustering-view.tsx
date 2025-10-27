@@ -14,6 +14,7 @@ interface MobileClusteringViewProps {
   userPositions: UserPosition[];
   currentUserId?: string;
   totalUsers: number;
+  onGroupClick?: (groupId: number) => void;
 }
 
 export function MobileClusteringView({
@@ -21,6 +22,7 @@ export function MobileClusteringView({
   userPositions,
   currentUserId,
   totalUsers,
+  onGroupClick,
 }: MobileClusteringViewProps) {
   const currentUserPosition = userPositions.find((p) => p.userId === currentUserId);
 
@@ -41,12 +43,13 @@ export function MobileClusteringView({
             const isUserGroup = currentUserPosition?.coarseGroupId === group.id;
 
             return (
-              <div
+              <button
                 key={group.id}
-                className={`p-4 rounded-lg transition-all ${
+                onClick={() => onGroupClick?.(group.id)}
+                className={`w-full p-4 rounded-lg transition-all text-start ${
                   isUserGroup
                     ? "bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300"
-                    : "bg-gray-50"
+                    : "bg-gray-50 hover:bg-gray-100"
                 }`}
               >
                 {/* Group header */}
@@ -85,7 +88,7 @@ export function MobileClusteringView({
                     }}
                   />
                 </div>
-              </div>
+              </button>
             );
           })}
       </div>

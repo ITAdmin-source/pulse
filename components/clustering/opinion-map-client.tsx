@@ -52,6 +52,22 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
   // View state (map or statements)
   const [currentView, setCurrentView] = useState<OpinionMapView>("map");
 
+  // Expanded groups state (for showing demographics)
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+
+  // Handler for toggling group expansion (called from legend or map clicks)
+  const handleGroupToggle = (groupId: number) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
   // Fetch clustering data (only if poll is loaded and eligible)
   const {
     data: clusteringData,
@@ -225,12 +241,14 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
                   groups={clusteringData.coarseGroups}
                   currentUserId={dbUser?.id}
                   totalUsers={clusteringData.metadata.totalUsers}
+                  onGroupClick={handleGroupToggle}
                 />
               ) : (
                 <OpinionMapCanvas
                   userPositions={clusteringData.userPositions}
                   groups={clusteringData.coarseGroups}
                   currentUserId={dbUser?.id}
+                  onGroupClick={handleGroupToggle}
                 />
               )}
             </div>
@@ -243,6 +261,8 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
                   clusteringData.userPositions.find((p) => p.userId === dbUser?.id)
                     ?.coarseGroupId
                 }
+                expandedGroups={expandedGroups}
+                onGroupToggle={handleGroupToggle}
               />
 
               {/* Quality Metrics Card */}
@@ -325,7 +345,14 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
 
         {/* Statement Agreement View */}
         {clusteringData && currentView === "statements" && (
-          <StatementAgreementView pollId={poll.id} groups={clusteringData.coarseGroups} />
+          <StatementAgreementView
+            pollId={poll.id}
+            groups={clusteringData.coarseGroups}
+            currentUserGroupId={
+              clusteringData.userPositions.find((p) => p.userId === dbUser?.id)
+                ?.coarseGroupId
+            }
+          />
         )}
       </main>
     </div>

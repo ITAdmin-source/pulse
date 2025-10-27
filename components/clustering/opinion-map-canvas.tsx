@@ -15,6 +15,7 @@ interface OpinionMapCanvasProps {
   userPositions: UserPosition[];
   groups: CoarseGroup[];
   currentUserId?: string;
+  onGroupClick?: (groupId: number) => void;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export function OpinionMapCanvas({
   userPositions,
   groups,
   currentUserId,
+  onGroupClick,
   className = "",
 }: OpinionMapCanvasProps) {
   const [hoveredGroupId, setHoveredGroupId] = useState<number | null>(null);
@@ -164,6 +166,7 @@ export function OpinionMapCanvas({
                   className="transition-opacity cursor-pointer"
                   onMouseEnter={() => setHoveredGroupId(group.id)}
                   onMouseLeave={() => setHoveredGroupId(null)}
+                  onClick={() => onGroupClick?.(group.id)}
                   role="button"
                   tabIndex={0}
                   aria-label={opinionMap.ariaGroup(group.id + 1)}
@@ -180,6 +183,7 @@ export function OpinionMapCanvas({
                   className="transition-opacity cursor-pointer"
                   onMouseEnter={() => setHoveredGroupId(group.id)}
                   onMouseLeave={() => setHoveredGroupId(null)}
+                  onClick={() => onGroupClick?.(group.id)}
                   role="button"
                   tabIndex={0}
                   aria-label={opinionMap.ariaGroup(group.id + 1)}

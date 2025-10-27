@@ -20,6 +20,12 @@ export interface CoarseGroup {
   centroid: number[];
   fineClusterIds: number[];
   userCount: number;
+  demographics?: {
+    ageGroups: Record<string, number>;
+    genders: Record<string, number>;
+    ethnicities: Record<string, number>;
+    politicalParties: Record<string, number>;
+  };
 }
 
 export interface ClusteringMetadata {

@@ -4,11 +4,16 @@
  */
 
 import { db } from "@/db/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import {
   pollClusteringMetadata,
   userClusteringPositions,
   statementClassifications,
+  userDemographics,
+  ageGroups,
+  genders,
+  ethnicities,
+  politicalParties,
   type PollClusteringMetadata,
   type UserClusteringPosition,
   type StatementClassification,
@@ -210,4 +215,87 @@ export async function deleteClusteringData(pollId: string): Promise<void> {
       .delete(pollClusteringMetadata)
       .where(eq(pollClusteringMetadata.pollId, pollId));
   });
+}
+
+/**
+ * Demographic breakdown for a cluster group
+ */
+export interface GroupDemographics {
+  coarseGroupId: number;
+  totalUsers: number;
+  ageGroups: Record<string, number>; // label -> count
+  genders: Record<string, number>; // label -> count
+  ethnicities: Record<string, number>; // label -> count
+  politicalParties: Record<string, number>; // label -> count
+}
+
+/**
+ * Get demographic breakdowns for all coarse groups in a poll
+ */
+export async function getCoarseGroupDemographics(
+  pollId: string
+): Promise<GroupDemographics[]> {
+  // Get all user positions with their demographics
+  const usersWithDemographics = await db
+    .select({
+      coarseGroupId: userClusteringPositions.coarseGroupId,
+      userId: userClusteringPositions.userId,
+      ageGroupLabel: ageGroups.label,
+      genderLabel: genders.label,
+      ethnicityLabel: ethnicities.label,
+      politicalPartyLabel: politicalParties.label,
+    })
+    .from(userClusteringPositions)
+    .leftJoin(
+      userDemographics,
+      eq(userClusteringPositions.userId, userDemographics.userId)
+    )
+    .leftJoin(ageGroups, eq(userDemographics.ageGroupId, ageGroups.id))
+    .leftJoin(genders, eq(userDemographics.genderId, genders.id))
+    .leftJoin(ethnicities, eq(userDemographics.ethnicityId, ethnicities.id))
+    .leftJoin(
+      politicalParties,
+      eq(userDemographics.politicalPartyId, politicalParties.id)
+    )
+    .where(eq(userClusteringPositions.pollId, pollId));
+
+  // Aggregate demographics by coarse group
+  const groupMap = new Map<number, GroupDemographics>();
+
+  for (const user of usersWithDemographics) {
+    const groupId = user.coarseGroupId;
+
+    if (!groupMap.has(groupId)) {
+      groupMap.set(groupId, {
+        coarseGroupId: groupId,
+        totalUsers: 0,
+        ageGroups: {},
+        genders: {},
+        ethnicities: {},
+        politicalParties: {},
+      });
+    }
+
+    const group = groupMap.get(groupId)!;
+    group.totalUsers++;
+
+    // Count demographics (handle nulls for users without demographics)
+    if (user.ageGroupLabel) {
+      group.ageGroups[user.ageGroupLabel] =
+        (group.ageGroups[user.ageGroupLabel] || 0) + 1;
+    }
+    if (user.genderLabel) {
+      group.genders[user.genderLabel] = (group.genders[user.genderLabel] || 0) + 1;
+    }
+    if (user.ethnicityLabel) {
+      group.ethnicities[user.ethnicityLabel] =
+        (group.ethnicities[user.ethnicityLabel] || 0) + 1;
+    }
+    if (user.politicalPartyLabel) {
+      group.politicalParties[user.politicalPartyLabel] =
+        (group.politicalParties[user.politicalPartyLabel] || 0) + 1;
+    }
+  }
+
+  return Array.from(groupMap.values());
 }

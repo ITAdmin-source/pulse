@@ -19,9 +19,10 @@ import type { CoarseGroup } from "./types";
 interface StatementAgreementViewProps {
   pollId: string;
   groups: CoarseGroup[];
+  currentUserGroupId?: number;
 }
 
-export function StatementAgreementView({ pollId, groups }: StatementAgreementViewProps) {
+export function StatementAgreementView({ pollId, groups, currentUserGroupId }: StatementAgreementViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statementData, setStatementData] = useState<StatementGroupAgreement[] | null>(null);
@@ -95,7 +96,11 @@ export function StatementAgreementView({ pollId, groups }: StatementAgreementVie
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Heatmap (2/3 width on large screens) */}
         <div className="lg:col-span-2">
-          <StatementAgreementHeatmap statements={statementData} groups={groups} />
+          <StatementAgreementHeatmap
+            statements={statementData}
+            groups={groups}
+            currentUserGroupId={currentUserGroupId}
+          />
         </div>
 
         {/* Coalition Analysis Sidebar (1/3 width on large screens) */}
