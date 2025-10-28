@@ -373,7 +373,7 @@ export async function hasUserMetVotingThresholdAction(userId: string, pollId: st
   }
 }
 
-export async function getStatementBatchAction(pollId: string, userId: string, batchNumber: number) {
+export async function getStatementBatchAction(pollId: string, userId: string, batchNumber: number = 1) {
   try {
     const { VotingService } = await import("@/lib/services/voting-service");
     const statements = await VotingService.getStatementBatch(pollId, userId, batchNumber);

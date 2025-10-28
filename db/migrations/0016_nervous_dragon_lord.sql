@@ -1,0 +1,1 @@
+CREATE INDEX "statement_classifications_poll_statement_idx" ON "statement_classifications" USING btree ("poll_id","statement_id");

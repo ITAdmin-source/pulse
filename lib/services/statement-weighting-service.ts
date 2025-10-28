@@ -187,32 +187,31 @@ export class StatementWeightingService {
     pollId: string,
     statementIds: string[]
   ): Promise<StatementWithWeight[]> {
-    // Get statement data
-    const stmts = await db
-      .select()
-      .from(statements)
-      .where(
-        and(
-          eq(statements.pollId, pollId),
-          inArray(statements.id, statementIds)
-        )
-      );
-
-    // Get classifications
-    const classifications = await db
-      .select()
-      .from(statementClassifications)
-      .where(
-        and(
-          eq(statementClassifications.pollId, pollId),
-          inArray(statementClassifications.statementId, statementIds)
-        )
-      );
+    // PHASE 2 OPTIMIZATION: Parallelize all data fetches
+    const [stmts, classifications, voteCounts] = await Promise.all([
+      // Get statement data
+      db.select()
+        .from(statements)
+        .where(
+          and(
+            eq(statements.pollId, pollId),
+            inArray(statements.id, statementIds)
+          )
+        ),
+      // Get classifications
+      db.select()
+        .from(statementClassifications)
+        .where(
+          and(
+            eq(statementClassifications.pollId, pollId),
+            inArray(statementClassifications.statementId, statementIds)
+          )
+        ),
+      // Get vote counts
+      getStatementVoteCounts(pollId, statementIds)
+    ]);
 
     const classMap = new Map(classifications.map(c => [c.statementId, c]));
-
-    // Get vote counts
-    const voteCounts = await getStatementVoteCounts(pollId, statementIds);
 
     // Calculate weights
     const weights: StatementWithWeight[] = [];
@@ -286,19 +285,20 @@ export class StatementWeightingService {
     pollId: string,
     statementIds: string[]
   ): Promise<StatementWithWeight[]> {
-    // Get statement data
-    const stmts = await db
-      .select()
-      .from(statements)
-      .where(
-        and(
-          eq(statements.pollId, pollId),
-          inArray(statements.id, statementIds)
-        )
-      );
-
-    // Get vote counts
-    const voteCounts = await getStatementVoteCounts(pollId, statementIds);
+    // PHASE 2 OPTIMIZATION: Parallelize statement data and vote counts fetch
+    const [stmts, voteCounts] = await Promise.all([
+      // Get statement data
+      db.select()
+        .from(statements)
+        .where(
+          and(
+            eq(statements.pollId, pollId),
+            inArray(statements.id, statementIds)
+          )
+        ),
+      // Get vote counts
+      getStatementVoteCounts(pollId, statementIds)
+    ]);
 
     // Calculate average votes
     const totalVotes = Array.from(voteCounts.values()).reduce(

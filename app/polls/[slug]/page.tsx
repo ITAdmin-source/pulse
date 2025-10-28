@@ -566,22 +566,22 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           setUserId(dbUser.id);
           setSessionId(contextSessionId);
 
-          // Fix #2: Parallelize ALL data fetches (votes, progress, demographics, batch)
-          // Load user's votes, progress, and demographics in parallel
-          const [votesResult, progressResult, demographicsResult] = await Promise.all([
+          // PHASE 1 OPTIMIZATION: Parallelize ALL data fetches (votes, progress, demographics, batch)
+          // batchNumber now has default value (1), enabling full parallelization
+          const [votesResult, progressResult, demographicsResult, batchResult] = await Promise.all([
             getUserVotesForPollAction(dbUser.id, fetchedPoll.id),
             getVotingProgressAction(fetchedPoll.id, dbUser.id),
-            getUserDemographicsByIdAction(dbUser.id)
+            getUserDemographicsByIdAction(dbUser.id),
+            getStatementBatchAction(fetchedPoll.id, dbUser.id) // Uses default batchNumber = 1
           ]);
 
           const userVotesLookup = votesResult.success ? votesResult.data || {} : {};
           setHasDemographics(demographicsResult.success && !!demographicsResult.data);
 
           if (progressResult.success && progressResult.data) {
-            const { totalStatements, currentBatch } = progressResult.data;
+            const { totalStatements } = progressResult.data;
 
-            // Check if user has voted on ALL statements BEFORE loading batch
-            // This handles the case where getStatementBatchAction returns empty array
+            // Check if user has voted on ALL statements
             const totalVoted = Object.keys(userVotesLookup).length;
             const hasVotedOnAll = totalVoted >= totalStatements;
 
@@ -601,10 +601,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
               // Auto-switch to results tab (user has voted on all statements, so definitely 10+)
               setActiveTab("results");
             } else {
-              // Fix #2: Fetch statement batch (was sequential, now remains separate due to conditional logic)
-              // Note: Can't parallelize with votes/progress because we need totalVoted check first
-              const batchResult = await getStatementBatchAction(fetchedPoll.id, dbUser.id, currentBatch);
-
+              // Use batch result from parallel fetch
               if (batchResult.success && batchResult.data && batchResult.data.length > 0) {
                 const manager = new StatementManager(
                   batchResult.data,
@@ -619,7 +616,6 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                 setCurrentStatement(nextStmt);
 
                 // Auto-landing logic: If user has 10+ votes, send them to Results view
-                const totalVoted = Object.keys(userVotesLookup).length;
                 const votesRequiredForResults = Math.min(10, totalStatements);
                 if (totalVoted >= votesRequiredForResults) {
                   setActiveTab("results");

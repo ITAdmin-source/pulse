@@ -1,4 +1,4 @@
-import { pgTable, uuid, jsonb, real, timestamp, smallint, text } from "drizzle-orm/pg-core";
+import { pgTable, uuid, jsonb, real, timestamp, smallint, text, index } from "drizzle-orm/pg-core";
 import { polls } from "./polls";
 import { users } from "./users";
 
@@ -114,7 +114,10 @@ export const statementClassifications = pgTable("statement_classifications", {
   computedAt: timestamp("computed_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  // Performance index for batch classification lookups in weighted ordering
+  pollIdStatementIdIdx: index("statement_classifications_poll_statement_idx").on(table.pollId, table.statementId),
+}));
 
 // Type exports for TypeScript
 export type PollClusteringMetadata = typeof pollClusteringMetadata.$inferSelect;

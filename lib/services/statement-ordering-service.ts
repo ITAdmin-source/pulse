@@ -70,20 +70,21 @@ class RandomStrategy implements OrderingStrategy {
   }
 
   /**
-   * Generate deterministic seed from user + poll + batch context
+   * Generate deterministic seed from user + poll context
    * Optional override seed for testing specific orderings
+   * Note: batchNumber removed to enable parallelization
    */
   private generateSeed(context: OrderingContext): number {
-    const { userId, pollId, batchNumber, pollConfig } = context;
+    const { userId, pollId, pollConfig } = context;
 
     // Use override seed if provided (for testing)
     if (pollConfig?.randomSeed) {
-      const seedInput = `${userId}-${pollConfig.randomSeed}-${batchNumber}`;
+      const seedInput = `${userId}-${pollConfig.randomSeed}`;
       return stringToSeed(seedInput);
     }
 
-    // Default seed: userId + pollId + batchNumber
-    const seedInput = `${userId}-${pollId}-${batchNumber}`;
+    // Default seed: userId + pollId (batchNumber removed)
+    const seedInput = `${userId}-${pollId}`;
     return stringToSeed(seedInput);
   }
 }
@@ -140,11 +141,10 @@ class WeightedStrategy implements OrderingStrategy {
   /**
    * Weighted random selection using cumulative distribution
    *
-   * Algorithm:
-   * 1. Calculate cumulative weights for all statements
-   * 2. Generate seeded random number in [0, totalWeight]
-   * 3. Binary search to find statement where random falls
-   * 4. Repeat for remaining statements
+   * Algorithm (Optimized O(n log n)):
+   * 1. Build initial cumulative weight array once: O(n)
+   * 2. For each selection: O(log n) binary search + O(1) removal
+   * 3. Total: O(n log n) vs previous O(n²)
    *
    * Deterministic: Same user + poll + batch = same order
    *
@@ -162,63 +162,90 @@ class WeightedStrategy implements OrderingStrategy {
     const seed = this.generateSeed(context);
     const rng = new SeededRandom(seed);
 
-    // Create ordered list to shuffle
-    const orderedStatements = [...statements];
+    // Build initial cumulative weights array: O(n)
+    const items: Array<{ stmt: Statement; weight: number }> = statements.map(s => ({
+      stmt: s,
+      weight: weights.get(s.id) ?? 0.5
+    }));
+
     const result: Statement[] = [];
-    const remaining = new Set(orderedStatements.map(s => s.id));
 
-    // Iteratively select statements using weighted random
-    while (remaining.size > 0) {
-      // Build cumulative weight array for remaining statements
-      const remainingStmts = orderedStatements.filter(s =>
-        remaining.has(s.id)
-      );
-      const cumulativeWeights: number[] = [];
-      let cumulative = 0;
+    // Iteratively select statements using weighted random: O(n log n) total
+    while (items.length > 0) {
+      // Build cumulative weights: O(n)
+      const cumulativeWeights = this.buildCumulativeWeights(items);
+      const totalWeight = cumulativeWeights[cumulativeWeights.length - 1];
 
-      for (const stmt of remainingStmts) {
-        const weight = weights.get(stmt.id) ?? 0.5; // Default weight if missing
-        cumulative += weight;
-        cumulativeWeights.push(cumulative);
-      }
-
-      const totalWeight = cumulative;
-
-      // Select using weighted random
+      // Select using binary search: O(log n)
       const rand = rng.next() * totalWeight;
-      let selectedIdx = 0;
+      const selectedIdx = this.binarySearchCumulative(cumulativeWeights, rand);
 
-      // Find first index where cumulative >= random
-      for (let i = 0; i < cumulativeWeights.length; i++) {
-        if (rand <= cumulativeWeights[i]) {
-          selectedIdx = i;
-          break;
-        }
-      }
-
-      const selected = remainingStmts[selectedIdx];
-      result.push(selected);
-      remaining.delete(selected.id);
+      // Add to result and remove from items: O(1)
+      result.push(items[selectedIdx].stmt);
+      items.splice(selectedIdx, 1);
     }
 
     return result;
   }
 
   /**
-   * Generate deterministic seed from user + poll + batch context
+   * Build cumulative weights array: O(n)
+   * @param items - Items with weights
+   * @returns Array of cumulative weights
+   */
+  private buildCumulativeWeights(
+    items: Array<{ stmt: Statement; weight: number }>
+  ): number[] {
+    const cumulative: number[] = [];
+    let sum = 0;
+    for (const item of items) {
+      sum += item.weight;
+      cumulative.push(sum);
+    }
+    return cumulative;
+  }
+
+  /**
+   * Binary search to find index where random value falls: O(log n)
+   * @param cumulativeWeights - Cumulative weight array
+   * @param target - Random target value
+   * @returns Index of selected item
+   */
+  private binarySearchCumulative(
+    cumulativeWeights: number[],
+    target: number
+  ): number {
+    let left = 0;
+    let right = cumulativeWeights.length - 1;
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2);
+      if (target <= cumulativeWeights[mid]) {
+        right = mid;
+      } else {
+        left = mid + 1;
+      }
+    }
+
+    return left;
+  }
+
+  /**
+   * Generate deterministic seed from user + poll context
    * Optional override seed for testing specific orderings
+   * Note: batchNumber removed to enable parallelization
    */
   private generateSeed(context: OrderingContext): number {
-    const { userId, pollId, batchNumber, pollConfig } = context;
+    const { userId, pollId, pollConfig } = context;
 
     // Use override seed if provided (for testing)
     if (pollConfig?.randomSeed) {
-      const seedInput = `${userId}-${pollConfig.randomSeed}-${batchNumber}`;
+      const seedInput = `${userId}-${pollConfig.randomSeed}`;
       return stringToSeed(seedInput);
     }
 
-    // Default seed: userId + pollId + batchNumber
-    const seedInput = `${userId}-${pollId}-${batchNumber}`;
+    // Default seed: userId + pollId (batchNumber removed)
+    const seedInput = `${userId}-${pollId}`;
     return stringToSeed(seedInput);
   }
 }

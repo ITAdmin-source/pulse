@@ -481,34 +481,35 @@ export class VotingService {
   static async getStatementBatch(
     pollId: string,
     userId: string,
-    batchNumber: number
+    batchNumber: number = 1  // Default value enables parallelization
   ): Promise<typeof statements.$inferSelect[]> {
     if (batchNumber < 1) {
       throw new Error("Batch number must be at least 1");
     }
 
-    // 1. Get all statement IDs the user has already voted on for this poll
-    const votedStatementIds = await db
-      .select({ statementId: votes.statementId })
-      .from(votes)
-      .innerJoin(statements, eq(votes.statementId, statements.id))
-      .where(and(
-        eq(votes.userId, userId),
-        eq(statements.pollId, pollId)
-      ));
-
-    const votedIds = votedStatementIds.map(v => v.statementId);
-
-    // 2. Get poll configuration for ordering strategy
-    const poll = await db
-      .select({
+    // PHASE 2 OPTIMIZATION: Parallelize voted IDs and poll config queries
+    const [votedStatementIds, pollResults] = await Promise.all([
+      // 1. Get all statement IDs the user has already voted on for this poll
+      db.select({ statementId: votes.statementId })
+        .from(votes)
+        .innerJoin(statements, eq(votes.statementId, statements.id))
+        .where(and(
+          eq(votes.userId, userId),
+          eq(statements.pollId, pollId)
+        )),
+      // 2. Get poll configuration for ordering strategy
+      db.select({
         id: polls.id,
         statementOrderMode: polls.statementOrderMode,
         randomSeed: polls.randomSeed,
       })
-      .from(polls)
-      .where(eq(polls.id, pollId))
-      .limit(1);
+        .from(polls)
+        .where(eq(polls.id, pollId))
+        .limit(1)
+    ]);
+
+    const votedIds = votedStatementIds.map(v => v.statementId);
+    const poll = pollResults;
 
     const orderMode = (poll[0]?.statementOrderMode as "sequential" | "random" | "weighted") || "random";
     const randomSeed = poll[0]?.randomSeed || null;
@@ -519,9 +520,10 @@ export class VotingService {
       // Uses hash-based ordering to fetch only what we need (10 rows instead of 200+)
 
       // Generate deterministic seed string from context
+      // Note: batchNumber removed - user doesn't need same statements on refresh
       const seedString = randomSeed
-        ? `${userId}-${randomSeed}-${batchNumber}`
-        : `${userId}-${pollId}-${batchNumber}`;
+        ? `${userId}-${randomSeed}`
+        : `${userId}-${pollId}`;
 
       // Fetch ONLY unvoted statements with SQL-side random ordering
       const randomStatements = await db
