@@ -131,8 +131,8 @@ export const pollPage = {
 export const splashScreen = {
   // How it works (3 simple steps)
   step1: 'קראו עמדות שונות',
-  step2: 'החליט אם אתם בעד 👍 או נגד 👎',
-  step3: 'קבלו תובנה אישית, וראו איפה אתם ביחס לאחרים',
+  step2: 'הצביעו בעד 👍 או נגד 👎',
+  step3: 'ראו איפה אתם ביחס לאחרים',
 
   // Privacy note
   privacyNote: 'ההצבעה אנונימית',
