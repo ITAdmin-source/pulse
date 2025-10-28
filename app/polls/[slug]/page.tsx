@@ -74,6 +74,16 @@ const DemographicHeatmap = dynamic(() => import("@/components/results-v2/demogra
   ssr: false
 });
 
+const MusicRecommendationCard = dynamic(() => import("@/components/music/music-recommendation-card").then(mod => ({ default: mod.MusicRecommendationCard })), {
+  loading: () => (
+    <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary-600" />
+      <p className="text-gray-600 text-sm">מחפשים את השיר המושלם...</p>
+    </div>
+  ),
+  ssr: false
+});
+
 // Removed MoreStatementsPrompt and VotingCompleteBanner - replaced by ResultsActionButtons
 
 // Actions
@@ -91,7 +101,7 @@ import type { ArtifactSlot } from "@/components/results-v2/minimal-collection-fo
 // Services & Utils
 import { StatementManager } from "@/lib/services/statement-manager";
 import { colors } from "@/lib/design-tokens-v2";
-import { pollPage, results, voting } from "@/lib/strings/he";
+import { pollPage, results, voting, musicRecommendation } from "@/lib/strings/he";
 import { getInsightFromStorage, saveInsightToStorage } from "@/lib/utils/insight-storage";
 
 interface Statement {
@@ -253,6 +263,18 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   // Artifact collection state
   const [userArtifacts, setUserArtifacts] = useState<ArtifactSlot[]>([]);
   const [newlyEarnedArtifact, setNewlyEarnedArtifact] = useState<{ emoji: string; profile: string } | null>(null);
+
+  // Music recommendation state
+  const [musicData, setMusicData] = useState<{
+    songTitle: string;
+    artistName: string;
+    spotifyLink: string;
+    appleMusicLink: string;
+    thumbnailUrl: string;
+    reasoning: string;
+    fallbackUsed?: boolean;
+  } | null>(null);
+  const [isLoadingMusic, setIsLoadingMusic] = useState(false);
 
   // Locks
   const isVotingRef = useRef(false);
@@ -1249,6 +1271,104 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     }
   }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
 
+  // Load music recommendation when insight is available
+  const loadMusicRecommendation = useCallback(async () => {
+    if (!poll || !userId || !resultsData.insight || musicData) {
+      return; // Skip if no poll, no user, no insight, or already loaded
+    }
+
+    console.log("[Music] Loading music recommendation...");
+    setIsLoadingMusic(true);
+
+    try {
+      // Get user's votes for statements (returns lookup object, not array)
+      const userVotesResult = await getUserVotesForPollAction(userId, poll.id);
+      if (!userVotesResult.success || !userVotesResult.data) {
+        console.warn("[Music] Failed to fetch user votes");
+        return;
+      }
+
+      const votesLookup = userVotesResult.data; // Record<statementId, vote>
+
+      // Get all statements for this poll
+      const statementsResult = await getApprovedStatementsByPollIdAction(poll.id);
+      if (!statementsResult.success || !statementsResult.data) {
+        console.warn("[Music] Failed to fetch statements");
+        return;
+      }
+
+      const statements = statementsResult.data.map((stmt: any) => {
+        const vote = votesLookup[stmt.id] || 0; // Get vote from lookup object
+        return {
+          text: stmt.text,
+          vote: vote as 1 | 0 | -1,
+        };
+      });
+
+      // Calculate vote statistics
+      const agreeCount = statements.filter((s: any) => s.vote === 1).length;
+      const disagreeCount = statements.filter((s: any) => s.vote === -1).length;
+      const unsureCount = statements.filter((s: any) => s.vote === 0).length;
+      const total = agreeCount + disagreeCount + unsureCount;
+
+      const voteStatistics = {
+        agreeCount,
+        disagreeCount,
+        unsureCount,
+        total,
+        agreePercent: total > 0 ? Math.round((agreeCount / total) * 100) : 0,
+        disagreePercent: total > 0 ? Math.round((disagreeCount / total) * 100) : 0,
+        unsurePercent: total > 0 ? Math.round((unsureCount / total) * 100) : 0,
+      };
+
+      // Call music recommendation API
+      const response = await fetch('/api/insights/music-recommendation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pollId: poll.id,
+          pollQuestion: poll.question,
+          pollDescription: poll.description || undefined,
+          statements,
+          voteStatistics,
+          insightTitle: `${resultsData.insight.emoji} ${resultsData.insight.profile}`,
+          insightBody: resultsData.insight.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Music API failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.music) {
+        setMusicData({
+          songTitle: data.music.songTitle,
+          artistName: data.music.artistName,
+          spotifyLink: data.music.spotifyLink,
+          appleMusicLink: data.music.appleMusicLink,
+          thumbnailUrl: data.music.thumbnailUrl,
+          reasoning: data.music.reasoning,
+          fallbackUsed: data.metadata?.fallbackUsed,
+        });
+        console.log("[Music] ✅ Music recommendation loaded:", data.music.songTitle);
+      }
+    } catch (error) {
+      console.error("[Music] Error loading music:", error);
+      // Silently fail - music is optional enhancement
+    } finally {
+      setIsLoadingMusic(false);
+    }
+  }, [poll, userId, resultsData.insight, musicData]);
+
+  // Auto-load music when insight becomes available
+  useEffect(() => {
+    if (resultsData.insight && !musicData && !isLoadingMusic) {
+      loadMusicRecommendation();
+    }
+  }, [resultsData.insight, musicData, isLoadingMusic, loadMusicRecommendation]);
+
   // Auto-load results when Results tab becomes active
   // For closed polls, skip the results locked and demographics checks
   // Also allow results loading without userId for closed polls (anonymous users without DB entry)
@@ -1591,22 +1711,39 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                                 </button>
                               </div>
                             ) : resultsData.insight ? (
-                              <InsightCard
-                                profile={resultsData.insight.profile}
-                                emoji={resultsData.insight.emoji}
-                                description={resultsData.insight.description}
-                                pollSlug={poll.slug}
-                                pollQuestion={poll.question}
-                                showSignUpPrompt={!dbUser?.clerkUserId}
-                                isAuthenticated={!!dbUser?.clerkUserId}
-                                artifacts={userArtifacts}
-                                userId={userId || undefined}
-                                currentPollId={poll.id}
-                                newlyEarned={newlyEarnedArtifact || undefined}
-                                onDismissNewBadge={handleDismissNewBadge}
-                                onSignUp={handleSignUpFromCollection}
-                                onEarnMore={handleEarnMore}
-                              />
+                              <>
+                                <InsightCard
+                                  profile={resultsData.insight.profile}
+                                  emoji={resultsData.insight.emoji}
+                                  description={resultsData.insight.description}
+                                  pollSlug={poll.slug}
+                                  pollQuestion={poll.question}
+                                  showSignUpPrompt={!dbUser?.clerkUserId}
+                                  isAuthenticated={!!dbUser?.clerkUserId}
+                                  artifacts={userArtifacts}
+                                  userId={userId || undefined}
+                                  currentPollId={poll.id}
+                                  newlyEarned={newlyEarnedArtifact || undefined}
+                                  onDismissNewBadge={handleDismissNewBadge}
+                                  onSignUp={handleSignUpFromCollection}
+                                  onEarnMore={handleEarnMore}
+                                />
+
+                                {/* Music Recommendation Card - Shows after insight */}
+                                {musicData && (
+                                  <div className="mt-6">
+                                    <MusicRecommendationCard
+                                      songTitle={musicData.songTitle}
+                                      artistName={musicData.artistName}
+                                      spotifyLink={musicData.spotifyLink}
+                                      appleMusicLink={musicData.appleMusicLink}
+                                      thumbnailUrl={musicData.thumbnailUrl}
+                                      reasoning={musicData.reasoning}
+                                      fallbackUsed={musicData.fallbackUsed}
+                                    />
+                                  </div>
+                                )}
+                              </>
                             ) : null}
                           </>
                         )}

@@ -816,6 +816,37 @@ export const errorPages = {
   },
 } as const;
 
+// ============================================================================
+// MUSIC RECOMMENDATION
+// ============================================================================
+
+export const musicRecommendation = {
+  // Card Headers
+  sectionTitle: 'השיר שלך',
+  sectionSubtitle: 'בחרנו לך שיר שמתאים לאישיותך',
+
+  // Loading States
+  loading: 'מחפשים את השיר המושלם...',
+  loadingSubtext: 'מנתחים את דפוס ההצבעה שלך',
+
+  // Buttons
+  listenOnSpotify: 'Spotify ב-',
+  listenOnAppleMusic: 'Apple Music ב-',
+  shareButton: 'שתפו',
+
+  // Labels
+  songBy: 'מאת',
+  whyThisSong: 'למה השיר הזה?',
+
+  // Error States
+  errorTitle: 'לא הצלחנו למצוא שיר',
+  errorMessage: 'נסו שוב מאוחר יותר',
+  retryButton: 'נסו שוב',
+
+  // Fallback message
+  fallbackNote: 'זוהי המלצה כללית - נסו לרענן לקבלת שיר מותאם יותר',
+} as const;
+
 /**
  * Format large numbers (e.g., 1000 -> 1K)
  */
@@ -850,6 +881,7 @@ export default {
   dateTime,
   opinionMap,
   errorPages,
+  musicRecommendation,
 } as const;
 
 // Type for all strings
@@ -873,4 +905,5 @@ export const strings = {
   dateTime,
   opinionMap,
   errorPages,
+  musicRecommendation,
 } as const;

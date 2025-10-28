@@ -15,3 +15,4 @@ export * from './user-feedback';
 export * from './clustering';
 export * from './statement-weights';
 export * from './clustering-queue';
+export * from './user-music-recommendations';
