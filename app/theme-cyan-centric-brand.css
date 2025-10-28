@@ -75,7 +75,7 @@
 
   /* Additional Gradients */
   --gradient-header-from: rgba(4, 46, 95, 0.8);
-  --gradient-header-via: rgba(22, 195, 234, 0.6);
+  --gradient-header-via: rgba(10, 74, 122,0.8);
   --gradient-header-to: rgba(4, 46, 95, 0.8);
   --gradient-error-from: #dc2626;
   --gradient-error-via: #f43f5e;
