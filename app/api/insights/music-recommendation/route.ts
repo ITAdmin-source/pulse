@@ -6,6 +6,7 @@ import { generateMusicRecommendation } from "@/lib/ai/music-recommendation-clien
 import { getMusicRecommendation, saveMusicRecommendation } from "@/db/queries/music-recommendation-queries";
 import { getUserDemographicsById } from "@/db/queries/user-demographics-queries";
 import { searchSpotifyTrack, validateSpotifyConfig } from "@/lib/services/spotify-service";
+import { isMusicRecommendationsEnabled } from "@/lib/config/features";
 import crypto from "crypto";
 
 // ===========================================================================
@@ -34,6 +35,20 @@ export async function POST(request: NextRequest) {
   const startTime = performance.now();
   console.log("[MusicAPI] ===== MUSIC RECOMMENDATION REQUEST STARTED =====");
   console.log("[MusicAPI] Timestamp:", new Date().toISOString());
+
+  // -----------------------------------------------------------------------
+  // 0. CHECK FEATURE FLAG
+  // -----------------------------------------------------------------------
+  if (!isMusicRecommendationsEnabled()) {
+    console.log("[MusicAPI] ⚠️ Music recommendations feature is disabled");
+    return NextResponse.json(
+      {
+        error: "Music recommendations feature is currently disabled",
+        featureEnabled: false
+      },
+      { status: 503 }
+    );
+  }
 
   try {
     // -----------------------------------------------------------------------

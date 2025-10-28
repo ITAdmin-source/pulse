@@ -37,7 +37,7 @@ export async function generateMusicRecommendation(
 ): Promise<MusicRecommendationResponse> {
   const startTime = Date.now();
   const maxRetries = 2; // Fewer retries than insights (music is non-critical)
-  const timeoutMs = 15000; // 15 seconds (faster timeout than insights)
+  const timeoutMs = 30000; // 30 seconds (enough for complex recommendations with demographics)
 
   console.log("[MusicAI] ===== STARTING MUSIC RECOMMENDATION =====");
   console.log("[MusicAI] Poll:", request.pollQuestion);

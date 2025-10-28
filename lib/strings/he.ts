@@ -125,6 +125,23 @@ export const pollPage = {
 } as const;
 
 // ============================================================================
+// SPLASH SCREEN (WELCOME VIEW)
+// ============================================================================
+
+export const splashScreen = {
+  // How it works (3 simple steps)
+  step1: 'קראו עמדות שונות',
+  step2: 'הביעו את דעתכם',
+  step3: 'קבלו תובנה אישית',
+
+  // Privacy note
+  privacyNote: 'ההצבעה אנונימית',
+
+  // CTA Button
+  startButton: 'בואו נתחיל',
+} as const;
+
+// ============================================================================
 // VOTING INTERFACE
 // ============================================================================
 
@@ -868,6 +885,7 @@ export default {
   pollsList,
   pollCard,
   pollPage,
+  splashScreen,
   voting,
   results,
   banners,
@@ -892,6 +910,7 @@ export const strings = {
   pollsList,
   pollCard,
   pollPage,
+  splashScreen,
   voting,
   results,
   banners,

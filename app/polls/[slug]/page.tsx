@@ -31,6 +31,7 @@ import confetti from "canvas-confetti";
 // v2.0 Components - Core (always loaded)
 import { SplitVoteCard } from "@/components/voting-v2/split-vote-card";
 import { ProgressSegments } from "@/components/voting-v2/progress-segments";
+import { WelcomeView } from "@/components/voting-v2/welcome-view";
 import { ResultsLockedBanner } from "@/components/banners/results-locked-banner";
 import { ClosedPollBanner } from "@/components/banners/closed-poll-banner";
 import { PartialParticipationBanner } from "@/components/banners/partial-participation-banner";
@@ -225,6 +226,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const [isPollClosed, setIsPollClosed] = useState(false);
   const [inGracePeriod, setInGracePeriod] = useState(false);
 
+  // Welcome view state (splash screen for first-time voters)
+  const [showWelcomeView, setShowWelcomeView] = useState(true);
+
   // Voting state
   const [currentStatement, setCurrentStatement] = useState<Statement | null>(null);
   const [showVoteStats, setShowVoteStats] = useState(false);
@@ -295,6 +299,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   const progress = statementManager?.getProgress();
   const votedCount = progress?.totalVoted ?? 0;
   const totalStatements = progress?.totalStatementsInPoll ?? 0;
+
+  // Hide welcome view once user has voted at least once
+  const shouldShowWelcomeView = showWelcomeView && votedCount === 0;
 
   // Dynamic threshold: 10 votes OR all statements if poll has fewer than 10
   const votesRequiredForResults = Math.min(10, totalStatements);
@@ -1273,6 +1280,13 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
 
   // Load music recommendation when insight is available
   const loadMusicRecommendation = useCallback(async () => {
+    // Check if feature is enabled
+    const isMusicEnabled = process.env.NEXT_PUBLIC_ENABLE_MUSIC_RECOMMENDATIONS === 'true';
+    if (!isMusicEnabled) {
+      console.log("[Music] Feature is disabled via environment variable");
+      return;
+    }
+
     if (!poll || !userId || !resultsData.insight || musicData) {
       return; // Skip if no poll, no user, no insight, or already loaded
     }
@@ -1458,6 +1472,11 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     setActiveTab("results");
   }, []);
 
+  // Handle welcome view start button
+  const handleWelcomeStart = useCallback(() => {
+    setShowWelcomeView(false);
+  }, []);
+
   // Handle "Sign Up" button in collection footer (anonymous users)
   const handleSignUpFromCollection = useCallback(() => {
     openSignUp();
@@ -1524,19 +1543,18 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Poll Header - Question and Description */}
-        <div className="text-center mb-4 sm:mb-6 px-4">
-          <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">{poll.emoji || '📊'}</div>
-          <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-            <h1 className="text-2xl sm:text-3xl font-medium text-white">{poll.question}</h1>
-            {isPollClosed && (
-              <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
-            )}
+        {/* Poll Header - Question only (hidden when showing welcome view) */}
+        {!shouldShowWelcomeView && (
+          <div className="text-center mb-4 sm:mb-6 px-4">
+            <div className="text-5xl sm:text-5xl mb-2 sm:mb-3">{poll.emoji || '📊'}</div>
+            <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+              <h1 className="text-2xl sm:text-3xl font-medium text-white">{poll.question}</h1>
+              {isPollClosed && (
+                <span className="bg-status-error text-white text-xs font-bold px-2 py-1 rounded">סגור</span>
+              )}
+            </div>
           </div>
-          {poll.description && (
-            <p className="text-primary-200 text-sm sm:text-base">{poll.description}</p>
-          )}
-        </div>
+        )}
 
         {/* Tab Navigation - removed from Results view, only sub-navigation will be shown */}
 
@@ -1545,7 +1563,15 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
           <div className="space-y-6">
             {/* Voting Interface */}
             <AnimatePresence mode="wait">
-              {showStatementModal ? (
+              {shouldShowWelcomeView ? (
+                <WelcomeView
+                  key="welcome-view"
+                  pollQuestion={poll.question}
+                  pollDescription={poll.description}
+                  pollEmoji={poll.emoji}
+                  onStart={handleWelcomeStart}
+                />
+              ) : showStatementModal ? (
                 <StatementSubmissionModal
                   key="statement-submission"
                   open={showStatementModal}
@@ -1729,8 +1755,8 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
                                   onEarnMore={handleEarnMore}
                                 />
 
-                                {/* Music Recommendation Card - Shows after insight */}
-                                {musicData && (
+                                {/* Music Recommendation Card - Shows after insight (if feature enabled) */}
+                                {musicData && process.env.NEXT_PUBLIC_ENABLE_MUSIC_RECOMMENDATIONS === 'true' && (
                                   <div className="mt-6">
                                     <MusicRecommendationCard
                                       songTitle={musicData.songTitle}

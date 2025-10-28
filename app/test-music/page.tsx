@@ -28,6 +28,26 @@ export default function TestMusicPage() {
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<MetadataData | null>(null);
 
+  // Check if feature is enabled
+  const isMusicEnabled = process.env.NEXT_PUBLIC_ENABLE_MUSIC_RECOMMENDATIONS === 'true';
+
+  // If feature is disabled, show message
+  if (!isMusicEnabled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Music Recommendations Disabled</h1>
+          <p className="text-gray-600 mb-4">
+            The music recommendations feature is currently disabled.
+          </p>
+          <p className="text-sm text-gray-500">
+            To enable it, set <code className="bg-gray-100 px-2 py-1 rounded">NEXT_PUBLIC_ENABLE_MUSIC_RECOMMENDATIONS=true</code> in your <code className="bg-gray-100 px-2 py-1 rounded">.env.local</code> file and restart the dev server.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   async function testMusicAPI() {
     setLoading(true);
     setError(null);
