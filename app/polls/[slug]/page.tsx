@@ -101,7 +101,7 @@ import type { ArtifactSlot } from "@/components/results-v2/minimal-collection-fo
 // Services & Utils
 import { StatementManager } from "@/lib/services/statement-manager";
 import { colors } from "@/lib/design-tokens-v2";
-import { pollPage, results, voting, musicRecommendation } from "@/lib/strings/he";
+import { pollPage, results, voting } from "@/lib/strings/he";
 import { getInsightFromStorage, saveInsightToStorage } from "@/lib/utils/insight-storage";
 
 interface Statement {
@@ -1297,7 +1297,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         return;
       }
 
-      const statements = statementsResult.data.map((stmt: any) => {
+      const statements = statementsResult.data.map((stmt) => {
         const vote = votesLookup[stmt.id] || 0; // Get vote from lookup object
         return {
           text: stmt.text,
@@ -1306,9 +1306,9 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       });
 
       // Calculate vote statistics
-      const agreeCount = statements.filter((s: any) => s.vote === 1).length;
-      const disagreeCount = statements.filter((s: any) => s.vote === -1).length;
-      const unsureCount = statements.filter((s: any) => s.vote === 0).length;
+      const agreeCount = statements.filter((s) => s.vote === 1).length;
+      const disagreeCount = statements.filter((s) => s.vote === -1).length;
+      const unsureCount = statements.filter((s) => s.vote === 0).length;
       const total = agreeCount + disagreeCount + unsureCount;
 
       const voteStatistics = {

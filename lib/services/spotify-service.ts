@@ -19,6 +19,38 @@ interface SpotifyTrackResult {
   releaseDate: string;
 }
 
+interface SpotifyImage {
+  url: string;
+  height: number;
+  width: number;
+}
+
+interface SpotifyArtist {
+  name: string;
+  id: string;
+}
+
+interface SpotifyAlbum {
+  name: string;
+  images: SpotifyImage[];
+  release_date: string;
+}
+
+interface SpotifyTrack {
+  name: string;
+  external_urls: {
+    spotify: string;
+  };
+  album: SpotifyAlbum;
+  artists: SpotifyArtist[];
+}
+
+interface SpotifySearchResponse {
+  tracks: {
+    items: SpotifyTrack[];
+  };
+}
+
 // Token cache (in-memory, valid for 1 hour)
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
@@ -97,7 +129,7 @@ export async function searchSpotifyTrack(
       `artist:${artistName}`,
     ];
 
-    let data: any = null;
+    let data: SpotifySearchResponse | null = null;
     let strategyUsed = 0;
 
     for (let i = 0; i < searchStrategies.length; i++) {
@@ -119,7 +151,7 @@ export async function searchSpotifyTrack(
 
       data = await response.json();
 
-      if (data.tracks?.items?.length > 0) {
+      if (data?.tracks?.items?.length && data.tracks.items.length > 0) {
         strategyUsed = i + 1;
         console.log(`[Spotify] Found results using strategy ${strategyUsed}`);
         break;
