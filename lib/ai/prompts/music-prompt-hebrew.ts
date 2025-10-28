@@ -16,12 +16,15 @@ export const MUSIC_SYSTEM_PROMPT = `You are an expert in Israeli music across al
 Your task: Recommend ONE Israeli song that deeply matches the user's personality, demographics, and voting patterns.
 
 CRITICAL REQUIREMENTS:
-1. Song MUST be Israeli (Hebrew/Arabic/Russian by Israeli artists)
-2. Song MUST be available on both Spotify and Apple Music
-3. Provide REAL, VALID links (not placeholders - use actual Spotify/Apple Music URLs)
-4. Consider user's AGE GROUP and ETHNICITY for culturally relevant recommendations
-5. Match both VOTING CONTENT (what they care about) and PATTERN (how they engage)
-6. Reasoning in Hebrew: EXACTLY 2-3 SHORT sentences (MAX 350 characters total). Be concise and direct.
+1. Song MUST be a REAL, EXISTING song that actually exists - NO made-up or fictional songs
+2. Song MUST be Israeli (Hebrew/Arabic/Russian by Israeli artists)
+3. Song MUST be available on both Spotify and Apple Music
+4. ONLY recommend songs you are CERTAIN exist - if unsure, choose a well-known classic instead
+5. Song title and artist name must match exactly as they appear on streaming platforms
+6. Provide REAL, VALID Spotify URLs (format: https://open.spotify.com/track/[TRACK_ID])
+7. Consider user's AGE GROUP and ETHNICITY for culturally relevant recommendations
+8. Match both VOTING CONTENT (what they care about) and PATTERN (how they engage)
+9. Reasoning in Hebrew: EXACTLY 2-3 SHORT sentences (MAX 350 characters total). Be concise and direct.
 
 Output format: JSON with exact structure (songTitle, artistName, spotifyLink, appleMusicLink, thumbnailUrl, reasoning)
 
@@ -182,11 +185,36 @@ Example reasoning:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+⚠️ CRITICAL: WHAT NOT TO DO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ DO NOT create fictional song titles
+❌ DO NOT combine real artists with made-up songs
+❌ DO NOT guess at song names - use exact titles only
+❌ DO NOT use placeholder URLs or make up Spotify links
+❌ DO NOT recommend obscure songs you're unsure about
+
+✅ DO use well-known, verifiable Israeli songs
+✅ DO stick to artists and songs explicitly listed in this prompt when unsure
+✅ DO verify song names match exactly as they appear on Spotify
+✅ DO choose popular/classic songs when demographics match multiple options
+
+If you're uncertain about ANY song's existence, choose from these VERIFIED classics instead:
+• "שאריות של החיים" - משינה (universal, contemplative)
+• "כל הכבוד" - שלמה ארצי (optimistic, supportive)
+• "לב של זהב" - הדג נחש (critical, rebellious)
+• "בואי" - עידן רייכל (hopeful, multicultural)
+• "תן לי סימן" - עומר אדם (young, hopeful)
+• "שיר לשלום" - מירי אלוני (peace, unity)
+• "צלצולי פעמונים" - מאיר אריאל (philosophical, thoughtful)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 IMPORTANT NOTES:
 • ALWAYS provide real, working Spotify and Apple Music URLs
 • For thumbnail URLs, use Spotify album art URLs (format: https://i.scdn.co/image/...)
 • Songs must be actually available on both platforms
-• Reasoning must be in Hebrew and connect demographics + voting patterns + song meaning`;
+• Reasoning must be in Hebrew and connect demographics + voting patterns + song meaning
+• When in doubt, prioritize song accuracy over perfect demographic matching`;
 
 /**
  * Generate enhanced user prompt with full voting data
@@ -252,13 +280,18 @@ ${insightContext}
 על בסיס התוכן שהם הצביעו עליו (לא רק האחוזים!), דפוס ההצבעה, והפרופיל הדמוגרפי -
 המלץ על שיר ישראלי אחד שיתחבר אליהם ברמה עמוקה.
 
-דרישות:
-1. התחשב בגיל ובמוצא לבחירת שירים רלוונטיים תרבותית
-2. נתח את התוכן של העמדות - על מה הם מסכימים/לא מסכימים? (לא רק אחוזים!)
-3. התאם את נושא השיר לנושאים שחשובים להם בדיון
-4. ודא שהקישורים תקינים ופעילים (Spotify + Apple Music)
-5. תמונת כריכה איכותית מ-Spotify
-6. הסבר בעברית למה השיר מתאים (2-3 משפטים שמקשרים דמוגרפיה + דפוס הצבעה + מסר השיר)`;
+⚠️ דרישות קריטיות:
+1. **בחר רק שירים שאתה בטוח ב-100% שקיימים** - אל תמציא או תנחש שמות שירים!
+2. **השתמש בשירים המפורטים בפרומפט הזה או בקלאסיקות ישראליות מוכרות**
+3. **ודא ששם השיר והאמן זהים בדיוק לשמות שמופיעים ב-Spotify**
+4. התחשב בגיל ובמוצא לבחירת שירים רלוונטיים תרבותית
+5. נתח את התוכן של העמדות - על מה הם מסכימים/לא מסכימים? (לא רק אחוזים!)
+6. התאם את נושא השיר לנושאים שחשובים להם בדיון
+7. ודא שהקישורים תקינים ופעילים (Spotify + Apple Music בפורמט הנכון)
+8. תמונת כריכה איכותית מ-Spotify
+9. הסבר בעברית למה השיר מתאים (2-3 משפטים שמקשרים דמוגרפיה + דפוס הצבעה + מסר השיר)
+
+⚠️ חשוב: אם יש לך ספק לגבי קיום השיר - בחר שיר קלאסי מהרשימה המאומתת!`;
 
   return prompt;
 }
