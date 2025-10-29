@@ -167,8 +167,10 @@ export function calculatePassRatePenalty(votes: VoteCounts): number {
   const total = agree + disagree + pass;
 
   if (total === 0) {
-    // No votes yet: neutral penalty (middle ground)
-    return 0.5;
+    // No votes yet: no penalty (give equal opportunity to gather initial data)
+    // The vote count boost already prioritizes less-voted statements
+    // Once we have data, pass rate will naturally penalize confusing statements
+    return 1.0;
   }
 
   const passRate = pass / total;

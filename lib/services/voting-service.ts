@@ -7,6 +7,7 @@ import { VoteValue, calculateVoteDistribution, getMinimumVotingThreshold } from 
 import { PollService } from "./poll-service";
 import { UserService } from "./user-service";
 import { ClusteringService } from "./clustering-service";
+import { StatementWeightingService } from "./statement-weighting-service";
 import { z } from "zod";
 
 export class VotingService {
@@ -222,6 +223,51 @@ export class VotingService {
         console.log(
           `[VotingService] Clustering trigger detected for poll ${statement[0].pollId}: ${triggerCheck.reason}`
         );
+
+        // Invalidate and eagerly recalculate statement weights on batch completion
+        // This ensures weights are always up-to-date with current vote distribution
+        try {
+          // Step 1: Invalidate old cache
+          await StatementWeightingService.invalidateWeights(statement[0].pollId);
+          console.log(
+            `[VotingService] Invalidated weight cache for poll ${statement[0].pollId} after batch completion`
+          );
+
+          // Step 2: Eagerly recalculate weights for ALL approved statements
+          // Get all approved statements for this poll
+          const { statements: statementsSchema } = await import("@/db/schema");
+          const { eq, and } = await import("drizzle-orm");
+          const { db } = await import("@/db/db");
+
+          const approvedStatements = await db
+            .select({ id: statementsSchema.id })
+            .from(statementsSchema)
+            .where(
+              and(
+                eq(statementsSchema.pollId, statement[0].pollId),
+                eq(statementsSchema.approved, true)
+              )
+            );
+
+          const statementIds = approvedStatements.map(s => s.id);
+
+          if (statementIds.length > 0) {
+            // Calculate weights for all statements (this also caches them)
+            await StatementWeightingService.getStatementWeights(
+              statement[0].pollId,
+              statementIds
+            );
+            console.log(
+              `[VotingService] Eagerly recalculated weights for ${statementIds.length} statements in poll ${statement[0].pollId}`
+            );
+          }
+        } catch (error) {
+          // Log error but don't fail the vote
+          console.error(
+            `[VotingService] Failed to invalidate/recalculate weight cache for poll ${statement[0].pollId}:`,
+            error
+          );
+        }
 
         // Enqueue clustering job for background processing via Vercel Cron
         try {

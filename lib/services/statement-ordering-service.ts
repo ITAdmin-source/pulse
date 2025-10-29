@@ -162,11 +162,40 @@ class WeightedStrategy implements OrderingStrategy {
     const seed = this.generateSeed(context);
     const rng = new SeededRandom(seed);
 
-    // Build initial cumulative weights array: O(n)
-    const items: Array<{ stmt: Statement; weight: number }> = statements.map(s => ({
-      stmt: s,
-      weight: weights.get(s.id) ?? 0.5
-    }));
+    // Build items array with weights
+    const items: Array<{ stmt: Statement; weight: number }> = statements.map(s => {
+      const baseWeight = weights.get(s.id) ?? 0.5;
+
+      // CRITICAL FIX: Add statement-specific random perturbation to break ties
+      //
+      // Problem: If we use the shared RNG (rng.next()), all users process statements
+      // in the same database order, so they get the same perturbation sequence:
+      //   User 1's RNG: [rand1, rand2, rand3...] → [stmt1, stmt2, stmt3...]
+      //   User 2's RNG: [rand1, rand2, rand3...] → [stmt1, stmt2, stmt3...] SAME!
+      //
+      // Solution: Create a unique seed for each statement by combining the user seed
+      // with the statement ID. This ensures:
+      //   - Same user + same statement = same perturbation (deterministic)
+      //   - Different users + same statement = different perturbations
+      //   - Same user + different statements = different perturbations
+      //
+      // Example: User A sees statement X with perturbation based on hash(seedA + idX)
+      //          User B sees statement X with perturbation based on hash(seedB + idX)
+      //
+      // Perturbation is ±5% of base weight, ensuring weight-based priority is
+      // preserved while adding enough variance for different seeds to produce
+      // different orders.
+      const stmtSeedInput = `${seed}-${s.id}`;
+      const stmtSeed = stringToSeed(stmtSeedInput);
+      const stmtRng = new SeededRandom(stmtSeed);
+      const perturbation = (stmtRng.next() - 0.5) * 0.1 * baseWeight; // ±5%
+      const perturbedWeight = Math.max(0.1, baseWeight + perturbation);
+
+      return {
+        stmt: s,
+        weight: perturbedWeight
+      };
+    });
 
     const result: Statement[] = [];
 
