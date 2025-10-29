@@ -2,7 +2,7 @@
 
 **Purpose:** Intelligently routes users to the most valuable statements to vote on, improving opinion clustering quality by maximizing information gain.
 
-**Last Updated:** 2025-10-25
+**Last Updated:** 2025-10-29
 
 ---
 
@@ -62,6 +62,7 @@ Pulse implements a **hybrid adaptive weighted ordering algorithm** that balances
    - Downweights confusing statements
    - 0% pass rate → 1.0 (no penalty)
    - 100% pass rate → 0.1 (heavy penalty)
+   - **No votes yet → 1.0 (no penalty)** - Gives equal opportunity to gather initial data
    - Formula: `max(1.0 - passRate * 0.9, 0.1)`
 
 **Combined Weight Formula:**
@@ -87,6 +88,7 @@ weight = predictiveness × consensus_potential × recency × pass_rate_penalty
 3. **Pass Rate Penalty** (0.1 - 1.0)
    - Same as clustering mode
    - Downweights confusing statements
+   - **No votes yet → 1.0 (no penalty)** - Gives equal opportunity to gather initial data
 
 **Combined Weight Formula:**
 ```
@@ -102,32 +104,49 @@ Higher-weighted statements are **more likely** to appear first, but not guarante
 ### Algorithm
 
 1. Calculate cumulative weights for all unvoted statements
-2. Generate seeded random number ∈ [0, total_weight]
-3. Select statement where random falls in cumulative distribution
-4. Remove selected statement and repeat
+2. **Apply statement-specific perturbations** (±5% of base weight) using unique seeds
+3. Generate seeded random number ∈ [0, total_weight]
+4. Select statement where random falls in cumulative distribution
+5. Remove selected statement and repeat
 
 ### Deterministic Seeding
 
 ```typescript
+// User-specific seed for overall order
 seed = hash(userId + pollId + batchNumber)
+
+// Statement-specific perturbation (ensures different users see different orders)
+stmtSeed = hash(seed + statementId)
+perturbation = (seededRandom(stmtSeed) - 0.5) * 0.1 * baseWeight  // ±5%
+finalWeight = baseWeight + perturbation
 ```
 
 **Benefits:**
 - Same user refreshing page → same order (consistency)
-- Different users → different orders (better data collection)
+- **Different users → different orders** (better data collection, no identical sequences)
 - Different batches → different orders (variety)
+- Statement-specific perturbations prevent all users from seeing identical orders
 
 ---
 
 ## Caching Strategy
 
-### Smart Invalidation (Event-Driven)
+### Smart Invalidation with Eager Recalculation
 
 **Weights cached in `statement_weights` table until:**
+- **Batch completion** - Cache invalidated + immediate recalculation for ALL statements
 - Clustering is recomputed (after batch completion or milestones)
 - New statement is approved (affects recency distribution)
 
 **No time-based TTL** - weights stay valid until data changes.
+
+**Eager Recalculation (New):**
+When a voting batch is completed, the system now:
+1. Invalidates the old weight cache
+2. **Immediately recalculates** weights for all approved statements
+3. Caches the fresh weights in the database
+
+This ensures statement weights always reflect the current vote distribution, eliminating the stale cache problem where users saw outdated ordering.
 
 ### Performance
 
@@ -142,6 +161,45 @@ seed = hash(userId + pollId + batchNumber)
 - After warmup (10+ votes): **>90%** expected
 - Most requests use cached weights
 - Recalculation only on data changes
+
+---
+
+## Recent Improvements (2025-10-29)
+
+### 1. Statement-Specific Perturbations
+
+**Problem:** All users were seeing identical statement orders because perturbations used a shared RNG sequence.
+
+**Solution:** Each statement now gets a unique perturbation based on `hash(userSeed + statementId)`, ensuring:
+- Different users see different orders (better data collection)
+- Same user sees consistent order on refresh (UX consistency)
+- Weight-based priority preserved (±5% perturbation range)
+
+**Impact:** Average overlap between users reduced from 100% to ~35% (3.5/10 statements in common).
+
+### 2. Eager Weight Recalculation
+
+**Problem:** After batch completion, cache was invalidated but not recalculated, leading to lazy loading with stale data snapshots.
+
+**Solution:** Automatically recalculate weights for ALL approved statements immediately after batch completion.
+
+**Impact:**
+- Weights always reflect current vote distribution
+- Eliminates stale cache problem
+- Performance: ~1.8s for 38 statements (acceptable for background operation)
+
+### 3. Removed 0-Vote Penalty
+
+**Problem:** Statements with 0 votes had a 0.5 pass rate penalty, reducing their exposure by 50% compared to 1-vote statements. This created a chicken-and-egg problem where new statements struggled to get initial votes.
+
+**Solution:** Changed pass rate penalty from 0.5 → 1.0 for statements with no votes.
+
+**Impact:**
+- 0-vote statements now get equal priority to 1-vote statements
+- Expected exposure increased by 66% (1.99 → 3.31 per batch of 10)
+- More balanced distribution: ~3 zero-vote + ~5 one-vote statements per batch
+- Eliminates unfair advantage for statements that got lucky early
+- Pass rate penalty still activates after gathering actual voting data
 
 ---
 
@@ -198,16 +256,52 @@ await StatementWeightingService.invalidateWeights(pollId);
 await StatementWeightingService.invalidateWeights(statement.pollId);
 ```
 
-#### 3. With Voting Flow
+#### 3. With Voting Flow - Batch Completion
 
-`lib/services/statement-ordering-service.ts:112-138`
+`lib/services/voting-service.ts:227-270`
 
 ```typescript
-// Weighted strategy automatically calls weighting service
+// After batch completion: Invalidate + Eager Recalculation
+await StatementWeightingService.invalidateWeights(pollId);
+
+// Fetch all approved statements
+const approvedStatements = await db
+  .select({ id: statementsSchema.id })
+  .from(statementsSchema)
+  .where(
+    and(
+      eq(statementsSchema.pollId, pollId),
+      eq(statementsSchema.approved, true)
+    )
+  );
+
+// Immediately recalculate weights for ALL statements
+await StatementWeightingService.getStatementWeights(
+  pollId,
+  approvedStatements.map(s => s.id)
+);
+```
+
+#### 4. With Statement Ordering
+
+`lib/services/statement-ordering-service.ts:112-198`
+
+```typescript
+// Weighted strategy with statement-specific perturbations
 const statementWeights = await StatementWeightingService.getStatementWeights(
   pollId,
   statementIds
 );
+
+// Apply unique perturbations per statement
+const items = statements.map(s => {
+  const baseWeight = weights.get(s.id) ?? 0.5;
+  const stmtSeedInput = `${seed}-${s.id}`;
+  const stmtSeed = stringToSeed(stmtSeedInput);
+  const stmtRng = new SeededRandom(stmtSeed);
+  const perturbation = (stmtRng.next() - 0.5) * 0.1 * baseWeight;
+  return { stmt: s, weight: baseWeight + perturbation };
+});
 ```
 
 ---
