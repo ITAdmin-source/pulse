@@ -130,8 +130,8 @@ export const pollPage = {
 
 export const splashScreen = {
   // How it works (3 simple steps)
-  step1: 'בחרו תשובות שאתם אוהבים, או לא',
-  step2: 'הציעו רעיונות חדשים משלכם',
+  step1: 'בחרו תשובות שאתם בעד, או לא',
+  step2: 'הציעו רעיונות חדשים שלכם',
   step3: 'גלו איפה אתם ביחס לאחרים',
 
   // Privacy note
