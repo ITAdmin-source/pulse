@@ -815,6 +815,7 @@ export const opinionMap = {
     `${group} על "${statement}": ${agreement > 0 ? 'מסכימים' : agreement < 0 ? 'לא מסכימים' : 'נייטרלי'} (${Math.abs(agreement)}%)`,
   heatmapNoData: 'אין מספיק נתונים להצגת הסכמה',
   heatmapLoading: 'טוען נתוני הסכמה...',
+  heatmapVoterCount: (count: number) => `(${count} מצביעים)`,
 } as const;
 
 // ============================================================================

@@ -200,15 +200,22 @@ export function StatementAgreementHeatmap({
                     return (
                       <td
                         key={groupAgreement.groupId}
-                        className={`p-3 text-center font-semibold text-sm ${cellColor}`}
+                        className={`p-3 text-center ${cellColor}`}
                         title={opinionMap.heatmapCellLabel(
                           groupAgreement.groupLabel,
                           stmt.statementText,
                           groupAgreement.agreementPercentage
                         )}
                       >
-                        {groupAgreement.agreementPercentage > 0 ? "+" : ""}
-                        {groupAgreement.agreementPercentage}%
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="font-semibold text-sm">
+                            {groupAgreement.agreementPercentage > 0 ? "+" : ""}
+                            {groupAgreement.agreementPercentage}%
+                          </div>
+                          <div className="text-xs opacity-70">
+                            {opinionMap.heatmapVoterCount(groupAgreement.voterCount)}
+                          </div>
+                        </div>
                       </td>
                     );
                   })}

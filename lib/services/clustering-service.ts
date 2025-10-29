@@ -596,9 +596,51 @@ export class ClusteringService {
       statementRecords.map((s) => [s.id, s.text])
     );
 
+    // Get actual vote counts per group per statement
+    const voteCountsQuery = await db
+      .select({
+        statementId: votes.statementId,
+        coarseGroupId: userClusteringPositions.coarseGroupId,
+        voteValue: votes.value,
+        count: sql<number>`cast(count(*) as integer)`,
+      })
+      .from(votes)
+      .innerJoin(userClusteringPositions,
+        and(
+          eq(votes.userId, userClusteringPositions.userId),
+          eq(userClusteringPositions.pollId, pollId)
+        )
+      )
+      .where(inArray(votes.statementId, statementIds))
+      .groupBy(votes.statementId, userClusteringPositions.coarseGroupId, votes.value);
+
+    // Build a nested map: statementId -> groupId -> voteValue -> count
+    const voteCounts = new Map<string, Map<number, { agree: number; disagree: number; pass: number }>>();
+
+    for (const row of voteCountsQuery) {
+      if (!voteCounts.has(row.statementId)) {
+        voteCounts.set(row.statementId, new Map());
+      }
+      const groupMap = voteCounts.get(row.statementId)!;
+
+      if (!groupMap.has(row.coarseGroupId)) {
+        groupMap.set(row.coarseGroupId, { agree: 0, disagree: 0, pass: 0 });
+      }
+      const counts = groupMap.get(row.coarseGroupId)!;
+
+      if (row.voteValue === 1) {
+        counts.agree = row.count;
+      } else if (row.voteValue === -1) {
+        counts.disagree = row.count;
+      } else if (row.voteValue === 0) {
+        counts.pass = row.count;
+      }
+    }
+
     // Transform to StatementGroupAgreement format
     const result: StatementGroupAgreement[] = classifications.map((classification) => {
       const groupAgreements = classification.groupAgreements as Record<number, number>;
+      const statementVoteCounts = voteCounts.get(classification.statementId);
 
       // Transform groupAgreements to display format
       const groupAgreementDetails: GroupAgreementDetail[] = coarseGroups.map(
@@ -608,16 +650,21 @@ export class ClusteringService {
           // Convert from 0-1 normalized to -100 to +100 percentage
           const agreementPercentage = (normalizedScore - 0.5) * 200;
 
-          // Note: We don't have detailed vote counts per group here
-          // These would need to be calculated separately if needed
+          // Get actual vote counts for this group and statement
+          const groupVoteCounts = statementVoteCounts?.get(groupIdx) || { agree: 0, disagree: 0, pass: 0 };
+          const agreeCount = groupVoteCounts.agree;
+          const disagreeCount = groupVoteCounts.disagree;
+          const passCount = groupVoteCounts.pass;
+          const voterCount = agreeCount + disagreeCount; // Exclude pass votes
+
           return {
             groupId: groupIdx,
             groupLabel: group.label,
             agreementPercentage: Math.round(agreementPercentage),
-            agreeCount: 0, // Not available in current data structure
-            disagreeCount: 0, // Not available in current data structure
-            passCount: 0, // Not available in current data structure
-            voterCount: group.userCount,
+            agreeCount,
+            disagreeCount,
+            passCount,
+            voterCount,
           };
         }
       );
