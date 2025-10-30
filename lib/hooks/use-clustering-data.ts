@@ -3,7 +3,7 @@
  * Fetches and caches clustering data for a poll
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getCompleteClusteringDataAction } from "@/actions/clustering-actions";
 
 export interface ClusteringDataResult {
@@ -43,7 +43,7 @@ export function useClusteringData(pollId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     if (!pollId) return;
 
     setIsLoading(true);
@@ -79,11 +79,11 @@ export function useClusteringData(pollId: string) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [pollId]);
 
   useEffect(() => {
     refetch();
-  }, [pollId]);
+  }, [pollId, refetch]);
 
   return { data, isLoading, error, refetch };
 }

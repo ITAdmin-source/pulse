@@ -6,7 +6,7 @@
  * Does NOT show: individual positions of other users (privacy protection)
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { UserPosition, CoarseGroup, getGroupColor, Point2D } from "./types";
 import { opinionMap } from "@/lib/strings/he";
 import { computeSmoothedHull, estimateRadius } from "@/lib/clustering/convex-hull";
@@ -63,7 +63,7 @@ export function OpinionMapCanvas({
   }, [userPositions]);
 
   // Transform data coordinates to SVG coordinates
-  const toSVG = (pc1: number, pc2: number) => {
+  const toSVG = useCallback((pc1: number, pc2: number) => {
     const svgWidth = 800;
     const svgHeight = 600;
 
@@ -72,7 +72,7 @@ export function OpinionMapCanvas({
     const y = svgHeight - ((pc2 - bounds.minY) / bounds.height) * svgHeight;
 
     return { x, y };
-  };
+  }, [bounds]);
 
   const currentUserPosition = userPositions.find((p) => p.userId === currentUserId);
 
@@ -110,7 +110,7 @@ export function OpinionMapCanvas({
         hull: hullResult.hull,
       };
     });
-  }, [groups, userPositions, bounds, toSVG]);
+  }, [groups, userPositions, toSVG]);
 
   return (
     <div className={`bg-white rounded-xl shadow-xl p-6 ${className}`}>

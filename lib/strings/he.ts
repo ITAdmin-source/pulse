@@ -759,6 +759,12 @@ export const opinionMap = {
   mobileSwipeHint: 'החליקו כדי לראות עוד',
   mobileTapHint: 'הקישו על קבוצה לפרטים',
   mobileSimplifiedView: 'תצוגה מפושטת למובייל',
+  mobileYouAreHere: 'אתם כאן',
+  mobileTapInstruction: 'לחצו על קבוצה לפרטים נוספים',
+  mobileLegendGroups: 'קבוצות דעה',
+  mobileGroupSize: 'גודל הקבוצה',
+  mobileGroupPercentage: (percent: number) => `${percent.toFixed(0)}% מהמשתתפים`,
+  mobileYourGroupDesc: 'אתם חלק מקבוצה זו',
 
   // Data Table View
   tableViewTitle: 'תצוגת טבלה',

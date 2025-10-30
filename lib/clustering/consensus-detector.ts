@@ -231,8 +231,8 @@ export class ConsensusDetector {
       for (const groupId of uniqueGroups) {
         // Get users in this group
         const groupUserIds = Array.from(userGroupAssignments.entries())
-          .filter(([_, gId]) => gId === groupId)
-          .map(([userId, _]) => userId);
+          .filter(([, gId]) => gId === groupId)
+          .map(([userId]) => userId);
 
         // Get votes from these users for this statement
         const groupVotes = votes

@@ -14,8 +14,8 @@ import { ArrowRight, HelpCircle, AlertCircle } from "lucide-react";
 
 // Clustering Components
 import { OpinionMapCanvas } from "@/components/clustering/opinion-map-canvas";
+import { OpinionMapCanvasMobile } from "@/components/clustering/opinion-map-canvas-mobile";
 import { OpinionMapLegend } from "@/components/clustering/opinion-map-legend";
-import { MobileClusteringView } from "@/components/clustering/mobile-clustering-view";
 import { ClusteringLoadingSkeleton } from "@/components/clustering/clustering-loading-skeleton";
 import { ClusteringErrorState } from "@/components/clustering/clustering-error-state";
 import { ClusteringNotEligible } from "@/components/clustering/clustering-not-eligible";
@@ -236,11 +236,10 @@ export function OpinionMapClient({ poll, eligibility }: OpinionMapClientProps) {
               )}
 
               {isMobile ? (
-                <MobileClusteringView
+                <OpinionMapCanvasMobile
                   userPositions={clusteringData.userPositions}
                   groups={clusteringData.coarseGroups}
                   currentUserId={dbUser?.id}
-                  totalUsers={clusteringData.metadata.totalUsers}
                   onGroupClick={handleGroupToggle}
                 />
               ) : (

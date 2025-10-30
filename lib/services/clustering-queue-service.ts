@@ -301,7 +301,7 @@ export class ClusteringQueueService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-    const result = await db
+    await db
       .delete(clusteringQueue)
       .where(
         and(

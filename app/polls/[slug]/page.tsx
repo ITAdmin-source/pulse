@@ -393,7 +393,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
   }, [activeTab, currentStatement, hasMoreStatements, isPollClosed, inGracePeriod]);
 
   // Gamification: Calculate dynamic milestones based on poll size
-  const calculateMilestones = () => {
+  const calculateMilestones = useCallback(() => {
     const threshold = votesRequiredForResults;
 
     // Calculate percentage-based milestones
@@ -414,10 +414,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       milestoneAlmostThere,
       milestoneFinal,
     };
-  };
+  }, [votesRequiredForResults]);
 
   // Gamification: Check if vote count hits a milestone
-  const checkMilestone = (voteCount: number): string | null => {
+  const checkMilestone = useCallback((voteCount: number): string | null => {
     // Only trigger each milestone once
     if (triggeredMilestones.has(voteCount)) return null;
 
@@ -432,10 +432,10 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
     if (voteCount === milestones.milestoneFinal) return 'final';
 
     return null;
-  };
+  }, [triggeredMilestones, calculateMilestones]);
 
   // Gamification: Handle milestone effects
-  const handleMilestone = (milestoneType: string, voteCount: number) => {
+  const handleMilestone = useCallback((milestoneType: string, voteCount: number) => {
     // Mark milestone as triggered
     setTriggeredMilestones((prev) => new Set(prev).add(voteCount));
 
@@ -500,7 +500,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
         setShowEncouragement(true);
         break;
     }
-  };
+  }, [votesRequiredForResults, poll?.allowUserStatements]);
 
   // Initialize poll and user data
   useEffect(() => {
@@ -1272,7 +1272,7 @@ export default function CombinedPollPage({ params }: CombinedPollPageProps) {
       toast.error("שגיאה בטעינת תוצאות");
       setIsLoadingResults(false);
     }
-  }, [poll?.id, userId, hasMoreStatements, dbUser?.clerkUserId, loadUserArtifacts, votedCount, totalStatements, isPollClosed]);
+  }, [poll, userId, hasMoreStatements, dbUser, loadUserArtifacts, votedCount, totalStatements, isPollClosed, RESULTS_CACHE_TTL]);
 
   // Load music recommendation when insight is available
   const loadMusicRecommendation = useCallback(async () => {

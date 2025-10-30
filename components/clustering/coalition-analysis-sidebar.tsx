@@ -89,7 +89,7 @@ export function CoalitionAnalysisSidebar({
           </div>
         )}
 
-        {strongestCoalitions.map((coalition, idx) => {
+        {strongestCoalitions.map((coalition) => {
           const [group1Id, group2Id] = coalition.groupIds;
           const [label1, label2] = coalition.groupLabels;
           const color1 = GROUP_COLORS[group1Id % GROUP_COLORS.length];

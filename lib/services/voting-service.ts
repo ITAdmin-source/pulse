@@ -6,7 +6,6 @@ import { createVoteSchema, voteQuerySchema, userVotingProgressSchema } from "@/l
 import { VoteValue, calculateVoteDistribution, getMinimumVotingThreshold } from "@/lib/utils/voting";
 import { PollService } from "./poll-service";
 import { UserService } from "./user-service";
-import { ClusteringService } from "./clustering-service";
 import { StatementWeightingService } from "./statement-weighting-service";
 import { z } from "zod";
 

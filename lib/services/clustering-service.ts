@@ -15,7 +15,6 @@ import { eq, and, inArray, sql } from "drizzle-orm";
 import {
   votes,
   statements,
-  users,
   pollClusteringMetadata,
   userClusteringPositions,
   statementClassifications,
@@ -24,13 +23,8 @@ import { PCAEngine } from "@/lib/clustering/pca-engine";
 import { KMeansEngine } from "@/lib/clustering/kmeans-engine";
 import { ConsensusDetector } from "@/lib/clustering/consensus-detector";
 import { StatementClassifier, type EnhancedClassification } from "@/lib/clustering/statement-classifier";
-import { CoalitionAnalyzer, type CoalitionAnalysis } from "@/lib/clustering/coalition-analyzer";
+import type { CoalitionAnalysis } from "@/lib/clustering/coalition-analyzer";
 import type { CoarseGroup } from "@/components/clustering/types";
-import type {
-  PollClusteringMetadata,
-  UserClusteringPosition,
-  StatementClassification,
-} from "@/db/schema";
 
 /**
  * Group agreement data for a single statement

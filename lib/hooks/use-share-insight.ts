@@ -21,7 +21,6 @@ export function useShareInsight() {
       pollQuestion,
       insightEmoji,
       insightProfile,
-      insightDescription,
       shareText
     } = options;
 

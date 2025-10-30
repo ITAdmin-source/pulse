@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { banners } from "@/lib/strings/he";
-import { components } from "@/lib/design-tokens-v2";
 
 interface ClosedPollBannerProps {
   closedDate?: string | null; // ISO date string or formatted date (optional)
