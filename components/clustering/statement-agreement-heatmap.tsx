@@ -191,7 +191,7 @@ export function StatementAgreementHeatmap({
 
                   {/* Statement Text */}
                   <td className="p-3 text-sm text-gray-900">
-                    <div className="line-clamp-2">{stmt.statementText}</div>
+                    <div>{stmt.statementText}</div>
                   </td>
 
                   {/* Group Cells */}
